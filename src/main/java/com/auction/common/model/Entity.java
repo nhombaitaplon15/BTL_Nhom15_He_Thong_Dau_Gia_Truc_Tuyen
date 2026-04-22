@@ -1,4 +1,4 @@
-package com.auction.common;
+package com.auction.common.model;
 
 public abstract class Entity {
     protected int id;

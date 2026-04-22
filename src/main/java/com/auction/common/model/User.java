@@ -1,6 +1,6 @@
-package com.auction.common;
+package com.auction.common.model;
 
-public abstract class User extends Entity {
+public abstract class User extends Entity implements java.io.Serializable {
     private String name;
     private String email;
     private String password;

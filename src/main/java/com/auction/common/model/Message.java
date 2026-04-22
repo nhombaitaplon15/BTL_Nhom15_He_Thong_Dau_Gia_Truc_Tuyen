@@ -1,4 +1,4 @@
-package com.auction.common;
+package com.auction.common.model;
 
 import java.io.Serializable;
 //implements Serializable (để Java có thể biến đối tượng này thành byte và truyền qua mạng)

@@ -1,9 +1,10 @@
-package com.auction.client;
+package com.auction.client.controller;
 
+import com.auction.common.model.*;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Label;
 
 public class LoginController {
     @FXML
@@ -12,7 +13,6 @@ public class LoginController {
     private PasswordField passwordField;
     @FXML
     private Label messageLabel;
-
     // Logic xử lý khi nhấn nút Đăng nhập
     @FXML
     public void handleLogin() {

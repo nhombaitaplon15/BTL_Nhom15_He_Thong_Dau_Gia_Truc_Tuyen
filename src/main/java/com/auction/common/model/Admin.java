@@ -1,4 +1,4 @@
-package com.auction.common;
+package com.auction.common.model;
 
 // Kế thừa lớp User
 public class Admin extends User {
