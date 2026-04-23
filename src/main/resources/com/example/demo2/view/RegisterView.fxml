@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.demo2.controller.RegisterController">
+   <children>
+      <Label layoutX="312.0" layoutY="63.0" text="ĐĂNG KÍ TÀI KHOẢN">
+         <font>
+            <Font size="36.0" />
+         </font>
+      </Label>
+      <TextField layoutX="437.0" layoutY="137.0" promptText="Tạo tên tài khoản">
+            <font>
+                <Font size="18.0" />
+            </font></TextField>
+      <TextField layoutX="437.0" layoutY="192.0" promptText="Số điện thoại đăng kí">
+          <font>
+              <Font size="18.0" />
+          </font></TextField>
+      <PasswordField layoutX="437.0" layoutY="239.0" promptText="Mật khẩu mới">
+          <font>
+              <Font size="18.0" />
+          </font>
+      </PasswordField>
+       <Button layoutX="341.0" layoutY="320.0" mnemonicParsing="false" onAction="#Open_the_home_page" prefHeight="40.0" prefWidth="116.0" text="Đăng kí">
+           <font>
+               <Font size="18.0" />
+           </font>
+       </Button>
+       <Button layoutX="506.0" layoutY="320.0" mnemonicParsing="false" onAction="#Welcome_back" prefHeight="40.0" prefWidth="116.0" text="Quay lại">
+           <font>
+               <Font size="18.0" />
+           </font>
+       </Button>
+      <Label layoutX="312.0" layoutY="143.0" text="Tên tài khoản">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Label>
+      <Label layoutX="313.0" layoutY="198.0" text="Số điện thoại">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Label>
+      <Label layoutX="312.0" layoutY="245.0" text="Mật khẩu ">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Label>
+   </children>
+</AnchorPane>
