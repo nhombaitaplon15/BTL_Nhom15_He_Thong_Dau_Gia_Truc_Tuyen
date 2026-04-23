@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 public class DBConnection {
-    // Nhớ thay tên database, user, pass của sếp vào đây nhé
+    // Nhớ thay tên database, user, pass
     private static final String URL = "jdbc:mysql://localhost:3306/auction_db";
     private static final String USER = "root";
     private static final String PASS = "";
