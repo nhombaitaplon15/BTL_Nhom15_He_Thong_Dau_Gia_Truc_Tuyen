@@ -15,7 +15,7 @@ public class RegisterController {
     @FXML
     public void Welcome_back(ActionEvent event){
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/WelcomeView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);

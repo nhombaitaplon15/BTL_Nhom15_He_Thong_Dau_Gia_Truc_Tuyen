@@ -10,7 +10,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/WelcomeView.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
 
         Scene scene = new Scene(loader.load(),1000,640);
 

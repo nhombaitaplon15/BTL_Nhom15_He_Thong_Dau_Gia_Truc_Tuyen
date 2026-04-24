@@ -4,7 +4,11 @@ import com.auction.common.model.Admin;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.Seller;
 import com.auction.common.model.User;
-import java.sql.*;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UserDAO {
     public User checkLogin(String username, String password) {
