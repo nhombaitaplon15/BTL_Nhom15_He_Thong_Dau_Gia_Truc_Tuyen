@@ -33,7 +33,7 @@ public class WelcomeController {
         System.out.println("Loading...");
         try {
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/demo2/view/RegisterView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/RegisterView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);
