@@ -1,4 +1,4 @@
-package com.example.demo2.controller;
+package com.auction.client.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -8,13 +8,12 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 
-
 public class WelcomeController {
     @FXML
     public void Open_login_screen(ActionEvent event){
         System.out.println("Loading...");
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/demo2/view/LoginView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/LoginView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);
@@ -34,7 +33,7 @@ public class WelcomeController {
         System.out.println("Loading...");
         try {
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/demo2/view/RegisterView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/RegisterView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);

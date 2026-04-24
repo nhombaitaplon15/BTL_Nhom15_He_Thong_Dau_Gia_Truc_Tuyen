@@ -1,4 +1,4 @@
-package com.example.demo2.controller;
+package com.auction.client.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -15,7 +15,7 @@ public class RegisterController {
     @FXML
     public void Welcome_back(ActionEvent event){
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/demo2/view/WelcomeView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);

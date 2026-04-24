@@ -1,15 +1,14 @@
-module com.example.demo2 {
+module com.auction {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.graphics;
-    requires java.desktop;
     requires java.sql;
+    requires mysql.connector.j;
 
-    opens com.example.demo2.controller to javafx.fxml;
-    opens com.example.demo2 to javafx.fxml;
-    opens com.auction.server.dao to javafx.fxml;
-    exports com.auction.server.dao;
+    // Cho phép JavaFX đọc các file Controller của em
+    opens com.auction.client.controller to javafx.fxml;
+    // Cho phép JavaFX khởi chạy từ package chính
+    opens com.auction to javafx.fxml;
 
-    exports com.example.demo2;
-    exports com.example.demo2.controller;
+    exports com.auction;
 }

@@ -1,37 +1,63 @@
 package com.auction.server.dao;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import com.auction.common.model.Admin;
+import com.auction.common.model.Bidder;
+import com.auction.common.model.Seller;
+import com.auction.common.model.User;
+
+import java.sql.*;
 
 public class DBConnection {
-    // Sếp kiểm tra đúng tên db là auction_db nhé
-    private static final String URL = "jdbc:mysql://localhost:3306/auction_db?useUnicode=true&characterEncoding=UTF-8";
-    private static final String USER = "root";
-    private static final String PASS = "";
-
+    // Thay đổi tên database thành auction_db
+    private static final String URL = "jdbc:mysql://localhost:3306/auction_db";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = ""; // Nếu XAMPP mặc định thì để trống
     public static Connection getConnection() throws SQLException {
         try {
-            // Với Java 21 và MySQL Connector mới, dòng này có thể không cần nhưng viết vào cho chắc sếp ạ
+            // Nạp driver kết nối
             Class.forName("com.mysql.cj.jdbc.Driver");
-            return DriverManager.getConnection(URL, USER, PASS);
+            return DriverManager.getConnection(URL, USERNAME, PASSWORD);
         } catch (ClassNotFoundException e) {
-            throw new SQLException("Thiếu Driver MySQL rồi sếp ơi!");
+            System.err.println("Lỗi: Không tìm thấy Driver MySQL JDBC!");
+            e.printStackTrace();
+            return null;
         }
     }
+    public User checkLogin(String username, String password) {
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
 
-    // Hàm chạy thử ngay tại đây
-    public static void main(String[] args) {
-        try (Connection conn = getConnection()) {
-            if (conn != null) {
-                System.out.println("==========================================");
-                System.out.println("   KẾT NỐI THÀNH CÔNG RỒI!   ");
-                System.out.println("   Server Java 25 đã thông với MySQL!    ");
-                System.out.println("==========================================");
+        // Sử dụng Try-with-resources để tự động đóng kết nối
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("id");
+                    String name = rs.getString("name");
+                    String email = rs.getString("email");
+                    String pass = rs.getString("password");
+                    String phone = rs.getString("phone");
+                    String status = rs.getString("status");
+                    String role = rs.getString("role"); // Cột role trong DB: 'ADMIN' hoặc 'USER'
+
+                    // Nếu là ADMIN thì tạo đối tượng Admin, ngược lại tạo User
+                    if ("ADMIN".equalsIgnoreCase(role)) {
+                        return new Admin(id, name, email, pass, phone, status);
+                    } else if ("BIDDER".equalsIgnoreCase(role)) {
+                        return new Bidder(id, name, email, pass, phone, status);
+                    } else if ("SELLER".equalsIgnoreCase(role)) {
+                        return new Seller(id, name, email, pass, phone, status);
+                    } else {
+                        return null; // Hoặc một loại mặc định nào đó sếp quy định
+                    }
+                }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi kết nối: " + e.getMessage());
-            System.err.println("Nhớ bật Start MySQL trong XAMPP nhé!");
+            System.err.println("Lỗi truy vấn Database: " + e.getMessage());
         }
+        return null; // Trả về null nếu không khớp tài khoản
     }
 }
