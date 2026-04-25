@@ -30,13 +30,13 @@ public class LoginController {
             if (user != null) {
                 // In ra console để kiểm tra
                 System.out.println("Đăng nhập thành công!");
-                System.out.println("Chào: " + user.getName());
+                System.out.println("Chào: " + user.getUsername());
 
                 // Hiện Alert thông báo
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Xác nhận");
                 alert.setHeaderText("Kết nối Database thành công");
-                alert.setContentText("Hệ thống đã tìm thấy người dùng: " + user.getName()
+                alert.setContentText("Hệ thống đã tìm thấy người dùng: " + user.getUsername()
                         + "\nVai trò: " + user.getRole());
                 alert.showAndWait();
 

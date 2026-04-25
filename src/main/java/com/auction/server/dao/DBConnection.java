@@ -36,7 +36,7 @@ public class DBConnection {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int id = rs.getInt("id");
-                    String name = rs.getString("name");
+                    String Dbusername = rs.getString("username");
                     String email = rs.getString("email");
                     String pass = rs.getString("password");
                     String phone = rs.getString("phone");
@@ -45,11 +45,11 @@ public class DBConnection {
 
                     // Nếu là ADMIN thì tạo đối tượng Admin, ngược lại tạo User
                     if ("ADMIN".equalsIgnoreCase(role)) {
-                        return new Admin(id, name, email, pass, phone, status);
+                        return new Admin(id, Dbusername, email, pass, phone, status);
                     } else if ("BIDDER".equalsIgnoreCase(role)) {
-                        return new Bidder(id, name, email, pass, phone, status);
+                        return new Bidder(id, Dbusername, email, pass, phone, status);
                     } else if ("SELLER".equalsIgnoreCase(role)) {
-                        return new Seller(id, name, email, pass, phone, status);
+                        return new Seller(id, Dbusername, email, pass, phone, status);
                     } else {
                         return null; // Hoặc một loại mặc định nào đó sếp quy định
                     }

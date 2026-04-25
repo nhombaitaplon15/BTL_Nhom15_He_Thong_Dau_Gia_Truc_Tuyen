@@ -9,3 +9,4 @@ package com.auction.common.model;
   //      super(id,producer,price,show,name);
     //}
 //}
+
