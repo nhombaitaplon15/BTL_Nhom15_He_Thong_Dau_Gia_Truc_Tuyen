@@ -9,16 +9,20 @@ import java.sql.*;
 
 public class DBConnection {
     // Thay đổi tên database thành auction_db
-    private static final String URL = "jdbc:mysql://localhost:3306/auction_db";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = ""; // Nếu XAMPP mặc định thì để trống
+// 1. Đổi URL: Thêm đuôi ?options... để diệt lỗi múi giờ mặc định
+    private static final String URL = "jdbc:postgresql://shinkansen.proxy.rlwy.net:36856/railway?options=-c%20timezone=UTC";
+    private static final String USERNAME = "postgres";
+    private static final String PASSWORD = "VvQwsVyCLGuitsfXKuTpbLpRemIBxsIa";
+
     public static Connection getConnection() throws SQLException {
         try {
-            // Nạp driver kết nối
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            // 4. Đổi Driver từ mysql sang postgresql
+            Class.forName("org.postgresql.Driver");
+
             return DriverManager.getConnection(URL, USERNAME, PASSWORD);
         } catch (ClassNotFoundException e) {
-            System.err.println("Lỗi: Không tìm thấy Driver MySQL JDBC!");
+            // Sửa lại dòng thông báo lỗi cho đúng loại database
+            System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
             e.printStackTrace();
             return null;
         }
