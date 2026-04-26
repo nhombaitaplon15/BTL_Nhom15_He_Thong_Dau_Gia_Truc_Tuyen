@@ -1,7 +1,7 @@
 package com.auction.common.model;
 
 public abstract class User extends Entity implements java.io.Serializable {
-    private String name;
+    private String username;
     private String email;
     private String password;
     private String phone;
@@ -9,7 +9,7 @@ public abstract class User extends Entity implements java.io.Serializable {
     private String role;// vai tro
     public User(int id, String name, String email, String password, String phone, String status, String role) {
         super(id);
-        this.name = name;
+        this.username = name;
         this.email = email;
         this.password = password;
         this.phone = phone;
@@ -18,8 +18,8 @@ public abstract class User extends Entity implements java.io.Serializable {
     }
 
     // Các Getters và Setters
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getUsername() { return username; }
+    public void setUsername(String name) { this.username = name; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

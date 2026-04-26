@@ -24,7 +24,7 @@ public class UserDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int id = rs.getInt("id");
-                    String name = rs.getString("name");
+                    String name = rs.getString("username");
                     String email = rs.getString("email");
                     String pass = rs.getString("password");
                     String phone = rs.getString("phone");

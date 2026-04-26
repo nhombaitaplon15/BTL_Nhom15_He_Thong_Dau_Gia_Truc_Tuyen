@@ -42,5 +42,6 @@ public abstract class Items extends Entity implements java.io.Serializable{
     }
     public String getimgitem(){
         return imgitem;
+
     }
 }
