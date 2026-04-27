@@ -6,12 +6,12 @@ public abstract class Items extends Entity implements java.io.Serializable{
     protected String name;
     protected  String imgitem;
     public Items (int id,String producer,int price,String show,String name, String imgitem){
+        super(id);
         this.producer=producer;
         this.price=price;
         this.show=show;
         this.name= name;
         this.imgitem= imgitem;
-        super(id);
     }
     public void setProducer(String producer) {
         this.producer = producer;
