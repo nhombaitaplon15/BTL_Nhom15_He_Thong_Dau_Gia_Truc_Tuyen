@@ -38,7 +38,7 @@ public class ItemService {
             System.out.println("Không tìm thấy sản phẩm !");
             return;
         }
-        item.setStartPrice(price);
+        item.setStartPrice(price);                                        // khi set giá khởi điểm thì giá khởi điểm sẽ là giá hiện tại
         item.setCurrentPrice(price);
         System.out.println("Đã thiết lập giá khởi điểm là: "+ price);
     }
