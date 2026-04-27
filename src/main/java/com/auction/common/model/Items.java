@@ -1,14 +1,16 @@
 package com.auction.common.model;
 public abstract class Items extends Entity implements java.io.Serializable{
     protected String producer;
-    protected int price;
+    protected int startPrice;
+    protected int currentPrice;
     protected String show;   //mô tả của sản phẩm
     protected String name;
     protected  String imgItem;
-    public Items (int id,String producer,int price,String show,String name, String imgItem){
+    public Items (int id,String producer,int startPrice, int currentPrice,String show,String name, String imgItem){
         super(id);
         this.producer=producer;
-        this.price=price;
+        this.startPrice=startPrice;
+        this.currentPrice= currentPrice;
         this.show=show;
         this.name= name;
         this.imgItem= imgItem;
@@ -25,11 +27,17 @@ public abstract class Items extends Entity implements java.io.Serializable{
     public String getName(){
         return name;
     }
-    public void setPrice(int price) {
-        this.price = price;
+    public void setStartPrice(int startPrice) {
+        this.startPrice = startPrice;
     }
-    public int getPrice() {
-        return price;
+    public int getStartPrice() {
+        return startPrice;
+    }
+    public void setCurrentPrice(int currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+    public int getCurrentPrice() {
+        return currentPrice;
     }
     public void setShow(String show) {
         this.show = show;

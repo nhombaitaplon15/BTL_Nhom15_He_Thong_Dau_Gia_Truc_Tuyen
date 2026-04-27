@@ -16,15 +16,16 @@ public class ItemService {
         itemsList.put(item.getId(), item);                                  // thêm id và sp vào danh sách
         System.out.println("Đã thêm sản phẩm: " + item.getName());
     }
-    public void updateItem(int id, String producer, int price, String show,String name, String imgitem){ // hàm update sản phẩm
+    public void updateItem(int id,String producer, String show,String name, String imgItem) { // hàm update sản phẩm
         Items item = itemsList.get(id);                                                                  // duyệt id để update, sản phẩm mà không tồn tại thì không update được
-        if (item == null)
+        if (item == null){
+            System.out.println("Item không hợp lệ !");
             return;
-        item.setProducer(producer);
-        item.setPrice(price);
-        item.setShow(show);
+        }
         item.setName(name);
-        item.setimgitem(imgitem);
+        item.setProducer(producer);
+        item.setShow(show);
+        item.setimgItem(imgItem);
         System.out.println("Đã cập nhật sản phẩm!");
     }
     public void deleteItem(int id){                                          //xóa sản phẩm cũng duyệt id và xóa id
@@ -37,7 +38,8 @@ public class ItemService {
             System.out.println("Không tìm thấy sản phẩm !");
             return;
         }
-        item.setPrice(price);
+        item.setStartPrice(price);
+        item.setCurrentPrice(price);
         System.out.println("Đã thiết lập giá khởi điểm là: "+ price);
     }
     public void setDescription(int id,String show){                       // hàm set mô tả cũng như hàm set giá
