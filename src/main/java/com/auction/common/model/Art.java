@@ -1,7 +1,7 @@
 package com.auction.common.model;
 
 class Art extends Items implements java.io.Serializable{
-    public Art (int id,String producer,int price,String show,String name){
-        super(id,producer,price,show,name);
+    public Art (int id,String producer,int startPrice, String description, String name, String imgItem){
+        super(id, producer, startPrice, description, name, imgItem);
     }
 }
