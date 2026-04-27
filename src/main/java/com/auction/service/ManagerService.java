@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ManageService {
+public class ManagerService {
     private Map<Integer, Auction> auctionList = new HashMap<>();             // đấu giá có id của buổi đấu giá và has-a với class Auction
     public void setAuctionSchedule(int auctionId, LocalDateTime startTime) { // chuyển trạng thái
         Auction auction = auctionList.get(auctionId);                        // duyệt id của Auction
