@@ -6,9 +6,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AuctionService {
+public class ItemService {
     private Map<Integer, Items> itemsList = new HashMap<>();                 // list sản phẩm có id và những thứ chứ trong Items
-    private Map<Integer, Auction> auctionList = new HashMap<>();             // đấu giá có id của buổi đấu giá và has-a với class Auction
     public void addItem (Items item){                                        //hàm thêm sản phẩm
         if(item == null){                                                    // phải tạo đối tượng cụ thể rồi addItem
             System.out.println("Item không hợp lệ !");
@@ -49,14 +48,5 @@ public class AuctionService {
         }
         item.setShow(show);
         System.out.println("Đã cập nhật mô tả sản phẩm!" + show);
-    }
-    public void setAuctionSchedule(int auctionId, LocalDateTime startTime) { // chuyển trạng thái
-        Auction auction = auctionList.get(auctionId);                        // duyệt id của Auction
-        if (auction == null) {                                              // không có buổi đấu giá thì in và thoát hàm
-            System.out.println("Không có phiên đấu giá này !");
-            return;
-        }
-        auction.setAuctionSchedule(startTime);
-        System.out.println("Trạng thái hiện tại: " + auction.getStatus()); // có thì in trạng thái theo quy định hàm ở class Auction rồi
     }
 }
