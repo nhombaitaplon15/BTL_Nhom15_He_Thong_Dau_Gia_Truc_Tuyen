@@ -4,14 +4,14 @@ public abstract class Items extends Entity implements java.io.Serializable{
     protected int price;
     protected String show;   //mô tả của sản phẩm
     protected String name;
-    protected  String imgitem;
-    public Items (int id,String producer,int price,String show,String name, String imgitem){
+    protected  String imgItem;
+    public Items (int id,String producer,int price,String show,String name, String imgItem){
         super(id);
         this.producer=producer;
         this.price=price;
         this.show=show;
         this.name= name;
-        this.imgitem= imgitem;
+        this.imgItem= imgItem;
     }
     public void setProducer(String producer) {
         this.producer = producer;
@@ -37,10 +37,10 @@ public abstract class Items extends Entity implements java.io.Serializable{
     public String getShow(){
         return show;
     }
-    public void setimgitem(String imgitem) {
-        this.imgitem = imgitem;
+    public void setimgItem(String imgItem) {
+        this.imgItem = imgItem;
     }
-    public String getimgitem(){
-        return imgitem;
+    public String getimgItem(){
+        return imgItem;
     }
 }
