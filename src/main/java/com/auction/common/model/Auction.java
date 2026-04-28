@@ -3,25 +3,70 @@ package com.auction.common.model;
 import java.time.LocalDateTime;
 
 public class Auction {
-    private Items item;                                    // phiên đấu giá có chứa sản phẩm của class items
-    private LocalDateTime startTime;                       //thời gian bắt đầu phiên đấu giá
-    private String status;                                 // trang thái của phiên đấu giá
-    public Auction (Items item){
+    private int auctionId;
+    private Items item;              // Sản phẩm đấu giá
+    private LocalDateTime startTime; // Thời gian bắt đầu
+    private LocalDateTime endTime;   // Thời gian kết thúc
+    private int currentPrice;        // Giá hiện tại
+    private String highestBidder;    // Tên người trả giá cao nhất
+    private String status;           // Trạng thái
+
+    // Constructor khởi tạo phiên đấu giá
+    public Auction(int auctionId, Items item) {
+        this.auctionId = auctionId;
         this.item = item;
+        this.currentPrice = item.getStartPrice(); // Ban đầu giá hiện tại = giá khởi điểm
+        this.status = "PENDING";             // Mặc định là đang chờ
+        this.highestBidder = "Chưa có";
     }
-    public Items getItem(){
+
+    public int getAuctionId() {
+        return auctionId;
+    }
+
+    public Items getItem() {
         return item;
     }
-    public String getStatus(){                            // hàm viết quy định về trạng thái phiên đấu giá
-        if(startTime == null){                            //chưa set thời gian ban đầu thì chỉ mở thôi
-            return "OPEN";
-        }
-        if(LocalDateTime.now().isAfter(startTime)){
-            return "RUNNING";
-        }
-        return "OPEN";                                    //các trường hợp khác chỉ đang mở thôi
+
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
-    public void setAuctionSchedule(LocalDateTime startTime){// hàm lấy thời điểm bắt đầu đấu giá
-        this.startTime= startTime;
+
+    public void setAuctionSchedule(LocalDateTime startTime) {
+        this.startTime = startTime;
+        // giả sử mỗi phiên đấu giá là 30 phút
+        this.endTime = startTime.plusMinutes(30);
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public int getCurrentPrice() {
+        return currentPrice;
+    }
+    //cập nhật giá khi có người trả giá cao hơn
+    public void setCurrentPrice(int currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public String getHighestBidder() {
+        return highestBidder;
+    }
+
+    //Ghi tên người đang dẫn đầu
+    public void setHighestBidder(String highestBidder) {
+        this.highestBidder = highestBidder;
+    }
+
+    public String getStatus() {
+        // Có thể thêm logic tự động cập nhật trạng thái dựa trên thời gian thực ở đây
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
+
+
