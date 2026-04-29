@@ -63,4 +63,8 @@ public class ManagerService {
             throw e;
         }
     }
+    // lấy phiên đấu giá ra để kiểm tra
+    public Auction getAuction(int auctionId) {
+        return auctionList.get(auctionId);
+    }
 }
