@@ -52,4 +52,29 @@ public class Seller extends User {
         auction.setStatus("WAITING_FOR_ADMIN");
         System.out.println("Đã gửi yêu cầu HỦY phiên đấu giá ID: " + auctionId);
     }
+    public void requestDeposit(int amount) throws Exception {
+        validateRole();
+        if (amount <= 0) {
+            throw new Exception("Số tiền nạp phải lớn hơn 0!");
+        }
+        System.out.println("[Yêu cầu Nạp]: Seller " + this.getName() + " gửi yêu cầu nạp " + amount + " VNĐ. Đang chờ Admin duyệt...");
+    }
+    public void requestWithdraw(int amount) throws Exception {
+        validateRole();
+        if (amount <= getBalance()) {
+            throw new Exception("Số tiền rút phải lớn hơn 0!");
+        }
+        System.out.println("[Yêu cầu Rút]: Seller " + this.getName() + " gửi yêu cầu rút " + amount + " VNĐ. Đang chờ Admin kiểm tra số dư và chuyển khoản...");
+    }
+
+    public void requestTransfer(String receiverName, int amount) throws Exception {
+        validateRole();
+        if (amount >getBalance()) {
+            throw new Exception("Số tiền chuyển phải lớn hơn 0!");
+        }
+        if (this.getName().equals(receiverName)) {
+            throw new Exception("Không thể tự chuyển tiền cho chính mình!");
+        }
+        System.out.println("[Yêu cầu Chuyển]: Seller " + this.getName() + " yêu cầu chuyển " + amount + " VNĐ tới " + receiverName + ". Đang chờ Admin xác thực giao dịch...");
+    }
 }
