@@ -43,6 +43,19 @@ public class ManagerService {
             throw e;
         }
     }
+    public void openAuction(int auctionId) throws Exception {
+        Auction auction = auctionList.get(auctionId);
+        if (auction == null) throw new Exception("Không thấy phiên này!");
+
+        // Chỉ mở khi đang ở trạng thái PENDING
+        if ("PENDING".equals(auction.getStatus())) {
+            auction.setStatus("OPEN");
+            System.out.println("=== [OPEN]: Phiên " + auctionId + " đã MỞ CỬA cho khách tham quan! ===");
+        } else {
+            throw new Exception("Trạng thái hiện tại không hợp lệ để OPEN.");
+        }
+    }
+
     public void activateAuction(int auctionId) throws Exception{                // hàm chuyển trạng thái
         try{
             Auction auction = auctionList.get(auctionId);                       // lấy 1 phiên đấu giá trong danh sách các phiên đấu giá
@@ -50,7 +63,7 @@ public class ManagerService {
             if (auction == null) {
                 throw new Exception("Phiên đấu giá không tồn tại!");
             }
-            if ("PENDING".equals(auction.getStatus())) {                        // check xem phiên đấu giá có trạng thái ban đầu không
+            if ("OPEN".equals(auction.getStatus())) {                        // check xem phiên đấu giá có trạng thái ban đầu không
                 if (now.isAfter(auction.getStartTime())) {                      // check xem thời gian đã bắt đầu chưa
                     auction.setStatus("RUNNING");
                     System.out.println(" Phiên đấu giá số " + auctionId + " đã chính thức BẮT ĐẦU!");
@@ -58,7 +71,7 @@ public class ManagerService {
                     System.out.println("Chưa đến giờ bắt đầu. Vui lòng đợi đến: " + auction.getStartTime());
                 }
             } else {
-                System.out.println("Phiên đấu giá này không ở trạng thái PENDING nên không thể bắt đầu.");
+                System.out.println("Phiên đấu giá này không ở trạng thái OPEN nên không thể bắt đầu.");
             }
         }catch(Exception e){
             System.out.println("[Lỗi]: " + e.getMessage());

@@ -11,6 +11,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserDAO {
+    // 1. Kiểm tra tồn tại thông tin (Username, Email, Phone) để chặn trùng
+    public boolean isFieldExists(String fieldName, String value) {
+        String sql = "SELECT 1 FROM users WHERE " + fieldName + " = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, value);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
+        } catch (SQLException e) { return false; }
+    }
     public User checkLogin(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
 
@@ -29,9 +38,9 @@ public class UserDAO {
                     String pass = rs.getString("password");
                     String phone = rs.getString("phone");
                     String status = rs.getString("status");
-                    String role = rs.getString("role"); // Cột role trong DB: 'ADMIN' hoặc 'USER'
+                    String role = rs.getString("role"); // Cột role trong DB: 'ADMIN' hoặc 'BIDDER' hoặc 'SELLER'
 
-                    // Nếu là ADMIN thì tạo đối tượng Admin, ngược lại tạo User
+                    // Nếu là ADMIN thì tạo đối tượng Admin, hoặc còn lại
                     if ("ADMIN".equalsIgnoreCase(role)) {
                         return new Admin(id, name, email, pass, phone, status);
                     } else if ("BIDDER".equalsIgnoreCase(role)) {
@@ -39,7 +48,7 @@ public class UserDAO {
                     } else if ("SELLER".equalsIgnoreCase(role)) {
                         return new Seller(id, name, email, pass, phone, status);
                     } else {
-                        return null; // Hoặc một loại mặc định nào đó sếp quy định
+                        return null; // Hoặc một loại mặc định nào đó
                     }
                 }
             }
@@ -47,5 +56,29 @@ public class UserDAO {
             System.err.println("Lỗi truy vấn Database: " + e.getMessage());
         }
         return null; // Trả về null nếu không khớp tài khoản
+    }
+    // 3. Logic Đăng ký (ID tự tăng nên không cần truyền vào)
+    public boolean register(User user) {
+        String sql = "INSERT INTO users (username, password, email, phone, role, status) VALUES (?, ?, ?, ?, ?, 'ACTIVE')";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getEmail());
+            ps.setString(4, user.getPhone());
+            ps.setString(5, user.getRole()); // Lấy "SELLER" hoặc "BIDDER" từ đối tượng con
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) { return false; }
+    }
+    // 4. Đổi mật khẩu
+    public boolean updatePassword(String username, String oldPass, String newPass) {
+        String sql = "UPDATE users SET password = ? WHERE username = ? AND password = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newPass);
+            ps.setString(2, username);
+            ps.setString(3, oldPass);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) { return false; }
     }
 }
