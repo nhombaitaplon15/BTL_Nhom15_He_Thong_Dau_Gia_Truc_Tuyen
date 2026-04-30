@@ -29,9 +29,9 @@ public class UserService {
         int newId = userMap.size() + 1; // Tạm thời tự tăng ID trên RAM
 
         if ("SELLER".equalsIgnoreCase(role)) {
-            newUser = new Seller(newId, user, mail, pass, phone, "ACTIVE","SELLER");
+            newUser = new Seller(newId, user, mail, pass, phone, "ACTIVE");
         } else {
-            newUser = new Bidder(newId, user, mail, pass, phone, "ACTIVE", );
+            newUser = new Bidder(newId, user, mail, pass, phone, "ACTIVE" );
         }
 
         // 4. Lưu vào Map

@@ -4,8 +4,8 @@ import com.auction.service.ManagerService;
 import java.time.LocalDateTime;
 
 public class Seller extends User {
-    public Seller(int id, String name, String email, String password, String phone, String status, String role){
-        super(id,name,email,password, phone,status,role);
+    public Seller(int id, String name, String email, String password, String phone, String status) {
+        super(id, name, email, password, phone, status, "SELLER");
     }
     private void validateRole() throws Exception {                                 // hàm xác minh vai trò Seller
         if (!"SELLER".equals(this.getRole())) {
