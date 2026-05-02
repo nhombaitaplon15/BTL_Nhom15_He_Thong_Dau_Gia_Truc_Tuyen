@@ -5,8 +5,8 @@ public class Electronics extends Items implements java.io.Serializable{
     protected int warrantyExpiryDate;
     protected String brand;
     protected String condition;
-    public Electronics (String name,int id,String producer,int price, String show,String imgitem, String date, int warrantyExpiryDate, String brand, String condition ){
-        super(id,producer,price,show,name, imgitem);
+    public Electronics (String name,int id,String producer,int startPrice , String description,String imgitem, String date, int warrantyExpiryDate, String brand, String condition ){
+        super(id,producer,startPrice,description,name, imgitem);
         this.date= date;
         this.warrantyExpiryDate= warrantyExpiryDate;
         this.brand= brand;
