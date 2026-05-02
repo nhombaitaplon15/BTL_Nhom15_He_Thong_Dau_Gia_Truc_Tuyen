@@ -51,7 +51,7 @@ public class Auction {
     }
 
     //cập nhật giá khi có người trả giá cao hơn
-    public void setCurrentPrice(int currentPrice) {
+    public void setCurrentPrice(long currentPrice) {
         this.currentPrice = currentPrice;
     }
 

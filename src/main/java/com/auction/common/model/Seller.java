@@ -57,14 +57,14 @@ public class Seller extends User {
         if (amount <= 0) {
             throw new Exception("Số tiền nạp phải lớn hơn 0!");
         }
-        System.out.println("[Yêu cầu Nạp]: Seller " + this.getName() + " gửi yêu cầu nạp " + amount + " VNĐ. Đang chờ Admin duyệt...");
+        System.out.println("[Yêu cầu Nạp]: Seller " + this.getUsername() + " gửi yêu cầu nạp " + amount + " VNĐ. Đang chờ Admin duyệt...");
     }
     public void requestWithdraw(int amount) throws Exception {
         validateRole();
         if (amount <= getBalance()) {
             throw new Exception("Số tiền rút phải lớn hơn 0!");
         }
-        System.out.println("[Yêu cầu Rút]: Seller " + this.getName() + " gửi yêu cầu rút " + amount + " VNĐ. Đang chờ Admin kiểm tra số dư và chuyển khoản...");
+        System.out.println("[Yêu cầu Rút]: Seller " + this.getUsername() + " gửi yêu cầu rút " + amount + " VNĐ. Đang chờ Admin kiểm tra số dư và chuyển khoản...");
     }
 
     public void requestTransfer(String receiverName, int amount) throws Exception {
@@ -72,9 +72,9 @@ public class Seller extends User {
         if (amount >getBalance()) {
             throw new Exception("Số tiền chuyển phải lớn hơn 0!");
         }
-        if (this.getName().equals(receiverName)) {
+        if (this.getUsername().equals(receiverName)) {
             throw new Exception("Không thể tự chuyển tiền cho chính mình!");
         }
-        System.out.println("[Yêu cầu Chuyển]: Seller " + this.getName() + " yêu cầu chuyển " + amount + " VNĐ tới " + receiverName + ". Đang chờ Admin xác thực giao dịch...");
+        System.out.println("[Yêu cầu Chuyển]: Seller " + this.getUsername() + " yêu cầu chuyển " + amount + " VNĐ tới " + receiverName + ". Đang chờ Admin xác thực giao dịch...");
     }
 }
