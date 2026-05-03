@@ -3,6 +3,7 @@ package com.auction.client.controller;
 
 import com.auction.common.model.User;
 import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.UserDAO;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -23,9 +24,9 @@ public class LoginController {
         String inputUser = txtUsername.getText();
         String inputPass = txtPassword.getText();
 
-        DBConnection db = new DBConnection();
+        UserDAO userDAO = new UserDAO();
         try {
-            User user = db.checkLogin(inputUser, inputPass);
+            User user = userDAO.checkLogin(inputUser, inputPass);
 
             if (user != null) {
                 // In ra console để kiểm tra
