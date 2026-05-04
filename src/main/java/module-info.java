@@ -13,4 +13,6 @@ module com.auction {
     opens com.auction to javafx.fxml;
 
     exports com.auction;
+//    exports com.auction.test;
+//    opens com.auction.test to javafx.fxml;
 }

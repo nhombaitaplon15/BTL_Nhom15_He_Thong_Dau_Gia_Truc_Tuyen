@@ -11,7 +11,6 @@ public class Auction {
     private String highestBidder;    // Tên người trả giá cao nhất
     private String auctionStatus;           // Trạng thái
 
-    // Constructor khởi tạo phiên đấu giá
     public Auction(int auctionId, Items item) {
         this.auctionId = auctionId;
         this.item = item;
@@ -42,11 +41,16 @@ public class Auction {
         return endTime;
     }
 
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
     public double getCurrentPrice() {
         return currentPrice;
     }
+
     //cập nhật giá khi có người trả giá cao hơn
-    public void setCurrentPrice(double currentPrice) {
+    public void setCurrentPrice(long currentPrice) {
         this.currentPrice = currentPrice;
     }
 
@@ -68,5 +72,3 @@ public class Auction {
         this.auctionStatus = status;
     }
 }
-
-
