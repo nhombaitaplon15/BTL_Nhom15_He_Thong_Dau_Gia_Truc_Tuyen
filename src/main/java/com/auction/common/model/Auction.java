@@ -7,16 +7,16 @@ public class Auction {
     private Items item;              // Sản phẩm đấu giá
     private LocalDateTime startTime; // Thời gian bắt đầu
     private LocalDateTime endTime;   // Thời gian kết thúc
-    private int currentPrice;        // Giá hiện tại
+    private double currentPrice;        // Giá hiện tại
     private String highestBidder;    // Tên người trả giá cao nhất
-    private String status;           // Trạng thái
+    private String auctionStatus;           // Trạng thái
 
     // Constructor khởi tạo phiên đấu giá
     public Auction(int auctionId, Items item) {
         this.auctionId = auctionId;
         this.item = item;
         this.currentPrice = item.getStartPrice(); // Ban đầu giá hiện tại = giá khởi điểm
-        this.status = "PENDING";             // Mặc định là đang chờ
+        this.auctionStatus = "PENDING";             // Mặc định là đang chờ
         this.highestBidder = "Chưa có";
     }
 
@@ -42,11 +42,11 @@ public class Auction {
         return endTime;
     }
 
-    public int getCurrentPrice() {
+    public double getCurrentPrice() {
         return currentPrice;
     }
     //cập nhật giá khi có người trả giá cao hơn
-    public void setCurrentPrice(int currentPrice) {
+    public void setCurrentPrice(double currentPrice) {
         this.currentPrice = currentPrice;
     }
 
@@ -59,13 +59,13 @@ public class Auction {
         this.highestBidder = highestBidder;
     }
 
-    public String getStatus() {
+    public String getAuctionStatus() {
         // Có thể thêm logic tự động cập nhật trạng thái dựa trên thời gian thực ở đây
-        return status;
+        return auctionStatus;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setAuctionStatus(String status) {
+        this.auctionStatus = status;
     }
 }
 

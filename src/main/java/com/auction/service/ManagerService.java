@@ -33,7 +33,7 @@ public class ManagerService {
             Items item = itemService.findItem(itemId);                           // lấy 1 sản phẩm trong kho sản phẩm theo ID
             Auction newAuction = new Auction(auctionId, item);                   // tạo 1 phiên đấu giá
             newAuction.setAuctionSchedule(startTime);                            // set thời gian đấu giá
-            newAuction.setStatus("PENDING");                                     // set thời gian ban đầu: cố định ở lớp Auction
+            newAuction.setAuctionStatus("PENDING");                                     // set thời gian ban đầu: cố định ở lớp Auction
             auctionList.put(auctionId, newAuction);                              // set xong rồi thì cho lại vào danh sách các phiên đấu giá
             System.out.println("Đã lên lịch đấu giá cho " + item.getName() + " vào lúc " + startTime);
         }catch(Exception e){
@@ -48,9 +48,9 @@ public class ManagerService {
             if (auction == null) {
                 throw new Exception("Phiên đấu giá không tồn tại!");
             }
-            if ("PENDING".equals(auction.getStatus())) {                        // check xem phiên đấu giá có trạng thái ban đầu không
+            if ("PENDING".equals(auction.getAuctionStatus())) {                        // check xem phiên đấu giá có trạng thái ban đầu không
                 if (now.isAfter(auction.getStartTime())) {                      // check xem thời gian đã bắt đầu chưa
-                    auction.setStatus("RUNNING");
+                    auction.setAuctionStatus("RUNNING");
                     System.out.println(" Phiên đấu giá số " + auctionId + " đã chính thức BẮT ĐẦU!");
                 } else {
                     System.out.println("Chưa đến giờ bắt đầu. Vui lòng đợi đến: " + auction.getStartTime());
