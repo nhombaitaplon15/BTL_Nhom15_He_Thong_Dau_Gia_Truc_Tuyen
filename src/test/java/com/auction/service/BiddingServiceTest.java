@@ -1,5 +1,7 @@
 package com.auction.service;
 
+import com.auction.service.ItemService;
+import com.auction.service.ManagerService;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Vehicle;
 import com.auction.exception.AuctionException;
@@ -158,19 +160,19 @@ public class BiddingServiceTest {
     @DisplayName("confirmReceived | HỢP LỆ | Đúng người thắng, trạng thái DELIVERING → xác nhận thành công, chuyển COMPLETED")
     void confirmReceived_success() {
         biddingService.placeBid(1, "Alice", 2000000);
-        getAuction().setStatus("DELIVERING");
+        getAuction().setAuctionStatus("DELIVERING");
 
         boolean result = biddingService.confirmReceived(1, "Alice");
 
         assertTrue(result);
-        assertEquals("COMPLETED", getAuction().getStatus());
+        assertEquals("COMPLETED", getAuction().getAuctionStatus());
     }
 
     @Test
     @DisplayName("confirmReceived | LỖI UNAUTHORIZED | Người xác nhận không phải người thắng → bị chặn")
     void confirmReceived_wrongBidder_shouldThrow() {
         biddingService.placeBid(1, "Alice", 2000000);
-        getAuction().setStatus("DELIVERING");
+        getAuction().setAuctionStatus("DELIVERING");
 
         AuctionException ex = assertThrows(AuctionException.class, () ->
                 biddingService.confirmReceived(1, "Bob"));
