@@ -7,5 +7,6 @@ public class Art extends Items implements java.io.Serializable{
         super(id, producer, startPrice, description, name, imgItem);
         this.yearCreated = yearCreated;
         this.isOriginal = isOriginal;
+
     }
 }
