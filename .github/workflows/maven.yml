@@ -3,9 +3,9 @@ name: Java CI with Maven
 # Kịch bản này chạy khi bạn PUSH code hoặc tạo Pull Request vào nhánh chính
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "demo" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "demo"]
 
 jobs:
   build:
