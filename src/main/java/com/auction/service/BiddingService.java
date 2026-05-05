@@ -11,15 +11,15 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BiddingService {
 
     private final ManagerService managerService;
+
+    // tạo cho mỗi phiên đấu giá 1 cái khóa để ko sai lệch nếu nhiều người truy cập cùng lúc
     private final Map<Integer, ReentrantLock> lockMap = new ConcurrentHashMap<>();
 
     public BiddingService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    // =========================
-    // PLACE BID (CORE LOGIC)
-    // =========================
+    // xử lí đa luồng cho đặt giá
     public boolean placeBid(int auctionId, String bidderName, long newPrice) {
 
         Auction auction = managerService.getAuction(auctionId);
@@ -30,7 +30,7 @@ public class BiddingService {
                     "Auction không tồn tại"
             );
         }
-
+        // lấy khóa của auction
         ReentrantLock lock = lockMap.computeIfAbsent(auctionId, k -> new ReentrantLock());
 
         lock.lock();
@@ -55,7 +55,7 @@ public class BiddingService {
             }
             auction.setCurrentPrice(newPrice);
             auction.setHighestBidder(bidderName);
-            System.out.println("✔ " + bidderName + " đang dẫn đầu với giá " + newPrice);
+            System.out.println( bidderName + " đang dẫn đầu với giá " + newPrice);
             extendAuctionTime(auction);
             return true;
         } finally {
@@ -63,9 +63,7 @@ public class BiddingService {
         }
     }
 
-    // =========================
-    // ANTI SNIPING
-    // =========================
+    // nếu đặt giá sát giờ kết thúc thì tăng thời gian lên
     private void extendAuctionTime(Auction auction) {
 
         LocalDateTime now = LocalDateTime.now();
@@ -77,9 +75,7 @@ public class BiddingService {
         }
     }
 
-    // =========================
-    // CONFIRM RECEIVED
-    // =========================
+    // xác nhận đã nhận hàng
     public boolean confirmReceived(int auctionId, String bidderName) {
 
         Auction auction = managerService.getAuction(auctionId);
@@ -104,7 +100,7 @@ public class BiddingService {
                 );
             }
             auction.setAuctionStatus("COMPLETED");
-            System.out.println("✔ " + bidderName + " đã xác nhận nhận hàng!");
+            System.out.println( bidderName + " đã xác nhận nhận hàng!");
             return true;
         }
     }

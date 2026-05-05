@@ -4,18 +4,17 @@ import com.auction.common.model.Admin;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.Seller;
-import com.auction.server.dao.PaymentLogDAO;
-
-import javax.swing.*;
 
 public class PaymentService {
-    // Khai báo kho chứa RAM
-    private PaymentLogDAO logRepo;
+    // khai báo kho chứa RAM
+    private PaymentLog logRepo;
 
-    // Constructor truyền kho chứa vào
-    public PaymentService(PaymentLogDAO log) {
+    // constructor truyền kho chứa vào
+    public PaymentService(PaymentLog log) {
         this.logRepo = log;
     }
+
+    // tạm giữ tiền người bán trả cho mặt hàng đã mua
     public void holdFunds(Bidder bidder,Auction auction, Admin admin) {
         if (auction.getAuctionStatus().equals("PAID") && bidder.getUsername().equals(auction.getHighestBidder())) {
             double amount = auction.getCurrentPrice();
@@ -24,6 +23,8 @@ public class PaymentService {
             logRepo.saveLog("HOLD FUNDS", bidder.getUsername(), admin.getUsername(), amount,0.0);
         }
     }
+
+    // chuyển tiền đã trừ phí hệ thống cho người bán sau khi người mua xác nhận đã nhận hàng
     public void releaseFundsToSeller(Seller seller,Auction auction, Admin admin ) {
         if (auction.getItem().getItemStatus().equals("COMPLETED")) {
             double amount = auction.getCurrentPrice();

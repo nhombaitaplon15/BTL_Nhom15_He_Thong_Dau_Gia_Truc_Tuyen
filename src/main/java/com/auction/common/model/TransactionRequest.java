@@ -2,12 +2,12 @@ package com.auction.common.model;
 
 import java.time.LocalDateTime;
 
-public class TransactionRequest {
+public class TransactionRequest { // Yêu cầu nạp/rút tiền trong ví
     private int requestId;
     private User user;
-    private String type; // "DEPOSIT" / "WITHDRAW"
+    private String type; // DEPOSIT / WITHDRAW
     private double amount;
-    private String bankInfo; // Lưu số tài khoản của khách (nếu là rút tiền)
+    private String bankInfo; // lưu số tài khoản của khách (nếu là rút tiền)
     private String transactionStatus; // PENDING , APPROVED/ REJECTED
     private LocalDateTime requestDate;
 

@@ -1,13 +1,13 @@
 package com.auction.common.model;
 import java.time.LocalDateTime;
 
-public class PaymentLog {
+public class Payment { // dữ liệu thanh toán
     private int logId;
     private String transactionType; // "HOLD FUNDS" / "RELEASE FUNDS"
     private String fromUser;
     private String toUser;
     private double amount;
-    private double fee;
+    private double fee;  // tiền phí hệ thống
     private LocalDateTime timestamp;
 
     public int getLogId() {return logId;}
@@ -18,7 +18,7 @@ public class PaymentLog {
     public double getFee() {return fee;}
     public LocalDateTime getTimestamp() {return timestamp;}
 
-    public PaymentLog(int logId, String transactionType, String fromUser, String toUser, double amount, double fee) {
+    public Payment(int logId, String transactionType, String fromUser, String toUser, double amount, double fee) {
         this.logId = logId;
         this.transactionType = transactionType;
         this.fromUser = fromUser;

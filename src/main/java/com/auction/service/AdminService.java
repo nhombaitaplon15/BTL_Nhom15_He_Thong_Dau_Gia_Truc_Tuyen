@@ -1,32 +1,44 @@
 package com.auction.service;
 
 import com.auction.common.model.Auction;
+import com.auction.common.model.Vehicle;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AdminService {
+public class AdminService {   // admin quản lí các phiên đấu giá
 
     private ManagerService managerService;
 
-    // log đơn giản (RAM)
+    //  lưu dữ liệu về các phiên đấu giá
     private Map<Integer, String> auditLog = new ConcurrentHashMap<>();
 
     public AdminService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    // ---------------- 1. GET PENDING ----------------
+    // thêm thông tin vào mục lưu dữ liệu auction
+    private void logAction(int auctionId, String action) {
+        auditLog.put(auctionId, action);
+    }
+    // đọc thông tin auction từ mục lưu dữ liệu
+    public String getAudit(int auctionId) {
+        return auditLog.getOrDefault(auctionId, "NO ACTION");
+    }
+
+    // lấy danh sách chờ duyệt , sử dụng java stream API
     public List<Auction> getPendingAuctions() {
         return managerService.getAllAuctions()
                 .stream()
-                .filter(a -> "PENDING".equals(a.getAuctionStatus()))
+                .filter(a -> "PENDING".equals(a.getAuctionStatus()))  // lọc auction có trạng thái "PENDING" thôi
                 .toList();
     }
 
-    // ---------------- 2. APPROVE ----------------
+    // duyệt 1 auction
     public boolean approveAuction(int auctionId) {
 
         Auction auction = managerService.getAuction(auctionId);
@@ -47,13 +59,13 @@ public class AdminService {
 
         auction.setAuctionStatus("RUNNING");
 
-        logAction(auctionId, "APPROVED");
+        logAction(auctionId, "APPROVED");  // ghi lại dữ liệu về auction này
 
-        System.out.println("✔ Auction " + auctionId + " đã được duyệt");
+        System.out.println("Auction " + auctionId + " đã được duyệt");
         return true;
     }
 
-    // ---------------- 3. REJECT (có lý do) ----------------
+    // từ chối auction
     public void rejectAuction(int auctionId, String reason) {
 
         Auction auction = managerService.getAuction(auctionId);
@@ -76,10 +88,10 @@ public class AdminService {
 
         logAction(auctionId, "REJECTED: " + reason);
 
-        System.out.println("✖ Auction " + auctionId + " bị từ chối vì: " + reason);
+        System.out.println("Auction " + auctionId + " bị từ chối vì: " + reason);
     }
 
-    // ---------------- 4. BULK APPROVE (LEVEL NÂNG CAO) ----------------
+    // duyệt auction hàng loạt
     public void bulkApprove(List<Integer> auctionIds) {
 
         for (int id : auctionIds) {
@@ -91,7 +103,7 @@ public class AdminService {
         }
     }
 
-    // ---------------- 5. STATISTICS ----------------
+    // in ra thống kê từng loại auction
     public void printStats() {
 
         long pending = managerService.getAllAuctions().stream()
@@ -110,19 +122,14 @@ public class AdminService {
                 .filter(a -> "SOLD".equals(a.getAuctionStatus()))
                 .count();
 
-        System.out.println("===== ADMIN STATISTICS =====");
         System.out.println("PENDING: " + pending);
         System.out.println("RUNNING: " + running);
         System.out.println("REJECTED: " + rejected);
         System.out.println("SOLD: " + sold);
     }
 
-    // ---------------- 6. AUDIT LOG ----------------
-    private void logAction(int auctionId, String action) {
-        auditLog.put(auctionId, action);
-    }
-
-    public String getAudit(int auctionId) {
-        return auditLog.getOrDefault(auctionId, "NO ACTION");
-    }
 }
+
+
+
+

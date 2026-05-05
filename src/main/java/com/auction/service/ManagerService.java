@@ -8,14 +8,34 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ManagerService {
+public class ManagerService { // quản lí, điều phối hệ thống đấu giá
 
     private final ItemService itemService;
-    private final Map<Integer, Auction> auctionList = new ConcurrentHashMap<>();
-    private volatile boolean running = true;
+    private final Map<Integer, Auction> auctionList = new ConcurrentHashMap<>();  // map này để an toàn cho nhiều luồng truy cập cùng lúc
+    private volatile boolean running = true; // khóa an toàn cho hệ thống
 
     public ManagerService(ItemService itemService) {
         this.itemService = itemService;
+    }
+
+    //Lấy phiên
+    public Auction getAuction(int auctionId) {
+        return auctionList.get(auctionId);
+    }
+
+    public List<Auction> getAllAuctions() {
+        return new ArrayList<>(auctionList.values());
+    }
+
+    private Auction getAuctionOrThrow(int auctionId) {
+        Auction auction = auctionList.get(auctionId);
+        if (auction == null) {
+            throw new AuctionException(
+                    ErrorCode.AUCTION_NOT_FOUND.name(),
+                    "Phiên đấu giá không tồn tại"
+            );
+        }
+        return auction;
     }
 
     //Thêm phiên đấu
@@ -109,25 +129,7 @@ public class ManagerService {
         System.out.println("[MANAGER] RUNNING auction " + auctionId);
     }
 
-    //Lấy phiên
-    public Auction getAuction(int auctionId) {
-        return auctionList.get(auctionId);
-    }
 
-    public List<Auction> getAllAuctions() {
-        return new ArrayList<>(auctionList.values());
-    }
-
-    private Auction getAuctionOrThrow(int auctionId) {
-        Auction auction = auctionList.get(auctionId);
-        if (auction == null) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_NOT_FOUND.name(),
-                    "Phiên đấu giá không tồn tại"
-            );
-        }
-        return auction;
-    }
     //Dừng running
     public void stopAutoClose() {
         running = false;

@@ -2,14 +2,13 @@ package com.auction.service;
 
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
-import com.auction.server.dao.TransactionDAO;
 
 public class TransactionService {
     // khai báo kho chứa RAM
-    private TransactionDAO  transaction;
+    private Transaction transaction;
 
     // constructor truyền kho chứa vào
-    public TransactionService(TransactionDAO transaction) {
+    public TransactionService(Transaction transaction) {
         this.transaction = transaction;
     }
 
@@ -34,18 +33,18 @@ public class TransactionService {
         }
     }
 
-    // hàm này được gọi khi Admin bấm "Duyệt" hoặc "Từ chối" trên giao diện
+    // hàm này được gọi khi admin bấm duyệt/ từ chối trên giao diện
     public void executeTransactionDecision(int id, boolean isApproved) throws Exception {
         TransactionRequest request = transaction.getTransactionById(id);
         if (request.getTransactionStatus().equals("PENDING")) {
-            if (isApproved) {// admin duyệt giao dịch
+            if (isApproved) {// khi admin duyệt giao dịch
                 if (request.getType().equals("DEPOSIT")) {
                     User owner = request.getUser();
                     owner.setBalance(owner.getBalance() + request.getAmount());
                 }
                 request.setTransactionStatus("APPROVED");
 
-            } else { // admin không duyệt giao dịch
+            } else { // khi admin không duyệt giao dịch
                 if (request.getType().equals("WITHDRAW")) {
                     User owner = request.getUser();
                     owner.setBalance(owner.getBalance() + request.getAmount());
