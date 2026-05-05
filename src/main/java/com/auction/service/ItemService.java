@@ -115,4 +115,7 @@ public class ItemService {
 
         return item;
     }
+    public Items findItem(int id) {
+        return getItemById(id); // Gọi lại hàm đã có sẵn
+    }
 }
