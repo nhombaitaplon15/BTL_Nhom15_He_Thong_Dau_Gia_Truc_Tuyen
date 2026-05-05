@@ -58,7 +58,7 @@ public class AdminController implements Initializable {
 
         status.setCellValueFactory(cellData ->
                 new SimpleStringProperty(
-                        cellData.getValue().getStatus()
+                        cellData.getValue().getAuctionStatus()
                 )
         );
 

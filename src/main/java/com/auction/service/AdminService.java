@@ -22,7 +22,7 @@ public class AdminService {
     public List<Auction> getPendingAuctions() {
         return managerService.getAllAuctions()
                 .stream()
-                .filter(a -> "PENDING".equals(a.getStatus()))
+                .filter(a -> "PENDING".equals(a.getAuctionStatus()))
                 .toList();
     }
 
@@ -38,14 +38,14 @@ public class AdminService {
             );
         }
 
-        if (!"PENDING".equals(auction.getStatus())) {
+        if (!"PENDING".equals(auction.getAuctionStatus())) {
             throw new AuctionException(
                     ErrorCode.AUCTION_INVALID_STATE.name(),
                     "Chỉ PENDING mới được duyệt!"
             );
         }
 
-        auction.setStatus("RUNNING");
+        auction.setAuctionStatus("RUNNING");
 
         logAction(auctionId, "APPROVED");
 
@@ -65,14 +65,14 @@ public class AdminService {
             );
         }
 
-        if (!"PENDING".equals(auction.getStatus())) {
+        if (!"PENDING".equals(auction.getAuctionStatus())) {
             throw new AuctionException(
                     ErrorCode.AUCTION_INVALID_STATE.name(),
                     "Chỉ PENDING mới được duyệt!"
             );
         }
 
-        auction.setStatus("REJECTED");
+        auction.setAuctionStatus("REJECTED");
 
         logAction(auctionId, "REJECTED: " + reason);
 
@@ -95,19 +95,19 @@ public class AdminService {
     public void printStats() {
 
         long pending = managerService.getAllAuctions().stream()
-                .filter(a -> "PENDING".equals(a.getStatus()))
+                .filter(a -> "PENDING".equals(a.getAuctionStatus()))
                 .count();
 
         long running = managerService.getAllAuctions().stream()
-                .filter(a -> "RUNNING".equals(a.getStatus()))
+                .filter(a -> "RUNNING".equals(a.getAuctionStatus()))
                 .count();
 
         long rejected = managerService.getAllAuctions().stream()
-                .filter(a -> "REJECTED".equals(a.getStatus()))
+                .filter(a -> "REJECTED".equals(a.getAuctionStatus()))
                 .count();
 
         long sold = managerService.getAllAuctions().stream()
-                .filter(a -> "SOLD".equals(a.getStatus()))
+                .filter(a -> "SOLD".equals(a.getAuctionStatus()))
                 .count();
 
         System.out.println("===== ADMIN STATISTICS =====");

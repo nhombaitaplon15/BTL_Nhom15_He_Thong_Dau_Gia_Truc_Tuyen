@@ -35,7 +35,7 @@ public class BiddingService {
 
         lock.lock();
         try {
-            if (!"RUNNING".equals(auction.getStatus())) {
+            if (!"RUNNING".equals(auction.getAuctionStatus())) {
                 throw new AuctionException(
                         ErrorCode.AUCTION_INVALID_STATE.name(),
                         "Auction chưa RUNNING!"
@@ -97,13 +97,13 @@ public class BiddingService {
         }
         synchronized (auction) {
 
-            if (!"DELIVERING".equals(auction.getStatus())) {
+            if (!"DELIVERING".equals(auction.getAuctionStatus())) {
                 throw new AuctionException(
                         ErrorCode.AUCTION_INVALID_STATE.name(),
                         "Chưa ở trạng thái DELIVERING!"
                 );
             }
-            auction.setStatus("COMPLETED");
+            auction.setAuctionStatus("COMPLETED");
             System.out.println("✔ " + bidderName + " đã xác nhận nhận hàng!");
             return true;
         }
