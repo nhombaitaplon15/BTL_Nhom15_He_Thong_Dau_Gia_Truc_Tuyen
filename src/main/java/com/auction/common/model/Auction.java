@@ -7,7 +7,7 @@ public class Auction {
     private Items item;              // Sản phẩm đấu giá
     private LocalDateTime startTime; // Thời gian bắt đầu
     private LocalDateTime endTime;   // Thời gian kết thúc
-    private double currentPrice;        // Giá hiện tại
+    private long currentPrice;        // Giá hiện tại
     private String highestBidder;    // Tên người trả giá cao nhất
     private String auctionStatus;           // Trạng thái
 
@@ -45,7 +45,7 @@ public class Auction {
         this.endTime = endTime;
     }
 
-    public double getCurrentPrice() {
+    public long getCurrentPrice() {
         return currentPrice;
     }
 
