@@ -17,6 +17,7 @@ public class UserServiceTest {
     @BeforeEach
     void setUp() {
         userService = new UserService();
+        userService.clearData();
     }
     //TEST ĐĂNG KÍ
     @Test

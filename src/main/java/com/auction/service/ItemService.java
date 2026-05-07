@@ -132,5 +132,8 @@ public class ItemService {
 
         System.out.println("[ITEM] Đã xóa sản phẩm ID: " + id);
     }
+    public void clearData() {
+        itemsList.clear();
+    }
 
 }

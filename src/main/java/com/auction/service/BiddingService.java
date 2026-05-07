@@ -70,7 +70,8 @@ public class BiddingService {
         LocalDateTime end = auction.getEndTime();
 
         if (now.isAfter(end.minusSeconds(60)) && now.isBefore(end)) {
-            auction.setEndTime(end.plusSeconds(30));
+            end = end.plusSeconds(30);
+            auction.setEndTime(end);
             System.out.println("=== ANTI-SNIPING EXTEND 30s ===");
         }
     }
@@ -103,5 +104,8 @@ public class BiddingService {
             System.out.println( bidderName + " đã xác nhận nhận hàng!");
             return true;
         }
+    }
+    public void clearData() {
+        lockMap.clear();
     }
 }

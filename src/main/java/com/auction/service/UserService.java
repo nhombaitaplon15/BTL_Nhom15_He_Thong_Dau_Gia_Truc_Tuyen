@@ -25,6 +25,7 @@ public class UserService {
     userMap.put("Nguyễn Thúy Diệp", admin4);
   }
 
+  // kiểm tra dữ liệu đã trùng chưa và đăng kí
   public void handleRegister(String user, String pass, String mail, String phone, String role) {
 
     if (!phone.matches("^\\d{10}$")) {
@@ -76,7 +77,7 @@ public class UserService {
     System.out.println("Đăng ký thành công: " + user);
   }
 
-  // ---------------- LOGIN ----------------
+  // kiểm tra dữ liệu khi đăng nhập
   public User handleLogin(String username, String password) {
 
     User user = userMap.get(username);
@@ -99,7 +100,7 @@ public class UserService {
     return user;
   }
 
-  // ---------------- CHANGE PASSWORD ----------------
+  // thay đổi mật khẩu
   public void handleChangePassword(User currentUser, String oldP, String newP, String confirmP) {
 
     if (!currentUser.getPassword().equals(oldP)) {
@@ -133,5 +134,8 @@ public class UserService {
     currentUser.setPassword(newP);
 
     System.out.println("Đổi mật khẩu thành công!");
+  }
+  public void clearData() {
+    userMap.clear();
   }
 }

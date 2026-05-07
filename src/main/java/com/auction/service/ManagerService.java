@@ -181,4 +181,7 @@ public class ManagerService { // quản lí, điều phối hệ thống đấu 
     t.setDaemon(true);
     t.start();
   }
+  public void clearData() {
+    auctionList.clear();
+  }
 }

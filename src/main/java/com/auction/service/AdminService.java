@@ -127,6 +127,9 @@ public class AdminService {   // admin quản lí các phiên đấu giá
         System.out.println("REJECTED: " + rejected);
         System.out.println("SOLD: " + sold);
     }
+    public void clearData() {
+        auditLog.clear();
+    }
 
 }
 
