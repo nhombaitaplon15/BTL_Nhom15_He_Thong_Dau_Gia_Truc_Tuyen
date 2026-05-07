@@ -1,7 +1,7 @@
 package com.auction.exception;
 
-public class AuctionException extends RuntimeException {
-    private final String code;
+public class AuctionException extends RuntimeException { // lớp ngoại lệ tùy chỉnh của hệ thống đấu giá
+    private final String code; // mã lỗi
 
     public AuctionException(String code, String message) {
         super(message);

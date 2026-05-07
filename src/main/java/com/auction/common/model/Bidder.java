@@ -1,15 +1,27 @@
 package com.auction.common.model;
 
-// Kế thừa lớp User
 public class Bidder extends User {
+    private double balance;
 
-    // Constructor của Bidder
-    public Bidder(int id, String name, String email, String password, String phone, String status) {
-        // Gọi super() để truyền dữ liệu lên constructor của User
-        // Vì đây là Bidder, ta mặc định truyền cứng chữ "BIDDER" vào vị trí của tham số role
-        super(id, name, email, password, phone, status, "BIDDER");
+    public Bidder(int id, String name, String email, String password, String phone, String status, double balance) {
+        super(id, name, email, password, phone, status, "BIDDER", balance);
+        this.balance = 0.0 ;
     }
 
-    // Nơi đây sau này em có thể viết thêm các hàm đặc thù chỉ Bidder mới có
-    // Ví dụ: public void placeBid() { ... }
+    public double getBalance() {
+        return balance;
+    }
+
+    public void setBanlace(double balance){
+        this.balance= balance;
+    }
+
+    // hàm xác minh vai trò Bidder
+    private void validateRole() throws Exception {
+        if (!"BIDDER".equals(this.getRole())) {
+            throw new IllegalAccessException("Chỉ người dùng có vai trò BIDDER mới được thực hiện!");
+        }
+
+    }
+
 }

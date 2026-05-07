@@ -1,15 +1,28 @@
 package com.auction.common.model;
 
-// Kế thừa lớp User
 public class Admin extends User {
-
-    // Constructor của Admin
-    public Admin(int id, String name, String email, String password, String phone, String status) {
-        // Gọi super() và mặc định truyền chữ "ADMIN" cho tham số role
-        super(id, name, email, password, phone, status, "ADMIN");
+    private double escrowBalance;       // ví tạm
+    private double systemRevenue;       // doanh thu hệ thống
+    public Admin(int id, String name, String email, String password, String phone, String status, double balance) {
+        super( id,name, email, password, phone, status, "ADMIN", 0);
+        this.escrowBalance = 0;
+        this.systemRevenue = 0;
     }
 
-    // Nơi đây sau này em có thể viết thêm các hàm đặc thù chỉ Admin mới có
-    // Ví dụ: public void banUser() { ... }
-    // hoặc public void cancelAuction() { ... }
+    public double getEscrowBalance() {
+        return escrowBalance;
+    }
+
+    public void setEscrowBalance(double escrowBalance) {
+        this.escrowBalance = escrowBalance;
+    }
+
+    public double getSystemRevenue() {
+        return systemRevenue;
+    }
+
+    public void setSystemRevenue(double systemRevenue) {
+        this.systemRevenue = systemRevenue;
+    }
+
 }

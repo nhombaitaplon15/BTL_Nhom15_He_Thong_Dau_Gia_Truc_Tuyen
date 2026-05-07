@@ -1,26 +1,26 @@
 package com.auction.exception;
-//ĐỂ ĐỊNH NGHĨA NHỮNG LỖI GẶP TRONG HỆ THỐNG
+// thiết lập các mã lỗi
 public enum ErrorCode {
 
-    // Auction
+    // auction
     AUCTION_NOT_FOUND,
     AUCTION_INVALID_STATE,
     AUCTION_ALREADY_ENDED,
 
-    // Bid
+    // bidder
     BID_TOO_LOW,
     INVALID_BID,
 
-    // Item
+    // item
     INVALID_ITEM,
     ITEM_DUPLICATE,
     ITEM_NOT_FOUND,
 
-    // User
+    // user
     USER_NOT_FOUND,
     UNAUTHORIZED,
 
-    // System
+    // system
     CONCURRENCY,
     INVALID_INPUT
 }

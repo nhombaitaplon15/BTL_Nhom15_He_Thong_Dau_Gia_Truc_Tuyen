@@ -12,9 +12,32 @@ public class ItemService {
 
     private final Map<Integer, Items> itemsList = new HashMap<>();
 
-    // =========================
-    // ADD ITEM
-    // =========================
+    // lấy tất cả các mặt hàng
+    public List<Items> getAllItems() {
+        return new ArrayList<>(itemsList.values());
+    }
+
+    // lấy hàng ra theo id
+    public Items getItemById(int id) {
+
+        Items item = itemsList.get(id);
+
+        if (item == null) {
+            throw new AuctionException(
+                    ErrorCode.ITEM_NOT_FOUND.name(),
+                    "Sản phẩm không tồn tại"
+            );
+        }
+
+        return item;
+    }
+
+    // tìm hàng
+    public Items findItem(int id) {
+        return getItemById(id);
+    }
+
+    // thêm mặt hàng
     public void addItem(Items item) {
 
         if (item == null) {
@@ -51,9 +74,7 @@ public class ItemService {
         System.out.println("[ITEM] Thêm thành công: " + item.getName());
     }
 
-    // =========================
-    // UPDATE ITEM
-    // =========================
+    // cập nhật thông tin cho mặt hàng
     public void updateItem(int id, String producer, String description, String name, String imgItem) {
 
         Items item = itemsList.get(id);
@@ -73,9 +94,7 @@ public class ItemService {
         System.out.println("[ITEM] Cập nhật thành công ID: " + id);
     }
 
-    // =========================
-    // DELETE ITEM
-    // =========================
+    // xóa mặt hàng
     public void deleteItem(int id) {
 
         Items item = itemsList.get(id);
@@ -92,27 +111,4 @@ public class ItemService {
         System.out.println("[ITEM] Đã xóa sản phẩm ID: " + id);
     }
 
-    // =========================
-    // GET ALL
-    // =========================
-    public List<Items> getAllItems() {
-        return new ArrayList<>(itemsList.values());
-    }
-
-    // =========================
-    // GET BY ID
-    // =========================
-    public Items getItemById(int id) {
-
-        Items item = itemsList.get(id);
-
-        if (item == null) {
-            throw new AuctionException(
-                    ErrorCode.ITEM_NOT_FOUND.name(),
-                    "Sản phẩm không tồn tại"
-            );
-        }
-
-        return item;
-    }
 }

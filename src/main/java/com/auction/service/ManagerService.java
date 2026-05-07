@@ -8,14 +8,34 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ManagerService {
+public class ManagerService { // quản lí, điều phối hệ thống đấu giá
 
     private final ItemService itemService;
-    private final Map<Integer, Auction> auctionList = new ConcurrentHashMap<>();
-    private volatile boolean running = true;
+    private final Map<Integer, Auction> auctionList = new ConcurrentHashMap<>();  // map này để an toàn cho nhiều luồng truy cập cùng lúc
+    private volatile boolean running = true; // khóa an toàn cho hệ thống
 
     public ManagerService(ItemService itemService) {
         this.itemService = itemService;
+    }
+
+    //Lấy phiên
+    public Auction getAuction(int auctionId) {
+        return auctionList.get(auctionId);
+    }
+
+    public List<Auction> getAllAuctions() {
+        return new ArrayList<>(auctionList.values());
+    }
+
+    private Auction getAuctionOrThrow(int auctionId) {
+        Auction auction = auctionList.get(auctionId);
+        if (auction == null) {
+            throw new AuctionException(
+                    ErrorCode.AUCTION_NOT_FOUND.name(),
+                    "Phiên đấu giá không tồn tại"
+            );
+        }
+        return auction;
     }
 
     //Thêm phiên đấu
@@ -61,7 +81,7 @@ public class ManagerService {
 
         Auction auction = new Auction(auctionId, item);
         auction.setAuctionSchedule(startTime);
-        auction.setStatus("PENDING");
+        auction.setAuctionStatus("PENDING");
 
         auctionList.put(auctionId, auction);
 
@@ -73,14 +93,14 @@ public class ManagerService {
 
         Auction auction = getAuctionOrThrow(auctionId);
 
-        if (!"PENDING".equals(auction.getStatus())) {
+        if (!"PENDING".equals(auction.getAuctionStatus())) {
             throw new AuctionException(
                     ErrorCode.AUCTION_INVALID_STATE.name(),
                     "Chỉ PENDING mới được OPEN"
             );
         }
 
-        auction.setStatus("OPEN");
+        auction.setAuctionStatus("OPEN");
 
         System.out.println("[MANAGER] OPEN auction " + auctionId);
     }
@@ -90,7 +110,7 @@ public class ManagerService {
 
         Auction auction = getAuctionOrThrow(auctionId);
 
-        if (!"OPEN".equals(auction.getStatus())) {
+        if (!"OPEN".equals(auction.getAuctionStatus())) {
             throw new AuctionException(
                     ErrorCode.AUCTION_INVALID_STATE.name(),
                     "Auction chưa OPEN"
@@ -104,30 +124,12 @@ public class ManagerService {
             );
         }
 
-        auction.setStatus("RUNNING");
+        auction.setAuctionStatus("RUNNING");
 
         System.out.println("[MANAGER] RUNNING auction " + auctionId);
     }
 
-    //Lấy phiên
-    public Auction getAuction(int auctionId) {
-        return auctionList.get(auctionId);
-    }
 
-    public List<Auction> getAllAuctions() {
-        return new ArrayList<>(auctionList.values());
-    }
-
-    private Auction getAuctionOrThrow(int auctionId) {
-        Auction auction = auctionList.get(auctionId);
-        if (auction == null) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_NOT_FOUND.name(),
-                    "Phiên đấu giá không tồn tại"
-            );
-        }
-        return auction;
-    }
     //Dừng running
     public void stopAutoClose() {
         running = false;
@@ -146,20 +148,20 @@ public class ManagerService {
 
                         synchronized (auction) {
 
-                            if (!"RUNNING".equals(auction.getStatus())) {
+                            if (!"RUNNING".equals(auction.getAuctionStatus())) {
                                 continue;
                             }
 
                             if (LocalDateTime.now().isAfter(auction.getEndTime())) {
 
-                                auction.setStatus("ENDED");
+                                auction.setAuctionStatus("ENDED");
 
                                 System.out.println("[AUTO] Auction " + auction.getAuctionId() + " ENDED");
 
                                 if (auction.getHighestBidder() != null
                                         && !"Chưa có".equals(auction.getHighestBidder())) {
 
-                                    auction.setStatus("SOLD");
+                                    auction.setAuctionStatus("SOLD");
 
                                     System.out.println("[AUTO] SOLD to "
                                             + auction.getHighestBidder());
