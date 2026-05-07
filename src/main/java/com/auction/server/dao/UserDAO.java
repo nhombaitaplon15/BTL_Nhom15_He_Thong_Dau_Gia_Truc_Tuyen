@@ -44,11 +44,7 @@ public class UserDAO {
                     String phone = rs.getString("phone");
                     String status = rs.getString("status");
                     String role = rs.getString("user_role"); // Cột role trong DB: ADMIN/ BIDDER/ SELLER
-<<<<<<< HEAD
                     double balance = rs.getDouble("balance");
-=======
-
->>>>>>> 67c68da03d601caff64228481442a69f17c843fc
                     //  tùy vào role để tạo đối tượng
                     if ("ADMIN".equalsIgnoreCase(role)) {
                         return new Admin(id, name, email, pass, phone, status, balance);
