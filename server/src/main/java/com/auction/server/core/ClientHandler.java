@@ -43,7 +43,9 @@ public class ClientHandler implements Runnable {
             }
         } catch (EOFException | SocketException e) {
             // Client ngắt kết nối đột ngột
+            System.err.println("[CLIENT HANDLER] Client disconnect: " + e.getMessage());
         } catch (Exception e) {
+            System.err.println("[CLIENT HANDLER ERROR] " + e.getClass().getName() + ": " + e.getMessage());
             e.printStackTrace();
         } finally {
             cleanUp();

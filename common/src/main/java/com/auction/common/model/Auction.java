@@ -2,6 +2,7 @@ package com.auction.common.model;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class Auction implements Serializable {
     private int auctionId;
@@ -134,5 +135,14 @@ public class Auction implements Serializable {
 
     public Item getItem() {
         return this.item;
+    }
+    private List<BiddingHistory> bids;
+
+    public List<BiddingHistory> getBids() {
+        return bids;
+    }
+
+    public void setBids(List<BiddingHistory> bids) {
+        this.bids = bids;
     }
 }

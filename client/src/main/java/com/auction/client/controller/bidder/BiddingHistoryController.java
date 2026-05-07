@@ -1,30 +1,36 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.controller.bidder.MainContainerController;
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
-import com.auction.server.dao.BiddingHistoryDAO;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.common.model.Auction;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
-import java.net.URL;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
-public class BiddingHistoryController implements Initializable {
+public class BiddingHistoryController {
 
+    // ─── ĐÃ ĐỒNG BỘ: Chỉ giữ lại các ID thực sự tồn tại trên file FXML mới ───
+    @FXML private Button btnToggleMenu; // Đóng vai trò là nút "← Quay lại" trên thanh tiêu đề
     @FXML private TextField txtSearch;
+    @FXML private Button btnRefresh;
+
     @FXML private TableView<BidHistoryRow> historyTable;
     @FXML private TableColumn<BidHistoryRow, Integer> colId;
     @FXML private TableColumn<BidHistoryRow, Integer> colAuctionId;
@@ -32,36 +38,25 @@ public class BiddingHistoryController implements Initializable {
     @FXML private TableColumn<BidHistoryRow, Double> colBidAmount;
     @FXML private TableColumn<BidHistoryRow, String> colBidTime;
     @FXML private TableColumn<BidHistoryRow, String> colStatus;
-    @FXML private Button btnViewDetail;
 
-    private final ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
-    private final BiddingHistoryDAO historyDAO = new BiddingHistoryDAO();
-    private final PaymentDAO paymentDAO = new PaymentDAO();
-    private final AuctionDAO auctionDAO = new AuctionDAO();
     private User currentUser;
+    private MainContainerController mainContainer;
+    private final ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
 
-    private The_Home_Page_Bidder_View_Controller homeControllerInstance;
-    private Scene homeScene;
+    public void setMainContainer(MainContainerController mainContainer) {
+        this.mainContainer = mainContainer;
+    }
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
+    @FXML
+    public void initialize() {
+        System.out.println("⏱ Khởi tạo màn hình Lịch sử đặt giá phẳng (Khớp 100% với FXML).");
         setupTable();
         setupSearch();
-    }
-
-    public void setMainHomeController(Scene homeScene, The_Home_Page_Bidder_View_Controller homeController) {
-        this.homeScene = homeScene;
-        this.homeControllerInstance = homeController;
-    }
-
-    public void setUserData(User user) {
-        if (user == null) return;
-        this.currentUser = user;
-        loadHistory();
+        MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, this::handleBidHistoryResult);
     }
 
     private void setupTable() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        if (colId != null) colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
         colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
@@ -87,7 +82,6 @@ public class BiddingHistoryController implements Initializable {
             }
         });
 
-        // 🎯 ĐÃ TINH GỌN: Bỏ qua trạng thái "Bị đè giá" phức tạp
         colStatus.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -98,50 +92,28 @@ public class BiddingHistoryController implements Initializable {
                     return;
                 }
 
-                BidHistoryRow rowData = getTableRow() != null ? getTableRow().getItem() : null;
-
-                if (rowData != null) {
-                    try {
-                        Auction auction = auctionDAO.getAuctionById(rowData.getAuctionId());
-
-                        if (auction != null) {
-                            String auctionStatus = auction.getAuctionStatus() != null ? auction.getAuctionStatus().toUpperCase() : "RUNNING";
-
-                            // LÚC ĐANG CHẠY: Mặc định hiển thị là đang dẫn đầu phiên
-                            if ("RUNNING".equals(auctionStatus)) {
-                                setText("ĐANG DẪN ĐẦU");
-                            }
-                            // KHI KẾT THÚC: Phân định thắng / thua rõ ràng
-                            else {
-                                if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() == currentUser.getId()
-                                        && rowData.getBidAmount() >= auction.getCurrentPrice()) {
-                                    setText("THẮNG CUỘC 🏆");
-                                } else {
-                                    setText("THẤT BẠI");
-                                }
-                            }
-                        } else {
-                            setText(item);
-                        }
-                    } catch (Exception e) {
-                        setText(item);
-                    }
+                String currentText = item.toUpperCase();
+                if (currentText.contains("THẮNG CUỘC") || currentText.contains("WIN")) {
+                    setText("THẮNG CUỘC 🏆");
+                } else if (currentText.contains("DẪN ĐẦU") || currentText.contains("LEADING")) {
+                    setText("ĐANG DẪN ĐẦU");
+                } else if (currentText.contains("THẤT BẠI") || currentText.contains("LOSE") || currentText.contains("ĐÈ GIÁ")) {
+                    setText("THẤT BẠI");
                 } else {
                     setText(item);
                 }
 
-                // Đổ màu sắc trạng thái ngắn gọn
                 TableRow<?> row = getTableRow();
                 if (row != null && row.isSelected()) {
                     setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
                 } else {
-                    String currentText = getText();
-                    if ("THẮNG CUỘC 🏆".equals(currentText)) {
-                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;"); // Màu xanh lá
-                    } else if ("ĐANG DẪN ĐẦU".equals(currentText)) {
-                        setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;"); // Màu xanh ngọc
-                    } else if ("THẤT BẠI".equals(currentText)) {
-                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;"); // Màu đỏ
+                    String text = getText();
+                    if ("THẮNG CUỘC 🏆".equals(text)) {
+                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;");
+                    } else if ("ĐANG DẪN ĐẦU".equals(text)) {
+                        setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;");
+                    } else if ("THẤT BẠI".equals(text)) {
+                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
                     } else {
                         setStyle("");
                     }
@@ -149,30 +121,18 @@ public class BiddingHistoryController implements Initializable {
             }
         });
 
-        historyTable.setRowFactory(tv -> {
-            TableRow<BidHistoryRow> row = new TableRow<>();
-            row.selectedProperty().addListener((obs, oldVal, newVal) -> row.requestLayout());
-            return row;
-        });
-    }
-
-    private void loadHistory() {
-        if (currentUser == null) return;
-        new Thread(() -> {
-            try {
-                List<BidHistoryRow> list = historyDAO.getHistoryByUser(currentUser.getId());
-                Platform.runLater(() -> {
-                    historyList.setAll(list);
-                    historyTable.setItems(historyList);
-                });
-            } catch (Exception e) {
-                System.err.println("❌ Lỗi kết nối Database khi tải bảng lịch sử đặt giá!");
-                e.printStackTrace();
-            }
-        }).start();
+        if (historyTable != null) {
+            historyTable.setItems(historyList);
+            historyTable.setRowFactory(tv -> {
+                TableRow<BidHistoryRow> row = new TableRow<>();
+                row.selectedProperty().addListener((obs, oldVal, newVal) -> row.requestLayout());
+                return row;
+            });
+        }
     }
 
     private void setupSearch() {
+        if (txtSearch == null) return;
         txtSearch.textProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue == null || newValue.isEmpty()) {
                 historyTable.setItems(historyList);
@@ -185,93 +145,116 @@ public class BiddingHistoryController implements Initializable {
         });
     }
 
-    @FXML
-    private void handleRefresh() {
-        if (currentUser != null) {
-            new Thread(() -> {
-                try {
-                    double actualBalance = paymentDAO.getBalance(currentUser.getId());
-                    Platform.runLater(() -> currentUser.setBalance(actualBalance));
-                } catch (Exception e) { e.printStackTrace(); }
-            }).start();
-        }
-        loadHistory();
-
-        if (homeControllerInstance != null) {
-            homeControllerInstance.updateWalletUI();
-        }
+    public void setUserData(User user) {
+        if (user == null) return;
+        this.currentUser = user;
+        SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, user.getId());
     }
 
-    @FXML
-    private void onLiveMenuClick() {
-        try {
-            if (homeScene != null) {
-                if (homeControllerInstance != null) {
-                    homeControllerInstance.updateWalletUI();
-                }
-                Stage stage = (Stage) txtSearch.getScene().getWindow();
-                stage.setScene(homeScene);
-                stage.setTitle("Elite Auction - Sàn Đấu Giá");
-                stage.show();
-            } else {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
-                Parent root = loader.load();
-                The_Home_Page_Bidder_View_Controller homeController = loader.getController();
+    private void handleBidHistoryResult(Message message) {
+        if (!(message.getPayload() instanceof List)) return;
+        @SuppressWarnings("unchecked")
+        List<BidHistoryRow> historyRows = (List<BidHistoryRow>) message.getPayload();
 
-                if (homeController != null) {
-                    homeController.setUserData(this.currentUser);
-                    homeController.updateWalletUI();
-                }
-                Stage stage = (Stage) txtSearch.getScene().getWindow();
-                stage.setScene(new Scene(root, 1280, 720));
-                stage.show();
+        Platform.runLater(() -> {
+            historyList.clear();
+            if (historyRows != null) {
+                historyList.addAll(historyRows);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+            if (historyTable != null) {
+                historyTable.setItems(historyList);
+            }
+        });
     }
 
     @FXML
-    private void handleReportIssue() {
-        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("Vui lòng chọn một lượt đặt giá từ bảng để báo cáo sự cố!");
-            return;
+    void handleRefresh(ActionEvent event) {
+        if (currentUser != null) {
+            SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, currentUser.getId());
         }
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ReportIssueView.fxml"));
-            Parent root = loader.load();
-            ReportIssueController dialogController = loader.getController();
-            if (dialogController != null) dialogController.setIssueData(selected, this.currentUser);
-
-            Stage dialogStage = new Stage();
-            dialogStage.setScene(new Scene(root));
-            dialogStage.setTitle("Báo Cáo Sự Cố Phiên Đấu Giá");
-            dialogStage.showAndWait();
-        } catch (Exception e) { e.printStackTrace(); }
     }
 
     @FXML
-    private void handleViewDetail(javafx.event.ActionEvent event) {
-        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
+    void handleViewDetail(ActionEvent event) {
+        if (historyTable == null) return;
+        BidHistoryRow selectedRow = historyTable.getSelectionModel().getSelectedItem();
+        if (selectedRow == null) {
             showWarning("Vui lòng chọn một dòng phiên đấu giá trong bảng lịch sử để xem!");
             return;
         }
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/AuctionDetailView.fxml"));
             Parent root = loader.load();
-            AuctionDetailController detailController = loader.getController();
+
+            com.auction.client.controller.bidder.AuctionDetailController detailController = loader.getController();
             if (detailController != null) {
-                detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
+                detailController.loadAuctionDetail(selectedRow.getAuctionId(), selectedRow.getItemName(), currentUser);
             }
-            Stage dialogStage = new Stage();
-            dialogStage.setScene(new Scene(root, 700, 500));
-            dialogStage.setTitle("Thông Tin Chi Tiết Phiên Đấu Giá - #" + selected.getAuctionId());
-            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
-            Stage ownerStage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-            dialogStage.initOwner(ownerStage);
-            dialogStage.setResizable(false);
-            dialogStage.show();
-        } catch (Exception e) { e.printStackTrace(); }
+
+            Stage stage = new Stage();
+            stage.setScene(new Scene(root));
+            stage.setTitle("Chi Tiết Phiên Đấu Giá #" + selectedRow.getAuctionId());
+            stage.initModality(Modality.APPLICATION_MODAL);
+
+            Stage ownerStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.initOwner(ownerStage);
+            stage.setResizable(false);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    void handleReportIssue(ActionEvent event) {
+        if (historyTable == null) return;
+        BidHistoryRow selectedRow = historyTable.getSelectionModel().getSelectedItem();
+        if (selectedRow == null) {
+            showWarning("Vui lòng chọn một lượt đặt giá từ bảng để báo cáo sự cố!");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ReportIssueView.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setScene(new Scene(root));
+            stage.setTitle("Báo Cáo Sự Cố - Phiên #" + selectedRow.getAuctionId());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * NÚT ⟵ QUAY LẠI: Đồng nhất hành động quay lại trang chủ phiên đấu giá trực tuyến
+     */
+    @FXML
+    void onLiveMenuClick(ActionEvent event) {
+        cleanupListeners();
+        // Nếu không có mainContainer, chuyển scene trực tiếp
+        if (this.mainContainer != null) {
+            this.mainContainer.setPage("/view/view/bidder/The_Home_Page_Bidder_View.fxml");
+        } else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                        "/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
+                Parent root = loader.load();
+                The_Home_Page_Bidder_View_Controller homeCtrl = loader.getController();
+                if (homeCtrl != null) homeCtrl.setUserData(this.currentUser);
+                Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+                stage.setScene(new Scene(root, 1280, 720));
+                stage.show();
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
+
+
+    private void cleanupListeners() {
+        MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
     }
 
     private void showWarning(String message) {

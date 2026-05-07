@@ -164,7 +164,7 @@
 .pie-chart {
     -fx-font-family: "Segoe UI", Arial, sans-serif;
     -fx-legend-visible: true;
-    -fx-legend-side: right;
+    -fx-legend-side: bottom;
 }
 
 .chart-pie {
@@ -194,15 +194,19 @@
 .default-color4.chart-pie { -fx-pie-color: #8B5CF6; }
 .default-color4.chart-legend-item-symbol { -fx-background-color: #8B5CF6; }
 
+/* Ép bảng ghi chú dàn hàng ngang, tự động xuống dòng và căn giữa */
 .chart-legend {
     -fx-background-color: transparent;
-    -fx-padding: 0px 0px 0px 20px;
+    -fx-padding: 15px 0px 0px 0px; /* Cách cái bánh ra một chút */
+    -fx-alignment: center;
 }
+
+/* Thu nhỏ chữ và khoảng cách để hiển thị đủ 5 trạng thái trên 1-2 dòng */
 .chart-legend-item {
     -fx-text-fill: #1E293B;
-    -fx-font-size: 12px;
+    -fx-font-size: 11px; /* Nhỏ lại một chút so với 12px cũ */
     -fx-font-weight: bold;
-    -fx-padding: 5px 0 5px 0;
+    -fx-padding: 2px 8px 2px 8px; /* Ép sát các item lại */
 }
 .chart-legend-item-symbol {
     -fx-background-radius: 50%;

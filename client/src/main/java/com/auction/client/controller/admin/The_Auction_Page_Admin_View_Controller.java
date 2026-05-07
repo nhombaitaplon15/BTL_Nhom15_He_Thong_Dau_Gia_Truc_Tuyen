@@ -57,6 +57,8 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     @FXML private TextField tfSearch;
     @FXML private ComboBox<String> cbStatus;
     @FXML private ComboBox<String> cbTime;
+    @FXML private Label lblAdminName, lblPendingCount;
+
 
     // ===================== STATE ===========================
     private User currentUser;
@@ -650,4 +652,19 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     }
 
     public void Welcome_back(ActionEvent actionEvent) { }
+    @FXML
+    public void handleLogout(ActionEvent event) {
+        // Nếu ở các trang kia bạn có đăng ký MessageRouter lắng nghe realtime,
+        // hãy nhớ unregister chúng ở đây (giống hàm unregisterAllHandlers bên trang chủ)
+
+        try {
+            // Đảm bảo đường dẫn đến file LoginView.fxml là chính xác với cấu trúc thư mục của bạn
+            Parent root = FXMLLoader.load(getClass().getResource("/view/view/bidder/LoginView.fxml"));
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

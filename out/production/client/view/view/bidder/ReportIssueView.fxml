@@ -68,7 +68,7 @@
         <HBox alignment="CENTER_RIGHT" spacing="12.0" style="-fx-background-color: #f8fafc; -fx-padding: 12; -fx-background-radius: 0 0 12 12;">
             <children>
                 <Button mnemonicParsing="false" onAction="#handleCancel" prefHeight="35.0" prefWidth="80.0" style="-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 5; -fx-cursor: hand;" text="Hủy bỏ" textFill="#475569" />
-                <Button mnemonicParsing="false" onAction="#handleSendReport" prefHeight="35.0" style="-fx-background-color: #dc2626; -fx-background-radius: 5; -fx-cursor: hand;" text="Gửi Báo Cáo" textFill="WHITE">
+                <Button fx:id="btnSend" mnemonicParsing="false" onAction="#handleSendReport" prefHeight="35.0" style="-fx-background-color: #dc2626; -fx-background-radius: 5; -fx-cursor: hand;" text="Gửi Báo Cáo" textFill="WHITE">
                     <font>
                         <Font name="System Bold" size="13.0" />
                     </font>

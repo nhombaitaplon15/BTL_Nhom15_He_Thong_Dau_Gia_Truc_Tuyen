@@ -1,12 +1,13 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.server.dao.ItemDAO;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -23,12 +24,11 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import java.io.InputStream;
-import java.sql.Connection;
 import java.time.LocalDateTime;
 
 public class AuctionDetailController {
 
-    // 🎯 CỐ ĐỊNH: Đồng bộ mảng 4 ID Admin hệ thống
+    // 🎯 ĐỒNG BỘ: Mảng 4 ID Admin hệ thống giải ngân tiền cọc
     private static final int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
 
     @FXML private Label lblAuctionId;
@@ -41,14 +41,18 @@ public class AuctionDetailController {
     @FXML private Label lblDescription;
     @FXML private HBox hboxWinnerActions;
 
-    private final AuctionDAO auctionDAO = new AuctionDAO();
-    private final ItemDAO itemDAO = new ItemDAO();
-    private final PaymentDAO paymentDAO = new PaymentDAO();
-
     private Timeline liveStatusTimeline;
     private Auction currentAuction;
     private User currentUser;
 
+    @FXML
+    public void initialize() {
+        System.out.println("🔌 Khởi tạo cổng mạng cho màn hình Chi tiết đấu giá.");
+    }
+
+    /**
+     * Nạp dữ liệu ban đầu và đăng ký các cổng lắng nghe từ Server
+     */
     public void loadAuctionDetail(int auctionId, String fallbackName, User user) {
         this.currentUser = user;
 
@@ -60,55 +64,68 @@ public class AuctionDetailController {
             hboxWinnerActions.setManaged(false);
         }
 
-        new Thread(() -> {
-            try {
-                Auction auction = auctionDAO.getAuctionById(auctionId);
-                if (auction != null) {
-                    this.currentAuction = auction;
-                    Item item = itemDAO.getItemById(auction.getItemId());
+        // ĐĂNG KÝ AN TOÀN: Làm sạch Listener cũ tránh lặp luồng dữ liệu
+        cleanupListeners();
+        MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, this::handleAuctionDetailResult);
+        MessageRouter.getInstance().register(ResponseCode.WITHDRAW_SUCCESS, this::handleTransactionSuccess);
+        MessageRouter.getInstance().register(ResponseCode.WITHDRAW_FAILED, this::handleTransactionFailed);
 
-                    Platform.runLater(() -> {
-                        if (lblCurrentPrice != null) {
-                            lblCurrentPrice.setText(String.format("%,.0f UETệ", auction.getCurrentPrice()));
-                        }
-
-                        if (lblStartTime != null && auction.getStartTime() != null) {
-                            lblStartTime.setText(auction.getStartTime().toString());
-                        }
-                        if (lblEndTime != null && auction.getEndTime() != null) {
-                            lblEndTime.setText(auction.getEndTime().toString());
-                        }
-
-                        checkAndToggleWinnerActions(auction, user);
-
-                        if (item != null) {
-                            if (lblItemName != null) lblItemName.setText(item.getName());
-                            if (lblDescription != null) lblDescription.setText(item.getDescription());
-
-                            if (item.getImgItem() != null && !item.getImgItem().trim().isEmpty()) {
-                                try {
-                                    String path = item.getImgItem().trim();
-                                    if (!path.startsWith("/")) path = "/" + path;
-                                    InputStream is = getClass().getResourceAsStream(path);
-                                    if (is != null) imgProduct.setImage(new Image(is));
-                                } catch (Exception e) {
-                                    System.err.println("❌ Lỗi hiển thị ảnh chi tiết vật phẩm: " + e.getMessage());
-                                }
-                            }
-                        }
-
-                        if (auction.getEndTime() != null && "RUNNING".equalsIgnoreCase(auction.getAuctionStatus())) {
-                            startRealtimeStatusTracker(auction.getEndTime(), auction, user);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                System.err.println("❌ Lỗi kết nối dữ liệu chi tiết phiên đấu giá!");
-                e.printStackTrace();
-            }
-        }).start();
+        // Gửi yêu cầu lên Server lấy thông tin chi tiết phiên
+        SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, auctionId);
     }
 
+    /**
+     * Xử lý dữ liệu phiên đấu giá từ Server đổ về qua Socket
+     */
+    private void handleAuctionDetailResult(Message message) {
+        Object payload = message.getPayload();
+        if (!(payload instanceof Auction)) return;
+
+        this.currentAuction = (Auction) payload;
+        Item item = currentAuction.getItem();
+
+        Platform.runLater(() -> {
+            if (lblCurrentPrice != null) {
+                lblCurrentPrice.setText(String.format("%,.0f UETệ", currentAuction.getCurrentPrice()));
+            }
+
+            if (lblStartTime != null && currentAuction.getStartTime() != null) {
+                lblStartTime.setText(currentAuction.getStartTime().toString());
+            }
+            if (lblEndTime != null && currentAuction.getEndTime() != null) {
+                lblEndTime.setText(currentAuction.getEndTime().toString());
+            }
+
+            // Kiểm tra hiển thị nút bấm cho người thắng cuộc
+            checkAndToggleWinnerActions(currentAuction, currentUser);
+
+            // Hiển thị thông tin vật phẩm đính kèm
+            if (item != null) {
+                if (lblItemName != null) lblItemName.setText(item.getName());
+                if (lblDescription != null) lblDescription.setText(item.getDescription());
+
+                if (item.getImgItem() != null && !item.getImgItem().trim().isEmpty()) {
+                    try {
+                        String path = item.getImgItem().trim();
+                        if (!path.startsWith("/")) path = "/" + path;
+                        InputStream is = getClass().getResourceAsStream(path);
+                        if (is != null) imgProduct.setImage(new Image(is));
+                    } catch (Exception e) {
+                        System.err.println("❌ Lỗi hiển thị ảnh chi tiết vật phẩm: " + e.getMessage());
+                    }
+                }
+            }
+
+            // Chạy bộ đếm ngược thời gian thực nếu phiên đang diễn ra
+            if (currentAuction.getEndTime() != null && "RUNNING".equalsIgnoreCase(currentAuction.getAuctionStatus())) {
+                startRealtimeStatusTracker(currentAuction.getEndTime(), currentAuction, currentUser);
+            }
+        });
+    }
+
+    /**
+     * Logic kiểm tra xem User hiện tại có phải người thắng phiên để hiện 2 nút Thanh Toán / Hủy Đấu Giá hay không
+     */
     private void checkAndToggleWinnerActions(Auction auction, User user) {
         String status = auction.getAuctionStatus();
 
@@ -122,7 +139,7 @@ public class AuctionDetailController {
         }
 
         if ("FINISHED".equalsIgnoreCase(status) || "CLOSED".equalsIgnoreCase(status)) {
-            if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId().intValue() == user.getId()) {
+            if (auction.getCurrentWinnerId() != null && user != null && auction.getCurrentWinnerId().intValue() == user.getId()) {
                 LocalDateTime endTime = auction.getEndTime();
                 LocalDateTime now = LocalDateTime.now();
                 if (endTime == null) endTime = now;
@@ -135,13 +152,13 @@ public class AuctionDetailController {
                     long hoursLeft = totalMinutesLeft / 60;
                     long minutesLeft = totalMinutesLeft % 60;
 
-                    // Tính toán ID Admin tương ứng hiển thị lên giao diện
+                    // Xác định Admin đang nắm giữ ví tạm dựa trên thuật toán lấy số dư của id phiên
                     int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
                     int assignedAdminId = ESCROW_ADMIN_IDS[idx];
 
                     if (lblStatus != null) {
-                        lblStatus.setText("🎉 BẠN ĐÃ THẮNG PHIÊN (Tiền tạm giữ tại Admin #" + assignedAdminId + " - Còn " + hoursLeft + "g " + minutesLeft + "p để xác nhận)");
-                        lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; -fx-background-radius: 5; -fx-padding: 6 12 6 12; -fx-font-weight: bold; -fx-border-color: #f59e0b; -fx-border-width: 1; -fx-border-radius: 5;");
+                        lblStatus.setText("🎉 BẠN ĐÃ THẮNG PHIÊN (Tiền cọc đóng băng tại Admin #" + assignedAdminId + " - Còn " + hoursLeft + "g " + minutesLeft + "p để xác nhận)");
+                        lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; -fx-background-radius: 5; -fx-padding: 6 12; -fx-font-weight: bold; -fx-border-color: #f59e0b; -fx-border-width: 1; -fx-border-radius: 5;");
                     }
                     if (hboxWinnerActions != null) {
                         hboxWinnerActions.setVisible(true);
@@ -149,19 +166,18 @@ public class AuctionDetailController {
                     }
                 } else {
                     if (lblStatus != null) {
-                        lblStatus.setText("❌ QUÁ HẠN 24H (TỰ ĐỘNG HỦY PHIÊN PHẠT CỌC)");
-                        lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+                        lblStatus.setText("❌ QUÁ HẠN 24H (HỆ THỐNG TỰ ĐỘNG KHÓA VÀ PHẠT CỌC)");
+                        lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
                     }
                     if (hboxWinnerActions != null) {
                         hboxWinnerActions.setVisible(false);
                         hboxWinnerActions.setManaged(false);
                     }
-                    autoRejectWinOverdue(user, auction);
                 }
             } else {
                 if (lblStatus != null) {
                     lblStatus.setText("ĐÃ KẾT THÚC (Bạn không thắng phiên này)");
-                    lblStatus.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+                    lblStatus.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
                 }
                 if (hboxWinnerActions != null) {
                     hboxWinnerActions.setVisible(false);
@@ -173,39 +189,33 @@ public class AuctionDetailController {
         }
     }
 
-    private void autoRejectWinOverdue(User user, Auction auction) {
-        try (Connection conn = DBConnection.getConnection()) {
-            conn.setAutoCommit(false);
-            int idx = auction.getAuctionId() % ESCROW_ADMIN_IDS.length;
-            int assignedAdminId = ESCROW_ADMIN_IDS[idx];
-            if (paymentDAO.processPenalty7Percent(conn, user.getId(), assignedAdminId, auction.getCurrentPrice())) {
-                auctionDAO.updateStatus(auction.getAuctionId(), "REJECTED");
-                conn.commit();
-            } else { conn.rollback(); }
-        } catch (Exception e) { e.printStackTrace(); }
-    }
-
+    /**
+     * Cập nhật màu sắc CSS cho nhãn trạng thái
+     */
     private void updateStatusStyle(String status) {
         if (lblStatus == null) return;
 
         if ("FINISHED".equalsIgnoreCase(status) || "CLOSED".equalsIgnoreCase(status)) {
             lblStatus.setText("ĐÃ KẾT THÚC");
-            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
         } else if ("PENDING".equalsIgnoreCase(status) || "WAITING_FOR_ADMIN".equalsIgnoreCase(status)) {
             lblStatus.setText("CHỜ KÍCH HOẠT");
-            lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
         } else if ("SOLD".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
             lblStatus.setText("ĐÃ THANH TOÁN THÀNH CÔNG");
-            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
         } else if ("REJECTED".equalsIgnoreCase(status)) {
             lblStatus.setText("ĐÃ HỦY ĐẤU GIÁ (PHẠT CỌC 7%)");
-            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
         } else {
             lblStatus.setText("ĐANG DIỄN RA");
-            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
         }
     }
 
+    /**
+     * Bộ theo dõi đếm ngược thời gian thực kết thúc phiên
+     */
     private void startRealtimeStatusTracker(LocalDateTime endTime, Auction auction, User user) {
         if (liveStatusTimeline != null) { liveStatusTimeline.stop(); }
         liveStatusTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
@@ -221,9 +231,8 @@ public class AuctionDetailController {
     }
 
     /**
-     * LUỒNG CHẤP NHẬN: Gọi Database chuyển 15% cho Admin và 85% cho Seller
+     * 🟢 NÚT XÁC NHẬN NHẬN HÀNG VÀ THANH TOÁN (Gửi lệnh qua Socket)
      */
-
     @FXML
     void handlePayAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
@@ -232,42 +241,27 @@ public class AuctionDetailController {
         double adminFee = currentBidPrice * 0.15;
         double sellerReceived = currentBidPrice * 0.85;
 
+        int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
+        int assignedAdminId = ESCROW_ADMIN_IDS[idx];
+
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                String.format("Xác nhận giải ngân vật phẩm này?\n- Hệ thống thu phí sàn 15%%: %,.0f UETệ\n- Người bán nhận lại 85%%: %,.0f UETệ", adminFee, sellerReceived),
+                String.format("Xác nhận giải ngân vật phẩm? (Ví tạm Admin #%d đang giữ tiền)\n- Phí sàn (15%%): %,.0f UETệ\n- Người bán nhận (85%%): %,.0f UETệ", assignedAdminId, adminFee, sellerReceived),
                 ButtonType.YES, ButtonType.NO);
         alert.setTitle("Xác nhận giải ngân");
         alert.setHeaderText(null);
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.YES) {
-                try (Connection conn = DBConnection.getConnection()) {
-                    conn.setAutoCommit(false);
-
-                    int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
-                    int assignedAdminId = ESCROW_ADMIN_IDS[idx];
-
-                    boolean success = paymentDAO.processAcceptPayment(conn, currentAuction.getSellerId(), assignedAdminId, currentBidPrice);
-
-                    if (success) {
-                        auctionDAO.updateStatus(currentAuction.getAuctionId(), "PAID");
-
-                        // 🎯 DÒNG THÊM MỚI CHÍ CHÓC: Cập nhật trạng thái ngay trên RAM để đồng bộ UI
-                        currentAuction.setAuctionStatus("PAID");
-
-                        conn.commit();
-                        showNotification("Thành công", "Giao dịch thành công! Vật phẩm đã chính thức thuộc về bạn.");
-                        handleClose(event);
-                    } else {
-                        conn.rollback();
-                        showNotification("Thất bại", "Không thể xử lý giải ngân dòng tiền.");
-                    }
-                } catch (Exception e) {
-                    showNotification("Lỗi hệ thống", "Không thể thực hiện giao dịch: " + e.getMessage());
-                    e.printStackTrace();
-                }
+                // Đóng gói mảng dữ liệu gửi lên Server xử lý dòng tiền qua Database tập trung
+                Object[] txPayload = new Object[] { currentAuction.getAuctionId(), currentUser.getId(), assignedAdminId };
+                SocketClient.getInstance().sendRequest(RequestCode.ADMIN_CREATE_TRANSACTION, txPayload);
             }
         });
     }
+
+    /**
+     * 🔴 NÚT TỪ CHỐI NHẬN HÀNG - HỦY PHIÊN PHẠT CỌC 7% (Gửi lệnh qua Socket)
+     */
     @FXML
     void handleCancelAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
@@ -276,47 +270,62 @@ public class AuctionDetailController {
         double penaltyFee = currentBidPrice * 0.07;
         double refundAmt = currentBidPrice * 0.93;
 
+        int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
+        int assignedAdminId = ESCROW_ADMIN_IDS[idx];
+
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                String.format("Hủy mua bạn sẽ bị phạt 7%% cọc (tương đương %,.0f UETệ).\nSố tiền còn lại 93%% (%,.0f UETệ) sẽ hoàn về ví chính của bạn. Bạn chắc chắn chứ?", penaltyFee, refundAmt),
+                String.format("Hủy mua sản phẩm sẽ giải phóng ví tạm của Admin #%d:\n- Bạn bị phạt 7%% cọc: %,.0f UETệ\n- Hoàn lại trả ví bạn 93%%: %,.0f UETệ\nBạn chắc chắn hủy chứ?", assignedAdminId, penaltyFee, refundAmt),
                 ButtonType.YES, ButtonType.NO);
         alert.setTitle("Xác nhận hủy nhận hàng");
         alert.setHeaderText(null);
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.YES) {
-                try (Connection conn = DBConnection.getConnection()) {
-                    conn.setAutoCommit(false);
-
-                    int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
-                    int assignedAdminId = ESCROW_ADMIN_IDS[idx];
-
-                    boolean success = paymentDAO.processPenalty7Percent(conn, currentUser.getId(), assignedAdminId, currentBidPrice);
-
-                    if (success) {
-                        auctionDAO.updateStatus(currentAuction.getAuctionId(), "REJECTED");
-
-                        // 🎯 DÒNG THÊM MỚI CHÍ CHÓC: Cập nhật trạng thái ngay trên RAM để đồng bộ UI
-                        currentAuction.setAuctionStatus("REJECTED");
-
-                        conn.commit();
-                        showNotification("Đã hủy phiên", String.format("Hệ thống đã hủy phiên và áp lệnh phạt cọc 7%% (%,.0f UETệ) thành công.", penaltyFee));
-                        handleClose(event);
-                    } else {
-                        conn.rollback();
-                        showNotification("Thất bại", "Không thể xử lý lệnh phạt cọc.");
-                    }
-                } catch (Exception e) {
-                    showNotification("Lỗi hệ thống", "Không thể xử lý hủy phiên: " + e.getMessage());
-                    e.printStackTrace();
-                }
+                // Gửi thông tin sang server gồm ID phiên và ID Admin giữ tiền để Server thực hiện Trực tiếp trên DB của nó
+                Object[] rejectPayload = new Object[] { currentAuction.getAuctionId(), assignedAdminId };
+                SocketClient.getInstance().sendRequest(RequestCode.ADMIN_REJECT_TRANSACTION, rejectPayload);
             }
         });
     }
+
+    /**
+     * Xử lý khi Server báo Giao dịch / Giải ngân / Phạt cọc THÀNH CÔNG qua Socket
+     */
+    private void handleTransactionSuccess(Message message) {
+        Platform.runLater(() -> {
+            showNotification("Thành công", "Hệ thống mạng đã thực thi thay đổi dòng tiền thành công!");
+            if (lblStatus != null && currentAuction != null) {
+                // Đồng bộ RAM lập tức
+                currentAuction.setAuctionStatus("PAID");
+                checkAndToggleWinnerActions(currentAuction, currentUser);
+            }
+        });
+    }
+
+    /**
+     * Xử lý khi Server báo giao dịch THẤT BẠI
+     */
+    private void handleTransactionFailed(Message message) {
+        Platform.runLater(() -> {
+            showNotification("Thất bại", "Giao dịch lỗi hoặc số dư ví tạm Admin không đủ: " + message.getMessage());
+        });
+    }
+
     @FXML
     void handleClose(ActionEvent event) {
+        cleanupListeners();
         if (liveStatusTimeline != null) { liveStatusTimeline.stop(); }
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.close();
+    }
+
+    /**
+     * Giải phóng cổng lắng nghe khi đóng cửa sổ để tránh rò rỉ bộ nhớ mạng (Memory Leak)
+     */
+    private void cleanupListeners() {
+        MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
+        MessageRouter.getInstance().unregister(ResponseCode.WITHDRAW_SUCCESS);
+        MessageRouter.getInstance().unregister(ResponseCode.WITHDRAW_FAILED);
     }
 
     private void showNotification(String title, String content) {

@@ -15,6 +15,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<?import javafx.scene.layout.FlowPane?>
 <AnchorPane maxWidth="1280" maxHeight="800"
             prefWidth="1100" prefHeight="700"
             style="-fx-background-color: #F0F4FF;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1"
@@ -154,34 +155,58 @@
                                         <VBox maxWidth="460.0" minWidth="320.0" prefWidth="400.0" spacing="20.0">
                                             <children>
                                                 <!-- Pie Chart -->
-                                                <VBox prefHeight="380.0"
-                                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
-                                                      VBox.vgrow="ALWAYS">
+                                                <VBox prefHeight="380.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);" VBox.vgrow="ALWAYS">
                                                     <padding><Insets bottom="12.0" left="16.0" right="16.0" top="16.0" /></padding>
                                                     <children>
-                                                        <Label text="🥧 Trạng thái phiên"
-                                                               style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+                                                        <Label text="🥧 Trạng thái phiên" style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+
                                                         <StackPane alignment="CENTER" VBox.vgrow="ALWAYS">
                                                             <children>
-                                                                <PieChart fx:id="statusPieChart" labelsVisible="false" legendSide="RIGHT"
-                                                                          legendVisible="true" maxHeight="Infinity" maxWidth="Infinity"
-                                                                          style="-fx-background-color: transparent;"
-                                                                          stylesheets="@../css/style.css"/>
-                                                                <StackPane fx:id="donutHolePane" maxHeight="120.0" maxWidth="120.0"
-                                                                           prefHeight="120.0" prefWidth="120.0"
-                                                                           style="-fx-background-color: white; -fx-background-radius: 100px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
+                                                                <PieChart fx:id="statusPieChart" labelsVisible="false" legendVisible="false" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: transparent;" stylesheets="@../css/style.css"/>
+
+                                                                <StackPane fx:id="donutHolePane" maxHeight="120.0" maxWidth="120.0" prefHeight="120.0" prefWidth="120.0" style="-fx-background-color: white; -fx-background-radius: 100px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
                                                                     <children>
                                                                         <VBox alignment="CENTER" spacing="2.0">
                                                                             <children>
                                                                                 <Label text="Tổng Phiên" style="-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-font-weight: bold;"/>
-                                                                                <Label fx:id="lblTotalAuctions" text="0"
-                                                                                       style="-fx-text-fill: #6C63FF; -fx-font-size: 30px; -fx-font-weight: bold;"/>
+                                                                                <Label fx:id="lblTotalAuctions" text="0" style="-fx-text-fill: #6C63FF; -fx-font-size: 30px; -fx-font-weight: bold;"/>
                                                                             </children>
                                                                         </VBox>
                                                                     </children>
                                                                 </StackPane>
                                                             </children>
                                                         </StackPane>
+
+                                                        <FlowPane alignment="CENTER" hgap="16.0" vgap="10.0">
+                                                            <padding><Insets top="16.0" bottom="8.0"/></padding>
+                                                            <children>
+                                                                <HBox alignment="CENTER" spacing="6.0">
+                                                                    <StackPane prefWidth="12" prefHeight="12" style="-fx-background-color: #F59E0B; -fx-background-radius: 6px;"/>
+                                                                    <Label text="Chờ duyệt" style="-fx-font-size: 12px; -fx-text-fill: #1E293B; -fx-font-weight: bold;"/>
+                                                                </HBox>
+
+                                                                <HBox alignment="CENTER" spacing="6.0">
+                                                                    <StackPane prefWidth="12" prefHeight="12" style="-fx-background-color: #10B981; -fx-background-radius: 6px;"/>
+                                                                    <Label text="Mở đăng ký" style="-fx-font-size: 12px; -fx-text-fill: #1E293B; -fx-font-weight: bold;"/>
+                                                                </HBox>
+
+                                                                <HBox alignment="CENTER" spacing="6.0">
+                                                                    <StackPane prefWidth="12" prefHeight="12" style="-fx-background-color: #3B82F6; -fx-background-radius: 6px;"/>
+                                                                    <Label text="Đang diễn ra" style="-fx-font-size: 12px; -fx-text-fill: #1E293B; -fx-font-weight: bold;"/>
+                                                                </HBox>
+
+                                                                <HBox alignment="CENTER" spacing="6.0">
+                                                                    <StackPane prefWidth="12" prefHeight="12" style="-fx-background-color: #EF4444; -fx-background-radius: 6px;"/>
+                                                                    <Label text="Bị từ chối" style="-fx-font-size: 12px; -fx-text-fill: #1E293B; -fx-font-weight: bold;"/>
+                                                                </HBox>
+
+                                                                <HBox alignment="CENTER" spacing="6.0">
+                                                                    <StackPane prefWidth="12" prefHeight="12" style="-fx-background-color: #8B5CF6; -fx-background-radius: 6px;"/>
+                                                                    <Label text="Đã kết thúc" style="-fx-font-size: 12px; -fx-text-fill: #1E293B; -fx-font-weight: bold;"/>
+                                                                </HBox>
+                                                            </children>
+                                                        </FlowPane>
+
                                                     </children>
                                                 </VBox>
 

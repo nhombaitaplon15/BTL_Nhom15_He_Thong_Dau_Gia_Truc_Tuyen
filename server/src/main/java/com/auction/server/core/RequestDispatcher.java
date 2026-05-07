@@ -168,13 +168,33 @@ public class RequestDispatcher {
     }
 
     private void handleJoinRoom(ClientHandler client, Message request) {
-        Integer roomId = (Integer) request.getPayload();
-        AuctionRoom room = AuctionRoomManager.getInstance().getRoom(roomId);
-        if (room != null) {
-            room.joinRoom(client);
-            client.sendMessage(new Message(ResponseCode.ROOM_JOIN_SUCCESS, "Đã vào phòng", roomId));
-        } else {
-            client.sendMessage(new Message(ResponseCode.ROOM_JOIN_FAILED, "Phòng không tồn tại hoặc đã đóng", null));
+        try {
+            Integer roomId = (Integer) request.getPayload();
+
+            // 1. Kiểm tra phòng đấu giá thời gian thực trên RAM
+            AuctionRoom room = AuctionRoomManager.getInstance().getRoom(roomId);
+
+            if (room != null) {
+                // 2. Client chính thức gia nhập danh sách nhận thông báo Real-time công khai
+                room.joinRoom(client);
+
+                // 3. [TÂM ĐIỂM FIX]: Gọi ManagerService lấy Full thông tin Auction, Item và lịch sử đặt giá từ DB
+                Auction fullAuction = this.managerService.getAuctionOrThrow(roomId);
+
+                // Đồng bộ mức giá mới nhất từ RAM vào Object trước khi gửi về Client render giao diện
+                fullAuction.setCurrentPrice(room.getCurrentPrice());
+
+                // 4. Gửi gói tin thành công kèm Payload là Object Auction đúng như Client mong đợi
+                client.sendMessage(new Message(ResponseCode.ROOM_JOIN_SUCCESS, "Đã vào phòng thành công!", fullAuction));
+                System.out.println("[DISPATCHER] User#" + client.getLoggedInUserId() + " vào phòng #" + roomId + " thành công. Đã nạp đầy đủ dữ liệu.");
+            } else {
+                // Phòng chưa được kích hoạt trên RAM hoặc đã kết thúc
+                client.sendMessage(new Message(ResponseCode.ROOM_JOIN_FAILED, "Phòng đấu giá hiện không tồn tại hoặc đã khép lại!", null));
+            }
+        } catch (Exception e) {
+            System.err.println("[DISPATCHER ERROR] Thất bại khi xử lý JOIN_ROOM: " + e.getMessage());
+            e.printStackTrace();
+            client.sendMessage(new Message(ResponseCode.ROOM_JOIN_FAILED, "Lỗi hệ thống Server: " + e.getMessage(), null));
         }
     }
 
@@ -287,12 +307,18 @@ public class RequestDispatcher {
 
     private void handleReportIssue(ClientHandler client, Message request) {
         try {
-            com.auction.common.network.ReportIssueDTO dto =
-                    (com.auction.common.network.ReportIssueDTO) request.getPayload();
-            if (dto == null) {
-                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED, "Dữ liệu báo cáo rỗng", null));
+            // Log payload type để debug ClassCastException nếu có
+            Object rawPayload = request.getPayload();
+            System.out.println("[REPORT] Payload type: " + (rawPayload == null ? "null" : rawPayload.getClass().getName()));
+
+            if (!(rawPayload instanceof com.auction.common.network.ReportIssueDTO)) {
+                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
+                        "Dữ liệu báo cáo không hợp lệ (type: " + (rawPayload == null ? "null" : rawPayload.getClass().getSimpleName()) + ")", null));
                 return;
             }
+
+            com.auction.common.network.ReportIssueDTO dto =
+                    (com.auction.common.network.ReportIssueDTO) rawPayload;
 
             Integer userId = client.getLoggedInUserId();
             if (userId == null) userId = dto.getUserId();
@@ -301,31 +327,39 @@ public class RequestDispatcher {
             boolean saved = issueDAO.insertIssue(userId, dto.getAuctionId(), dto.getIssueType(), dto.getDescription());
 
             if (saved) {
-                // Phản hồi thành công về Bidder
+                // Phản hồi thành công về Bidder TRƯỚC, sau đó mới broadcast
                 client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_SUCCESS,
                         "Báo cáo sự cố đã được ghi nhận thành công!", null));
-
-                // Tạo IssueRecord để broadcast lên Admin
-                com.auction.common.model.IssueRecord newIssue = new com.auction.common.model.IssueRecord(
-                        0, userId, dto.getAuctionId(), dto.getIssueType(), dto.getDescription(),
-                        java.time.LocalDateTime.now()
-                );
-                // Broadcast tới tất cả Admin đang online
-                SessionManager.getInstance().broadcastToAdmins(
-                        new Message(ResponseCode.ADMIN_NEW_ISSUE, "Báo cáo mới từ User#" + userId, newIssue),
-                        userService
-                );
                 System.out.println("[REPORT] ✅ User#" + userId + " báo cáo phiên #" + dto.getAuctionId()
                         + " | Loại: " + dto.getIssueType());
+
+                // Broadcast tới Admin trong try riêng — không được làm hỏng flow chính
+                try {
+                    com.auction.common.model.IssueRecord newIssue = new com.auction.common.model.IssueRecord(
+                            0, userId, dto.getAuctionId(), dto.getIssueType(), dto.getDescription(),
+                            java.time.LocalDateTime.now()
+                    );
+                    SessionManager.getInstance().broadcastToAdmins(
+                            new Message(ResponseCode.ADMIN_NEW_ISSUE, "Báo cáo mới từ User#" + userId, newIssue),
+                            userService
+                    );
+                } catch (Throwable broadcastErr) {
+                    // Broadcast thất bại không ảnh hưởng kết quả gửi báo cáo
+                    System.err.println("[REPORT] ⚠ Broadcast Admin thất bại (không ảnh hưởng kết quả): " + broadcastErr);
+                }
             } else {
                 client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
                         "Lỗi hệ thống! Không thể lưu báo cáo vào Database.", null));
                 System.err.println("[REPORT] ❌ Không lưu được báo cáo của User#" + userId);
             }
-        } catch (Exception e) {
-            System.err.println("[REPORT ERROR] " + e.getMessage());
-            client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
-                    "Lỗi xử lý báo cáo: " + e.getMessage(), null));
+        } catch (Throwable t) {
+            // Dùng Throwable thay vì Exception để bắt cả Error (LinkageError, NoClassDefFoundError...)
+            t.printStackTrace();
+            System.err.println("[REPORT ERROR] " + t.getClass().getName() + ": " + t.getMessage());
+            try {
+                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
+                        "Lỗi xử lý báo cáo: " + t.getMessage(), null));
+            } catch (Throwable ignored) {}
         }
     }
 
@@ -664,4 +698,5 @@ public class RequestDispatcher {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được báo cáo: " + e.getMessage(), null));
         }
     }
+
 }

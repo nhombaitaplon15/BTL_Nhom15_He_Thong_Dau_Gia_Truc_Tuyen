@@ -1,5 +1,6 @@
 package com.auction.client.controller.auth;
 
+import com.auction.client.controller.bidder.MainContainerController;
 import com.auction.client.controller.bidder.The_Home_Page_Bidder_View_Controller;
 import com.auction.common.model.User;
 import com.auction.server.service.UserService;
@@ -84,28 +85,28 @@ public class LoginController {
     private void chuyenTrangChu(ActionEvent event, String role, User user) {
         String fxmlFile;
         try {
-            // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
+            // 🔥 SỬA LỖI: Load đúng file vỏ bọc Maincontainer chứa Sidebar thay vì load trực tiếp trang con
             if ("ADMIN".equalsIgnoreCase(role)) {
                 fxmlFile = "/view/view/admin/The_Home_Page_Admin_View.fxml";
             } else {
-                fxmlFile = "/view/view/bidder/The_Home_Page_Bidder_View.fxml";
+                fxmlFile = "/view/view/bidder/Maincontainer.fxml"; // Dùng vỏ bọc tổng
             }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
             Parent root = loader.load();
 
             if (!"ADMIN".equalsIgnoreCase(role)) {
-                // Ép kiểu controller để truyền dữ liệu User vừa lấy từ Database Railway sang trang chủ
-                The_Home_Page_Bidder_View_Controller homeController = loader.getController();
-                homeController.setUserData(user);
+                // Bơm dữ liệu User vào MainContainer
+                MainContainerController mainController = loader.getController();
+                mainController.setUserData(user); // Hàm ta vừa tạo ở trên
             }
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
 
             stage.setScene(scene);
-            stage.setTitle("Elite Auction - Trang chủ hệ thống");
-            stage.setMaximized(true); // Giữ tính năng phóng to toàn màn hình cho đẹp
+            stage.setTitle("Elite Auction - Hệ thống Sàn Đấu Giá");
+            stage.setMaximized(true);
             stage.centerOnScreen();
             stage.show();
         } catch (Exception e) {
