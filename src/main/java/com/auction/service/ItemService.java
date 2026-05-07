@@ -1,6 +1,9 @@
 package com.auction.service;
 
+import com.auction.common.model.Art;
+import com.auction.common.model.Electronics;
 import com.auction.common.model.Items;
+import com.auction.common.model.Vehicle;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import java.util.ArrayList;
@@ -10,7 +13,26 @@ import java.util.Map;
 
 public class ItemService {
 
-    private final Map<Integer, Items> itemsList = new HashMap<>();
+    private static Map<Integer, Items> itemsList = new HashMap<>();
+
+    static {
+        Items vehicle = new Vehicle(484, "Bugatti", 484000000,
+            "Bugatti La Voiture Noire được trang bị động cơ W16 tăng áp kép," +
+                " dung tích 8.0 lít, mô-men xoắn cực đại 1.599Nm. " +
+                "Siêu xe này mất 2,4 giây để để tăng tốc từ 0-96,6 km/h.", " Bugatti La Voiture Noire", "view/images/Bugatti_La_Voiture_Noire.png") ;
+        Items art = new Art(9,"Van Gogh",1000,"Bức tranh khắc họa quang cảnh bên ngoài phòng bệnh của Van Gogh " +
+            "ở một bệnh viện tâm thần nằm tại miền Nam nước Pháp.","Bức Đêm đầy sao", "view/images/Tranh_Van_Gogh.png", 1889 , true );
+
+        Items electronics = new Electronics("Đồng hồ Romain Jerome Super Mario Bros",25,"Romain Jerome",18950,"Chiếc đồng hồ có đường kính 46mm và được làm bằng chất liệu titan màu đen." +
+            " Bên trong là bộ máy cơ tự động RJ001-A hoạt động ở xung nhịp 4Hz, có thể trữ năng lượng trong 42 giờ. " +
+            "Trên bề mặt đồng hồ là một tấm nền 3 lớp mô phỏng các hình ảnh đặc trưng như anh chàng Mario, cây nấm, " +
+            "đám mây hay bụi cây được tráng sứ.", "view/images/Đồng_hồ_Romain_Jerome_Super_Mario_Bros.png","năm 1985", 12) ;
+        itemsList.put(484,vehicle) ;
+        itemsList.put(9,art) ;
+        itemsList.put(25,electronics) ;
+
+
+    }
 
     // lấy tất cả các mặt hàng
     public List<Items> getAllItems() {

@@ -104,7 +104,7 @@ public class BiddingServiceTest {
     // khi giá bid bằng đúng currentPrice
     @Test
     void placeBid_priceEqualCurrent_shouldThrow() {
-        long currentPrice = getAuction().getCurrentPrice();
+        double currentPrice = getAuction().getCurrentPrice();
         AuctionException ex = assertThrows(AuctionException.class, () ->
                 biddingService.placeBid(1, "Alice", currentPrice));
         assertEquals(ErrorCode.BID_TOO_LOW.name(), ex.getCode());

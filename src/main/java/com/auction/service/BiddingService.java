@@ -20,7 +20,7 @@ public class BiddingService {
     }
 
     // xử lí đa luồng cho đặt giá
-    public boolean placeBid(int auctionId, String bidderName, long newPrice) {
+    public boolean placeBid(int auctionId, String bidderName, double newPrice) {
 
         Auction auction = managerService.getAuction(auctionId);
 
@@ -93,13 +93,13 @@ public class BiddingService {
         }
         synchronized (auction) {
 
-            if (!"DELIVERING".equals(auction.getAuctionStatus())) {
+            if (!"PAID".equals(auction.getItem().getItemStatus())) {
                 throw new AuctionException(
                         ErrorCode.AUCTION_INVALID_STATE.name(),
-                        "Chưa ở trạng thái DELIVERING!"
+                        "Chưa ở trạng thái PAID!"
                 );
             }
-            auction.setAuctionStatus("COMPLETED");
+            auction.getItem().setItemStatus("COMPLETED");
             System.out.println( bidderName + " đã xác nhận nhận hàng!");
             return true;
         }
