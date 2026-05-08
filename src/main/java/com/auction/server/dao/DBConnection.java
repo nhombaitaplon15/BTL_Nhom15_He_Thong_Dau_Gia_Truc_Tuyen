@@ -23,8 +23,7 @@ public class DBConnection {  // cầu nối với database
             // thiết lập kết nối
             return DriverManager.getConnection(URL, USERNAME, PASSWORD);
 
-        } catch (ClassNotFoundException e) {
-            System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
+        } catch (ClassNotFoundException e) {System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
             e.printStackTrace();
             return null;
         }

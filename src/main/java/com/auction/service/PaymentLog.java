@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PaymentLog {
+public class
+PaymentLog {
     // kho chứa dữ liệu trên RAM
     private List<Payment> memoryLogs = new CopyOnWriteArrayList<>();
 

@@ -20,8 +20,8 @@ public class AuctionDAO {
             conn = new DBConnection().getConnection();
             ps = conn.prepareStatement(query);
             ps.setInt(1, a.getItem().getId()); // Lấy ID của item
-            ps.setLong(2, a.getItem().getStartPrice());
-            ps.setLong(3, a.getCurrentPrice());
+            ps.setDouble(2, a.getItem().getStartPrice());
+            ps.setDouble(3, a.getCurrentPrice());
             ps.setString(4, a.getAuctionStatus());
             ps.setTimestamp(5, Timestamp.valueOf(a.getStartTime()));
             ps.setTimestamp(6, Timestamp.valueOf(a.getEndTime()));

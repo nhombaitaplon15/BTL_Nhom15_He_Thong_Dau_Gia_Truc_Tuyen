@@ -20,7 +20,9 @@ public class ItemServiceTest {
     @BeforeEach
     void setUp() {
         itemService = new ItemService();
+        itemService.clearData();
     }
+
     //thêm item
 
     // khi thêm item đúng thông tin

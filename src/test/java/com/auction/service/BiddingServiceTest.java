@@ -25,6 +25,9 @@ public class BiddingServiceTest {
         itemService = new ItemService();
         managerService = new ManagerService(itemService); // truyền cùng itemService vào
         biddingService = new BiddingService(managerService);
+        itemService.clearData();
+        managerService.clearData();
+        biddingService.clearData();
 
         // addItem vào itemService này -> managerService dùng chung -> scheduleAuction tìm thấy
         itemService.addItem(new Vehicle(1, "Producer", 1000000, "Mô tả", "Xe máy Honda", "img.jpg"));
@@ -104,7 +107,7 @@ public class BiddingServiceTest {
     // khi giá bid bằng đúng currentPrice
     @Test
     void placeBid_priceEqualCurrent_shouldThrow() {
-        long currentPrice = getAuction().getCurrentPrice();
+        double currentPrice = getAuction().getCurrentPrice();
         AuctionException ex = assertThrows(AuctionException.class, () ->
                 biddingService.placeBid(1, "Alice", currentPrice));
         assertEquals(ErrorCode.BID_TOO_LOW.name(), ex.getCode());
@@ -158,12 +161,13 @@ public class BiddingServiceTest {
     @Test
     void confirmReceived_success() {
         biddingService.placeBid(1, "Alice", 2000000);
+        getAuction().getItem().setItemStatus("PAID");
         getAuction().setAuctionStatus("DELIVERING");
 
         boolean result = biddingService.confirmReceived(1, "Alice");
 
         assertTrue(result);
-        assertEquals("COMPLETED", getAuction().getAuctionStatus());
+        assertEquals("COMPLETED", getAuction().getItem() .getItemStatus());
     }
     // khi người xác nhận không phải người thắng
     @Test

@@ -4,13 +4,10 @@ import com.auction.service.ManagerService;
 import java.time.LocalDateTime;
 
 public class Seller extends User {
-<<<<<<< HEAD
+    private double balance;
     public Seller(int id, String name, String email, String password, String phone, String status, double balance) {
-        super(id,name,email,password, phone,status,"SELLER", balance);
-=======
-    public Seller(int id, String name, String email, String password, String phone, String status){
         super(id,name,email,password, phone,status,"SELLER");
->>>>>>> 67c68da03d601caff64228481442a69f17c843fc
+        this.balance = balance;
     }
 
     // hàm xác minh vai trò Seller

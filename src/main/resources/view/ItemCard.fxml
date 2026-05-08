@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="260.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ItemCardController">
+   <children>
+      <ImageView fx:id="imgItem" fitHeight="200.0" fitWidth="300" pickOnBounds="true" preserveRatio="true" />
+      <Label fx:id="name" prefHeight="40.0" prefWidth="300.0" text="Tên sản phẩm: " />
+      <Label fx:id="startPrice" text="Giá khởi điểm: " />
+   </children>
+</VBox>

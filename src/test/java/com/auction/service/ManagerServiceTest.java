@@ -26,6 +26,8 @@ public class ManagerServiceTest {
     void setUp() {
         itemService = new ItemService();
         managerService = new ManagerService(itemService);
+        itemService.clearData();
+        managerService.clearData();
     }
 
     // test schedule auction

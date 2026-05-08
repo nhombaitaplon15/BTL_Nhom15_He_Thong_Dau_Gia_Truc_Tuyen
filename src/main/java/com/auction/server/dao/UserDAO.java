@@ -47,7 +47,7 @@ public class UserDAO {
                     double balance = rs.getDouble("balance");
                     //  tùy vào role để tạo đối tượng
                     if ("ADMIN".equalsIgnoreCase(role)) {
-                        return new Admin(id, name, email, pass, phone, status, balance);
+                        return new Admin(id, name, email, pass, phone, status);
                     } else if ("BIDDER".equalsIgnoreCase(role)) {
                         return new Bidder(id, name, email, pass, phone, status, balance);
                     } else if ("SELLER".equalsIgnoreCase(role)) {

@@ -20,7 +20,7 @@ public class BiddingService {
     }
 
     // xử lí đa luồng cho đặt giá
-    public boolean placeBid(int auctionId, String bidderName, long newPrice) {
+    public boolean placeBid(int auctionId, String bidderName, double newPrice) {
 
         Auction auction = managerService.getAuction(auctionId);
 
@@ -70,7 +70,8 @@ public class BiddingService {
         LocalDateTime end = auction.getEndTime();
 
         if (now.isAfter(end.minusSeconds(60)) && now.isBefore(end)) {
-            auction.setEndTime(end.plusSeconds(30));
+            end = end.plusSeconds(30);
+            auction.setEndTime(end);
             System.out.println("=== ANTI-SNIPING EXTEND 30s ===");
         }
     }
@@ -93,15 +94,18 @@ public class BiddingService {
         }
         synchronized (auction) {
 
-            if (!"DELIVERING".equals(auction.getAuctionStatus())) {
+            if (!"PAID".equals(auction.getItem().getItemStatus())) {
                 throw new AuctionException(
                         ErrorCode.AUCTION_INVALID_STATE.name(),
-                        "Chưa ở trạng thái DELIVERING!"
+                        "Chưa ở trạng thái PAID!"
                 );
             }
-            auction.setAuctionStatus("COMPLETED");
+            auction.getItem().setItemStatus("COMPLETED");
             System.out.println( bidderName + " đã xác nhận nhận hàng!");
             return true;
         }
+    }
+    public void clearData() {
+        lockMap.clear();
     }
 }

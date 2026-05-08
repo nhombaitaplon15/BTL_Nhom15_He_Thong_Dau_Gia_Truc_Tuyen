@@ -24,7 +24,7 @@
             <Font size="18.0" />
          </font>
       </PasswordField>
-      <Button layoutX="324.0" layoutY="313.0" mnemonicParsing="false" onAction="#Open_the_home_page" prefHeight="40.0" prefWidth="128.0" text="Đăng nhập">
+      <Button layoutX="324.0" layoutY="313.0" mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="128.0" text="Đăng nhập">
          <font>
             <Font size="18.0" />
          </font>

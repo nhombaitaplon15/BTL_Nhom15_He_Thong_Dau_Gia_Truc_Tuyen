@@ -8,7 +8,7 @@ public abstract class User extends Entity implements java.io.Serializable {
     private String status;  //
     private String role; // vai tro
     private double balance;
-    public User(int id, String name, String email, String password, String phone, String status, String role, double balance) {
+    public User(int id, String name, String email, String password, String phone, String status, String role) {
         super(id);
         this.username = name;
         this.email = email;

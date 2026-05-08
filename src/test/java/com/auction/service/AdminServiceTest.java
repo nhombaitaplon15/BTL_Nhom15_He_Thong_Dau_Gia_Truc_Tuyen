@@ -24,6 +24,9 @@ public class AdminServiceTest {
         itemService = new ItemService();
         managerService = new ManagerService(itemService);
         adminService = new AdminService(managerService);
+        itemService.clearData();
+        managerService.clearData();
+        adminService.clearData();
     }
 
     // tạo các dữ liệu giả để test
