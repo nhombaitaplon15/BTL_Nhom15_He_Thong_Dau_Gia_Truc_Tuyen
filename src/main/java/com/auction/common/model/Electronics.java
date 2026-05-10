@@ -1,37 +1,21 @@
 package com.auction.common.model;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-public class Electronics extends Items implements java.io.Serializable {
+/**
+ * Đại diện cho nhóm hàng điện tử (iPhone, Laptop...).
+ */
+public class Electronics extends Item {
+    private String brand;         // Hãng (VD: Apple)
+    private String model;         // Dòng máy (VD: iPhone 15 Pro Max)
+    private int warrantyMonths;    // Số năm bảo hành
 
-    protected String brand;
-    protected String condition;
-    protected LocalDate manufactureDate; // Ngày sản xuất (Cố định)
-    protected int warrantyMonths;    // Số tháng bảo hành (ví dụ: 12)
-
-    public Electronics(int id, String name, String producer, int startPrice, String description, String imgitem,
-                       String brand, String condition, LocalDate manufactureDate, int warrantyMonths) {
-        super(id, producer, startPrice, description, name, imgitem);
+    public Electronics(int itemId, String name, String description, double startingPrice,
+                          String condition, int sellerId, String imgItem, LocalDateTime createdAt,
+                          String brand, String model, int warrantyMonths) {
+        super(itemId, name, description, "ELECTRONICS", startingPrice, condition, sellerId, imgItem, createdAt);
         this.brand = brand;
-        this.condition = condition;
-        this.manufactureDate = manufactureDate;
-        this.warrantyMonths = warrantyMonths;
-    }
-
-    // Getter và Setter
-    public LocalDate getManufactureDate() {
-        return manufactureDate;
-    }
-
-    public void setManufactureDate(LocalDate manufactureDate) {
-        this.manufactureDate = manufactureDate;
-    }
-
-    public int getWarrantyMonths() {
-        return warrantyMonths;
-    }
-
-    public void setWarrantyMonths(int warrantyMonths) {
+        this.model = model;
         this.warrantyMonths = warrantyMonths;
     }
     public String getBrand() {
@@ -40,10 +24,21 @@ public class Electronics extends Items implements java.io.Serializable {
     public void setBrand(String brand) {
         this.brand = brand;
     }
-    public String getCondition() {
-        return condition;
+    public String getModel() {
+        return model;
     }
-    public void setCondition(String condition) {
-        this.condition = condition;
+    public void setModel(String model) {
+        this.model = model;
+    }
+    public int getWarrantyMonths() {
+        return warrantyMonths;
+    }
+    public void setWarrantyMonths(int warrantyMonths) {
+        this.warrantyMonths = warrantyMonths;
+    }
+
+    @Override
+    public String getDetailedSpecs() {
+        return String.format("%s %s | Bảo hành: %d tháng", brand, model, warrantyMonths);
     }
 }

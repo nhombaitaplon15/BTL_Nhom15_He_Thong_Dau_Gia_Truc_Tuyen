@@ -8,7 +8,7 @@ public abstract class User extends Entity implements java.io.Serializable {
     private String status;  //
     private String role; // vai tro
     private double balance;
-    public User(int id, String name, String email, String password, String phone, String status, String role) {
+    public User(int id, String name, String email, String password, String phone, String status, String role, double balance) {
         super(id);
         this.username = name;
         this.email = email;
@@ -16,9 +16,12 @@ public abstract class User extends Entity implements java.io.Serializable {
         this.phone = phone;
         this.status = status;
         this.role = role;
-        this.balance = 0.0;
+        this.balance = balance;
     }
-
+    // kiem tra nhanh nguoi dung co phai Admin khong
+    public boolean isAdmin(){
+        return "ADMIN".equalsIgnoreCase(this.role);
+    }
     // Các Getters và Setters
     public String getUsername() {return username;}
 

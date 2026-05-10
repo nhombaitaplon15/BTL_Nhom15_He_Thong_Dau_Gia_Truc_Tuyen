@@ -1,7 +1,7 @@
 package com.auction.service;
 
 import com.auction.common.model.Auction;
-import com.auction.common.model.Items;
+import com.auction.common.model.Item;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 
@@ -47,7 +47,7 @@ public class ManagerService { // quản lí, điều phối hệ thống đấu 
   //Đặt giá khởi điểm
   public void setupStartPrice(int itemId, int newPrice) {
 
-    Items item = itemService.getItemById(itemId);
+    Item item = itemService.getItemById(itemId);
 
     if (item == null) {
       throw new AuctionException(
@@ -71,7 +71,7 @@ public class ManagerService { // quản lí, điều phối hệ thống đấu 
   //Đặt lịch đấu giá
   public void scheduleAuction(int auctionId, int itemId, LocalDateTime startTime) {
 
-    Items item = itemService.getItemById(itemId);
+    Item item = itemService.getItemById(itemId);
 
     if (item == null) {
       throw new AuctionException(

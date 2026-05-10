@@ -1,10 +1,8 @@
 package com.auction.common.model;
 
 public class Bidder extends User {
-    private double balance;
     public Bidder(int id, String name, String email, String password, String phone, String status, double balance) {
-        super(id, name, email, password, phone, status, "BIDDER");
-        this.balance = balance;
+        super(id, name, email, password, phone, status, "BIDDER", balance);
     }
 
     // hàm xác minh vai trò Bidder

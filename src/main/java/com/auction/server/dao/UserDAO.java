@@ -1,90 +1,87 @@
 package com.auction.server.dao;
 
-import com.auction.common.model.Admin;
-import com.auction.common.model.Bidder;
-import com.auction.common.model.Seller;
-import com.auction.common.model.User;
+import com.auction.common.model.*;
+import com.auction.factory.UserFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class UserDAO {
-    // kiểm tra đã tồn tại các thông tin như Username, Email, Phone chưa
+
+    // 1. Kiểm tra người dùng đã tồn tại
     public boolean isFieldExists(String fieldName, String value) {
-        // nếu dữ liệu tồn tại thì trả vể số 1
         String sql = "SELECT 1 FROM users WHERE " + fieldName + " = ?";
-        try (Connection conn = DBConnection.getConnection(); // mở cổng kết nối với database
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, value); // điền giá trị vado dấu hỏi chấm
-            try (ResultSet rs = ps.executeQuery()) { // kiểm tra kết quả trả về từ database có gì ko
-                return rs.next(); }
-        } catch (SQLException e) { return false; }
-    }
-
-
-    // xác thực tài khoản người dùng vầ trả về dữ liệu
-    public User checkLogin(String username, String password) {
-        // * là lấy tất cả giữ liệu khi đã khớp username và password
-        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
+            ps.setString(1, value);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) { return false; }
+    }
+    // 2. Đăng nhập - dùng UserFactory
+    public User checkLogin(String username, String password) {
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, password);
 
-            try (ResultSet rs = ps.executeQuery()) { // bảng dữ liệu đc database trả về
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("id");
-                    String name = rs.getString("username");
-                    String email = rs.getString("email");
-                    String pass = rs.getString("password");
-                    String phone = rs.getString("phone");
-                    String status = rs.getString("status");
-                    String role = rs.getString("user_role"); // Cột role trong DB: ADMIN/ BIDDER/ SELLER
-                    double balance = rs.getDouble("balance");
-                    //  tùy vào role để tạo đối tượng
-                    if ("ADMIN".equalsIgnoreCase(role)) {
-                        return new Admin(id, name, email, pass, phone, status);
-                    } else if ("BIDDER".equalsIgnoreCase(role)) {
-                        return new Bidder(id, name, email, pass, phone, status, balance);
-                    } else if ("SELLER".equalsIgnoreCase(role)) {
-                        return new Seller(id, name, email, pass, phone, status, balance);
-                    } else {
-                        return null;
-                    }
+                    // Sử dụng UserFactory để tạo đối tượng, ID và Balance được giữ nguyên
+                    return UserFactory.createUser(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("email"),
+                            rs.getString("password"),
+                            rs.getString("phone"),
+                            rs.getString("status"),
+                            rs.getString("user_role"),
+                            rs.getDouble("balance")
+                    );
                 }
             }
         } catch (SQLException e) {
             System.err.println("Lỗi truy vấn Database: " + e.getMessage());
         }
-        return null; // trả về null nếu không khớp tài khoản
+        return null;
     }
 
-    // khi người dùng đăng kí thì lưu giữ liệu về database
+    // 3. Đăng ký tài khoản mới
     public boolean register(User user) {
-        String sql = "INSERT INTO users (username, password, email, phone, role, status) VALUES (?, ?, ?, ?, ?, 'ACTIVE')";
+        // Thêm cột balance vào SQL để đồng bộ
+        String sql = "INSERT INTO users (username, password, email, phone, user_role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getEmail());
             ps.setString(4, user.getPhone());
-            ps.setString(5, user.getRole()); // lấy SELLER / BIDDER từ đối tượng con
-            return ps.executeUpdate() > 0; // nếu thay đổi dữ liệu thành công thì ps.executeUpdate() > 0 hàm trả về true
+            ps.setString(5, user.getRole());
+            ps.setString(6, user.getStatus());
+            ps.setDouble(7, user.getBalance());
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) { return false; }
     }
 
-    // thay đổi mật khẩu
-    public boolean updatePassword(String username, String oldPass, String newPass) {
-        String sql = "UPDATE users SET password = ? WHERE username = ? AND password = ?";
+    // 4. Cập nhật mật khẩu (Dùng cho cả đổi và quên mật khẩu)
+    public boolean updatePassword(String username, String newPass) {
+        String sql = "UPDATE users SET password = ? WHERE username = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newPass);
             ps.setString(2, username);
-            ps.setString(3, oldPass);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) { return false; }
+    }
+
+    // 5. Cập nhật vai trò (Giữ nguyên ID, chỉ đổi nhãn role trong SQL)
+    public boolean updateRole(int userId, String newRole) {
+        String sql = "UPDATE users SET user_role = ? WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newRole);
+            ps.setInt(2, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { return false; }
     }

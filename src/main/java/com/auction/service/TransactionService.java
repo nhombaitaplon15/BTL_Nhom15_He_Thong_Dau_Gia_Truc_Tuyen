@@ -2,57 +2,52 @@ package com.auction.service;
 
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
+import com.auction.exception.AuctionException;
+import com.auction.exception.ErrorCode;
+import com.auction.server.dao.PaymentDAO;
+import com.auction.server.dao.TransactionDAO;
+import com.auction.server.dao.UserDAO;
 
 public class TransactionService {
-    // khai báo kho chứa RAM
-    private Transaction transaction;
+    private PaymentDAO paymentDAO = new PaymentDAO(); // Dùng cái mới này
+    private TransactionDAO transDAO = new TransactionDAO();
+    // yêu cầu nạp tiền chỉ lưu vào sql chưa đổi số dư
+    public void handleDepositRequest(User currentUser, double amount) {
+        if (amount <= 0) throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số tiền phải > 0");
 
-    // constructor truyền kho chứa vào
-    public TransactionService(Transaction transaction) {
-        this.transaction = transaction;
-    }
+        // Lưu vào SQL (Yêu cầu chờ duyệt)
+        boolean success = PaymentDAO.createTransaction(currentUser.getId(), amount, "DEPOSIT");
 
-    // nạp tiền vào ví
-    public void deposit(User user, double amount) {
-        if (amount > 0) {
-            TransactionRequest request = new TransactionRequest(user,"DEPOSIT", amount,"CHƯA CÓ","PENDING");
-            transaction.addTransaction(request);
-        } else {
-            throw new IllegalArgumentException("Số tiền nạp phải lớn hơn 0");
+        if (!success) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể gửi yêu cầu nạp!");
         }
+        System.out.println("Đã gửi yêu cầu nạp tiền vào hệ thống. Vui lòng chờ Admin duyệt.");
     }
 
-    // rút tiển khỏi ví
-    public void withdraw(User user ,double amount,String bankInfo) {
-        if (amount > 0 && user.getBalance() >= amount) {
-            user.setBalance(user.getBalance() - amount);
-            TransactionRequest request = new TransactionRequest(user,"WITHDRAW", amount, bankInfo,"PENDING");
-            transaction.addTransaction(request);
-        } else {
-            throw new IllegalArgumentException("Số dư không hợp vệ hoặc không đủ để rút ");
+    // admin phê duyệt nạp rút
+    public void handleApproveTransaction(User adminUser, int transId, User targetUser, double amount, String type) {
+        // 1. Kiểm tra quyền Admin (Sử dụng hàm isAdmin())
+        if (!adminUser.isAdmin()) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Chỉ Admin mới có quyền duyệt tiền!");
         }
-    }
+        // kiểm tra số dư
+        if (type.equalsIgnoreCase("WITHDRAW") && targetUser.getBalance() < amount) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số dư người dùng không đủ để thực hiện rút tiền!");
+        }
+        // 2. Cập nhật SQL (Quan trọng nhất)
+        // Gọi DAO để thực hiện logic Transaction SQL bên trên
+        boolean isSuccessSQL = userDAO.processApproval(transId, targetUser.getId(), amount, type);
 
-    // hàm này được gọi khi admin bấm duyệt/ từ chối trên giao diện
-    public void executeTransactionDecision(int id, boolean isApproved) throws Exception {
-        TransactionRequest request = transaction.getTransactionById(id);
-        if (request.getTransactionStatus().equals("PENDING")) {
-            if (isApproved) {// khi admin duyệt giao dịch
-                if (request.getType().equals("DEPOSIT")) {
-                    User owner = request.getUser();
-                    owner.setBalance(owner.getBalance() + request.getAmount());
-                }
-                request.setTransactionStatus("APPROVED");
+        // 3. Cập nhật RAM (Chỉ khi SQL đã thành công)
+        if (isSuccessSQL) {
+            double newBalance = type.equalsIgnoreCase("DEPOSIT")
+                    ? targetUser.getBalance() + amount
+                    : targetUser.getBalance() - amount;
 
-            } else { // khi admin không duyệt giao dịch
-                if (request.getType().equals("WITHDRAW")) {
-                    User owner = request.getUser();
-                    owner.setBalance(owner.getBalance() + request.getAmount());
-                }
-                request.setTransactionStatus("REJECTED");
-            }
+            targetUser.setBalance(newBalance); // Đồng bộ RAM để UI hiển thị đúng
+            System.out.println("Duyệt thành công! SQL và RAM đã được cập nhật.");
         } else {
-            throw new IllegalStateException("Giao dịch này đã được xử lý từ trước!");
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database: Duyệt tiền thất bại!");
         }
     }
 

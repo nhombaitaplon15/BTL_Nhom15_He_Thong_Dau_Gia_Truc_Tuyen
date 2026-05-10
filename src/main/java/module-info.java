@@ -5,6 +5,7 @@ module com.auction {
     requires java.sql;
     requires org.postgresql.jdbc;
     requires java.desktop;
+    requires com.auction;
     //requires com.auction;
 
     // Cho phép JavaFX đọc các file Controller của em

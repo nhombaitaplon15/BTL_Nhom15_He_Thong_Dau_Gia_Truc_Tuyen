@@ -1,138 +1,97 @@
 package com.auction.service;
 
 import com.auction.common.model.Auction;
-import com.auction.common.model.Vehicle;
+import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
+import com.auction.server.dao.AuctionDAO;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-public class AdminService {   // admin quản lí các phiên đấu giá
-
+public class AdminService {
     private ManagerService managerService;
+    private AuctionDAO auctionDAO = new AuctionDAO(); // Thêm DAO để lưu xuống DB
 
-    //  lưu dữ liệu về các phiên đấu giá
     private Map<Integer, String> auditLog = new ConcurrentHashMap<>();
 
     public AdminService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    // thêm thông tin vào mục lưu dữ liệu auction
+    // --- LOGIC QUẢN TRỊ VIÊN ---
+
+    /**
+     * Duyệt phiên: Chuyển từ WAITING_FOR_ADMIN -> OPEN (hoặc RUNNING tùy bạn đặt tên)
+     */
+    public boolean approveAuction(int auctionId) {
+        Auction auction = validatePendingAuction(auctionId);
+
+        // Bước 1: Cập nhật SQL trước
+        if (auctionDAO.updateStatus(auctionId, "OPEN")) {
+            // Bước 2: Cập nhật RAM để đồng bộ giao diện
+            auction.setAuctionStatus("OPEN");
+            logAction(auctionId, "APPROVED");
+            System.out.println(">>> Auction " + auctionId + " đã được mở!");
+            return true;
+        }
+        throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi duyệt phiên!");
+    }
+
+    /**
+     * Từ chối phiên đấu giá
+     */
+    public void rejectAuction(int auctionId, String reason) {
+        Auction auction = validatePendingAuction(auctionId);
+
+        if (auctionDAO.updateStatus(auctionId, "REJECTED")) {
+            auction.setAuctionStatus("REJECTED");
+            logAction(auctionId, "REJECTED: " + reason);
+        }
+    }
+
+    /**
+     * Hàm hỗ trợ tránh code smell: Kiểm tra tồn tại và trạng thái chờ duyệt
+     */
+    private Auction validatePendingAuction(int auctionId) {
+        Auction auction = managerService.getAuction(auctionId);
+        if (auction == null) {
+            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Auction không tồn tại!");
+        }
+        // Khớp với DB của bạn: WAITING_FOR_ADMIN
+        if (!"WAITING_FOR_ADMIN".equals(auction.getAuctionStatus())) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chỉ phiên WAITING_FOR_ADMIN mới được thao tác!");
+        }
+        return auction;
+    }
+
+    // --- THỐNG KÊ & STREAM API ---
+
+    public List<Auction> getPendingAuctions() {
+        return managerService.getAllAuctions().stream()
+                .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus()))
+                .collect(Collectors.toList());
+    }
+
+    public void printStats() {
+        Map<String, Long> stats = managerService.getAllAuctions().stream()
+                .collect(Collectors.groupingBy(Auction::getAuctionStatus, Collectors.counting()));
+
+        System.out.println("--- THỐNG KÊ PHIÊN ĐẤU GIÁ ---");
+        stats.forEach((status, count) -> System.out.println(status + ": " + count));
+    }
+
     private void logAction(int auctionId, String action) {
         auditLog.put(auctionId, action);
     }
-    // đọc thông tin auction từ mục lưu dữ liệu
+
     public String getAudit(int auctionId) {
         return auditLog.getOrDefault(auctionId, "NO ACTION");
     }
 
-    // lấy danh sách chờ duyệt , sử dụng java stream API
-    public List<Auction> getPendingAuctions() {
-        return managerService.getAllAuctions()
-                .stream()
-                .filter(a -> "PENDING".equals(a.getAuctionStatus()))  // lọc auction có trạng thái "PENDING" thôi
-                .toList();
-    }
-
-    // duyệt 1 auction
-    public boolean approveAuction(int auctionId) {
-
-        Auction auction = managerService.getAuction(auctionId);
-
-        if (auction == null) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_NOT_FOUND.name(),
-                    "Auction không tồn tại"
-            );
-        }
-
-        if (!"PENDING".equals(auction.getAuctionStatus())) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_INVALID_STATE.name(),
-                    "Chỉ PENDING mới được duyệt!"
-            );
-        }
-
-        auction.setAuctionStatus("RUNNING");
-
-        logAction(auctionId, "APPROVED");  // ghi lại dữ liệu về auction này
-
-        System.out.println("Auction " + auctionId + " đã được duyệt");
-        return true;
-    }
-
-    // từ chối auction
-    public void rejectAuction(int auctionId, String reason) {
-
-        Auction auction = managerService.getAuction(auctionId);
-
-        if (auction == null) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_NOT_FOUND.name(),
-                    "Auction không tồn tại"
-            );
-        }
-
-        if (!"PENDING".equals(auction.getAuctionStatus())) {
-            throw new AuctionException(
-                    ErrorCode.AUCTION_INVALID_STATE.name(),
-                    "Chỉ PENDING mới được duyệt!"
-            );
-        }
-
-        auction.setAuctionStatus("REJECTED");
-
-        logAction(auctionId, "REJECTED: " + reason);
-
-        System.out.println("Auction " + auctionId + " bị từ chối vì: " + reason);
-    }
-
-    // duyệt auction hàng loạt
-    public void bulkApprove(List<Integer> auctionIds) {
-
-        for (int id : auctionIds) {
-            try {
-                approveAuction(id);
-            } catch (Exception e) {
-                System.out.println("Không duyệt được auction " + id + ": " + e.getMessage());
-            }
-        }
-    }
-
-    // in ra thống kê từng loại auction
-    public void printStats() {
-
-        long pending = managerService.getAllAuctions().stream()
-                .filter(a -> "PENDING".equals(a.getAuctionStatus()))
-                .count();
-
-        long running = managerService.getAllAuctions().stream()
-                .filter(a -> "RUNNING".equals(a.getAuctionStatus()))
-                .count();
-
-        long rejected = managerService.getAllAuctions().stream()
-                .filter(a -> "REJECTED".equals(a.getAuctionStatus()))
-                .count();
-
-        long sold = managerService.getAllAuctions().stream()
-                .filter(a -> "SOLD".equals(a.getAuctionStatus()))
-                .count();
-
-        System.out.println("PENDING: " + pending);
-        System.out.println("RUNNING: " + running);
-        System.out.println("REJECTED: " + rejected);
-        System.out.println("SOLD: " + sold);
-    }
     public void clearData() {
         auditLog.clear();
     }
-
 }
-
-
-
-
