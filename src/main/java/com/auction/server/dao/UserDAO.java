@@ -85,4 +85,31 @@ public class UserDAO {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { return false; }
     }
+    // 6. Lấy người dùng theo id
+    public User getUserById(int userId) {
+        String sql = "SELECT * FROM users WHERE user_id = ?"; // Nhớ đúng tên cột user_id nhé shop
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                // Trả về object User đầy đủ (nhớ map đúng các cột)
+                return UserFactory.createUser(
+                        rs.getInt("user_id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        null, // Password không cần thiết trả về lúc này nên để null cho bảo mật
+                        rs.getString("phone"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getDouble("balance")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

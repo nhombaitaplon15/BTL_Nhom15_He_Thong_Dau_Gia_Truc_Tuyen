@@ -8,23 +8,43 @@ import com.auction.server.dao.UserDAO;
 public class UserService {
     private UserDAO userDAO = new UserDAO();
     // xử lí logic đăng kí mặc định là bidder không cho phép đăng kí là admin
-    public void handleRegister(String user, String pass, String mail, String phone) {
-        // kiểm tra định dạng
-        validateFormat(pass, phone);
-        // kiểu tra trùng lặp
-        checkDuplicates(user, mail, phone);
-        // khởi tạo đối tượng bidder
-        // ID = 0 (DB tự tăng), Role = BIDDER, Status = ACTIVE, Balance = 0.0
-        User newUser = UserFactory.createUser(0, user, mail, pass, phone, "ACTIVE", "BIDDER", 0.0);
-        // lưu vào sql
-        if (!userDAO.register(newUser)) {
-            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể lưu tài khoản!");
+    public boolean handleRegister(User userRequest) {
+        try {
+            // 1. Lấy dữ liệu từ Object userRequest mà Client gửi lên
+            String username = userRequest.getUsername();
+            String password = userRequest.getPassword();
+            String email = userRequest.getEmail();
+            String phone = userRequest.getPhone();
+
+            // 2. Kiểm tra định dạng (Truyền các chuỗi đã lấy ra)
+            validateFormat(password, phone);
+
+            // 3. Kiểm tra trùng lặp trong DB
+            checkDuplicates(username, email, phone);
+
+            // 4. Khởi tạo đối tượng "xịn" thông qua Factory
+            // (Sử dụng tên biến khác đi, ví dụ: finalUser)
+            User finalUser = UserFactory.createUser(0, username, email, password, phone, "ACTIVE", "BIDDER", 0.0);
+
+            // 5. Lưu vào SQL
+            if (!userDAO.register(finalUser)) {
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể lưu tài khoản!");
+            }
+
+            System.out.println(">>> [REGISTER SUCCESS] User: " + username);
+            return true; // Trả về true để ClientHandler biết mà gửi SUCCESS
+
+        } catch (AuctionException e) {
+            // Ném lỗi logic (sai định dạng, trùng lặp) ra để ClientHandler bắt và gửi về Client
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Lỗi đăng ký: " + e.getMessage());
+            return false;
         }
-        System.out.println(">>> Đăng ký thành công User: " + user);
     }
     // xử lí đăng nhập
-    public User handleLogin(String username, String password) {
-        User user = userDAO.checkLogin(username, password);
+    public User handleLogin(User credentials) {
+        User user = userDAO.checkLogin(credentials.getUsername(), credentials.getPassword());
         // Guard: Không tìm thấy user hoặc sai pass
         if (user == null) {
             throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tài khoản hoặc mật khẩu không chính xác!");
@@ -64,6 +84,19 @@ public class UserService {
         // Thực thi reset
         if (!userDAO.updatePassword(username, newPass)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể reset mật khẩu!");
+        }
+    }
+    public User getUserById(int userId) {
+        try {
+            // gọi DAO để lấy thông tin mới nhất ừ Database
+            User user = userDAO.getUserById(userId);
+            if (user == null) {
+                System.out.println(">>> [LỖI] Không tìm thấy User với ID: " + userId);
+            }
+            return user;
+        } catch (Exception e) {
+            System.err.println(">>> [LỖI] getUserById: " + e.getMessage());
+            return null;
         }
     }
     // chuyển đổi vai trò, giữ nguyên id
