@@ -1,12 +1,13 @@
 package com.auction.common.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * Lớp trừu tượng đại diện cho một vật phẩm đấu giá.
  * Chứa các trường chung khớp với bảng 'items' trong Database.
  */
-public abstract class Item {
+public abstract class Item extends Entity implements java.io.Serializable {
     private int itemId;
     private String name;
     private String description;
@@ -20,7 +21,7 @@ public abstract class Item {
     public Item(int itemId, String name, String description, String itemType,
                 double startingPrice, String itemCondition, int sellerId,
                 String imgItem, LocalDateTime createdAt) {
-        this.itemId = itemId;
+        super(itemId);
         this.name = name;
         this.description = description;
         this.itemType = itemType;

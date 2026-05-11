@@ -5,7 +5,10 @@ import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.AuctionDAO;
+import com.auction.server.dao.DBConnection;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,87 +17,80 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BiddingService {
 
     private final ManagerService managerService;
-    private final AuctionDAO auctionDAO = new AuctionDAO(); // Thêm DAO để lưu SQL
-
-    // Khóa cho từng phiên để tránh race condition (nhiều người cùng đặt giá 1 lúc)
+    private final AuctionDAO auctionDAO = new AuctionDAO();
     private final Map<Integer, ReentrantLock> lockMap = new ConcurrentHashMap<>();
 
     public BiddingService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    /**
-     * Xử lý đặt giá: Tích hợp logic chặn và lưu SQL
-     */
-    public boolean placeBid(User currentUser, int auctionId, double newPrice) {
-        Auction auction = managerService.getAuction(auctionId);
+    public void placeBid(User user, int auctionId, double bidAmount) {
+        // 1. Kiểm tra nhanh (Fast-fail) trước khi lấy Lock
+        Auction auction = managerService.getAuctionOrThrow(auctionId);
+        validateBidRules(user, auction, bidAmount);
 
-        if (auction == null) {
-            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Auction không tồn tại");
-        }
-
-        // Lấy khóa cho phiên này
+        // 2. Lock theo từng phiên để tránh tranh chấp (Race Condition)
         ReentrantLock lock = lockMap.computeIfAbsent(auctionId, k -> new ReentrantLock());
-
         lock.lock();
         try {
-            // 1. Logic chặn (Mới bổ sung theo yêu cầu)
-            if (currentUser.isAdmin()) {
-                throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin không được tham gia!");
-            }
-            if (currentUser.getId() == auction.getSellerId()) {
-                throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Không được tự đấu giá sản phẩm của mình!");
+            // Kiểm tra lại lần nữa trong Lock để đảm bảo giá chưa bị ai khác đẩy lên
+            if (bidAmount <= auction.getCurrentPrice()) {
+                throw new AuctionException(ErrorCode.BID_TOO_LOW.name(), "Giá đã bị thay đổi, vui lòng đặt cao hơn!");
             }
 
-            // 2. Kiểm tra trạng thái và thời gian (Khớp với OPEN trong DB của bạn)
-            if (!"OPEN".equals(auction.getAuctionStatus())) {
-                throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Phiên không mở!");
-            }
-            if (LocalDateTime.now().isAfter(auction.getEndTime())) {
-                throw new AuctionException(ErrorCode.AUCTION_ALREADY_ENDED.name(), "Phiên đã kết thúc!");
-            }
+            // 3. Thực hiện Transaction xuống Database
+            executeBidTransaction(user, auction, bidAmount);
 
-            // 3. Kiểm tra giá
-            if (newPrice <= auction.getCurrentPrice()) {
-                throw new AuctionException(ErrorCode.BID_TOO_LOW.name(), "Giá đặt phải cao hơn giá hiện tại!");
-            }
-
-            // 4. Lưu vào SQL trước (Rất quan trọng)
-            if (auctionDAO.updateBid(auctionId, currentUser.getId(), newPrice)) {
-
-                // 5. Nếu SQL ok thì mới cập nhật RAM
-                auction.setCurrentPrice(newPrice);
-                auction.setCurrentWinnerId(currentUser.getId());
-                auction.setTotalBids(auction.getTotalBids() + 1);
-
-                System.out.println(currentUser.getUsername() + " đang dẫn đầu với giá " + newPrice);
-
-                // Mở rộng thời gian nếu cần (Anti-sniping)
-                extendAuctionTime(auction);
-                return true;
-            } else {
-                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể cập nhật giá vào DB!");
-            }
-
+            System.out.println("[BID] " + user.getUsername() + " đặt giá " + bidAmount + " thành công!");
         } finally {
             lock.unlock();
         }
     }
 
-    private void extendAuctionTime(Auction auction) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime end = auction.getEndTime();
+    private void executeBidTransaction(User user, Auction auction, double amount) {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // Bắt đầu Transaction
+            try {
+                // Cập nhật giá và Winner
+                if (!auctionDAO.updateBid(conn, auction.getAuctionId(), user.getId(), amount)) {
+                    throw new SQLException("Update bid failed");
+                }
 
-        // Nếu còn chưa đến 60s mà có người đặt giá -> tăng thêm 30s
-        if (now.isAfter(end.minusSeconds(60)) && now.isBefore(end)) {
-            LocalDateTime newEnd = end.plusSeconds(30);
+                // Xử lý Anti-sniping: Gia hạn 30s nếu đặt giá vào phút chót
+                LocalDateTime newEndTime = calculateAntiSniping(auction.getEndTime());
+                if (newEndTime != null) {
+                    auctionDAO.updateEndTime(conn, auction.getAuctionId(), newEndTime);
+                    auction.setEndTime(newEndTime); // Cập nhật Object RAM
+                }
 
-            // Cập nhật cả SQL nữa (Cần thêm hàm updateEndTime trong DAO)
-            if (auctionDAO.updateEndTime(auction.getAuctionId(), newEnd)) {
-                auction.setEndTime(newEnd);
-                System.out.println("=== ANTI-SNIPING: Gia hạn thêm 30s ===");
+                conn.commit(); // Thành công hết thì chốt
+
+                // Cập nhật Object RAM sau khi DB đã OK
+                auction.setCurrentPrice(amount);
+                auction.setCurrentWinnerId(user.getId());
+                auction.setTotalBids(auction.getTotalBids() + 1);
+
+            } catch (SQLException e) {
+                conn.rollback(); // Lỗi bất cứ bước nào là hủy hết
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Giao dịch thất bại: " + e.getMessage());
             }
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối Database!");
         }
     }
-    public void clearData() { lockMap.clear(); }
+
+    private void validateBidRules(User user, Auction auction, double amount) {
+        if (user.isAdmin()) throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin không được đấu giá!");
+        if (user.getId() == auction.getSellerId()) throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Không được tự đấu giá!");
+        if (!"RUNNING".equals(auction.getAuctionStatus())) throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Phiên không trong trạng thái RUNNING!");
+        if (LocalDateTime.now().isAfter(auction.getEndTime())) throw new AuctionException(ErrorCode.AUCTION_ALREADY_ENDED.name(), "Phiên đã kết thúc!");
+    }
+
+    private LocalDateTime calculateAntiSniping(LocalDateTime currentEnd) {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(currentEnd.minusSeconds(60)) && now.isBefore(currentEnd)) {
+            return currentEnd.plusSeconds(30);
+        }
+        return null;
+    }
 }

@@ -43,9 +43,9 @@ public class RegisterController {
             return;
         }
         try {
-            userService.handleRegister(username, password, email, phone, role, balance);
+            userService.handleRegister(username, password, email, phone);
             showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
-                "Đăng kí thành công!\nChào: " + username + "\nVai trò: " + role);
+                "Đăng kí thành công!\nChào: " + username );
 
             chuyenTrangChu(event, role);;
 

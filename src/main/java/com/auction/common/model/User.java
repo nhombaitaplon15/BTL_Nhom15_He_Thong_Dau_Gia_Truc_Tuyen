@@ -50,20 +50,5 @@ public abstract class User extends Entity implements java.io.Serializable {
     public double getBalance() {return balance;}
 
     public void setBalance(double balance) {this.balance = balance;}
-
-    public void deposit(int amount) throws Exception {
-        if (amount <= 0) {
-            throw new Exception("Số tiền nạp phải lớn hơn 0!");
-        }
-        System.out.println("[Yêu cầu Nạp]: " + this.getUsername() + " gửi yêu cầu nạp " + amount + " VNĐ. Đang chờ Admin duyệt...");
-    }
-
-    public void withdraw(int amount) throws Exception {
-        if (amount <= getBalance()) {
-            throw new Exception("Số tiền rút phải lớn hơn 0!");
-        }
-        System.out.println("[Yêu cầu Rút]: " + this.getUsername() + " gửi yêu cầu rút " + amount + " VNĐ. Đang chờ Admin kiểm tra số dư và chuyển khoản...");
-    }
-
 }
 

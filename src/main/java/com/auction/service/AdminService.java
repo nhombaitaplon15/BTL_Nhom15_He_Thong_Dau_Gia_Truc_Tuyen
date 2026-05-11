@@ -1,7 +1,6 @@
 package com.auction.service;
 
 import com.auction.common.model.Auction;
-import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.AuctionDAO;
@@ -12,62 +11,74 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AdminService {
-    private ManagerService managerService;
-    private AuctionDAO auctionDAO = new AuctionDAO(); // Thêm DAO để lưu xuống DB
-
-    private Map<Integer, String> auditLog = new ConcurrentHashMap<>();
+    private final ManagerService managerService;
+    private final AuctionDAO auctionDAO = new AuctionDAO();
+    private final Map<Integer, String> auditLog = new ConcurrentHashMap<>();
 
     public AdminService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    // --- LOGIC QUẢN TRỊ VIÊN ---
-
     /**
-     * Duyệt phiên: Chuyển từ WAITING_FOR_ADMIN -> OPEN (hoặc RUNNING tùy bạn đặt tên)
+     * Duyệt phiên: WAITING_FOR_ADMIN -> OPEN
      */
     public boolean approveAuction(int auctionId) {
+        // Tận dụng hàm validate để bắt lỗi ID không tồn tại hoặc sai trạng thái
         Auction auction = validatePendingAuction(auctionId);
 
-        // Bước 1: Cập nhật SQL trước
-        if (auctionDAO.updateStatus(auctionId, "OPEN")) {
-            // Bước 2: Cập nhật RAM để đồng bộ giao diện
-            auction.setAuctionStatus("OPEN");
-            logAction(auctionId, "APPROVED");
-            System.out.println(">>> Auction " + auctionId + " đã được mở!");
-            return true;
+        try {
+            if (auctionDAO.updateStatus(auctionId, "OPEN")) {
+                auction.setAuctionStatus("OPEN"); // Cập nhật RAM
+                logAction(auctionId, "APPROVED");
+                System.out.println(">>> [ADMIN] Auction " + auctionId + " đã được duyệt thành công!");
+                return true;
+            } else {
+                // Trường hợp ID đúng nhưng DB không update được (ví dụ do kết nối)
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể cập nhật trạng thái trên Database!");
+            }
+        } catch (Exception e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống khi duyệt phiên: " + e.getMessage());
         }
-        throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi duyệt phiên!");
     }
 
     /**
-     * Từ chối phiên đấu giá
+     * Từ chối phiên đấu giá kèm lý do
      */
     public void rejectAuction(int auctionId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Lý do từ chối không được để trống!");
+        }
+
         Auction auction = validatePendingAuction(auctionId);
 
         if (auctionDAO.updateStatus(auctionId, "REJECTED")) {
             auction.setAuctionStatus("REJECTED");
             logAction(auctionId, "REJECTED: " + reason);
+            System.out.println(">>> [ADMIN] Đã từ chối Auction " + auctionId);
+        } else {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi từ chối phiên!");
         }
     }
 
     /**
-     * Hàm hỗ trợ tránh code smell: Kiểm tra tồn tại và trạng thái chờ duyệt
+     * Bắt lỗi tập trung: Kiểm tra tồn tại và trạng thái WAITING_FOR_ADMIN
      */
     private Auction validatePendingAuction(int auctionId) {
+        // Dùng ManagerService để lấy Object (nhớ ManagerService của bạn phải có hàm getAuction)
         Auction auction = managerService.getAuction(auctionId);
+
         if (auction == null) {
-            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Auction không tồn tại!");
+            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Không tìm thấy phiên đấu giá có ID: " + auctionId);
         }
-        // Khớp với DB của bạn: WAITING_FOR_ADMIN
+
         if (!"WAITING_FOR_ADMIN".equals(auction.getAuctionStatus())) {
-            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chỉ phiên WAITING_FOR_ADMIN mới được thao tác!");
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
+                    "Hành động không hợp lệ! Phiên đang ở trạng thái: " + auction.getAuctionStatus());
         }
         return auction;
     }
 
-    // --- THỐNG KÊ & STREAM API ---
+    // --- THỐNG KÊ (Sử dụng Stream tối ưu) ---
 
     public List<Auction> getPendingAuctions() {
         return managerService.getAllAuctions().stream()
@@ -76,19 +87,26 @@ public class AdminService {
     }
 
     public void printStats() {
+        // GroupingBy giúp đếm cực nhanh từ danh sách tổng
         Map<String, Long> stats = managerService.getAllAuctions().stream()
                 .collect(Collectors.groupingBy(Auction::getAuctionStatus, Collectors.counting()));
 
-        System.out.println("--- THỐNG KÊ PHIÊN ĐẤU GIÁ ---");
-        stats.forEach((status, count) -> System.out.println(status + ": " + count));
+        System.out.println("\n--- BÁO CÁO TRẠNG THÁI PHIÊN ---");
+        if (stats.isEmpty()) {
+            System.out.println("Hiện không có dữ liệu đấu giá.");
+        } else {
+            stats.forEach((status, count) -> System.out.println(status + ": " + count));
+        }
     }
+
+    // --- LOGGING ---
 
     private void logAction(int auctionId, String action) {
         auditLog.put(auctionId, action);
     }
 
     public String getAudit(int auctionId) {
-        return auditLog.getOrDefault(auctionId, "NO ACTION");
+        return auditLog.getOrDefault(auctionId, "Không có lịch sử cho phiên này.");
     }
 
     public void clearData() {

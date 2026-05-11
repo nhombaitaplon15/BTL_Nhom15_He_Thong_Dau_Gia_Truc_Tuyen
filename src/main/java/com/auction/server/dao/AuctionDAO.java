@@ -1,115 +1,85 @@
 package com.auction.server.dao;
 
 import com.auction.common.model.Auction;
-import com.auction.server.dao.DBConnection;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionDAO {
-    // dùng cho admin duyệt giá
-    public boolean updateStatus(int auctionId, String newStatus) {
-        String sql = "UPDATE auctions SET auction_status = ? WHERE auction_id = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setInt(2, auctionId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+
+    // --- CÁC HÀM TRUY VẤN (QUERIES) ---
+
+    public List<Auction> getAuctionsByStatus(String status) {
+        return queryList("SELECT * FROM auctions WHERE auction_status = ?", status);
     }
 
-    // cập nhật giá mới, người mới ra giá
-    public boolean updateBid(int auctionId, int winnerId, double bidAmount) {
-        String sql = "UPDATE auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 WHERE auction_id = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setDouble(1, bidAmount);
-            ps.setInt(2, winnerId);
-            ps.setInt(3, auctionId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // lấy toàn bộ danh sách
     public List<Auction> getAll() {
+        return queryList("SELECT * FROM auctions");
+    }
+
+    public Auction getAuctionById(int id) {
+        List<Auction> results = queryList("SELECT * FROM auctions WHERE auction_id = ?", id);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    // --- CÁC HÀM CẬP NHẬT (UPDATES) ---
+
+    public boolean updateStatus(int id, String status) {
+        return executeUpdate("UPDATE auctions SET auction_status = ? WHERE auction_id = ?", status, id);
+    }
+
+    public boolean updateBid(Connection conn, int id, int winnerId, double amount) throws SQLException {
+        return executeUpdate(conn, "UPDATE auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 WHERE auction_id = ? AND current_price < ?",
+                amount, winnerId, id, amount);
+    }
+
+    public boolean updateEndTime(Connection conn, int id, LocalDateTime end) throws SQLException {
+        return executeUpdate(conn, "UPDATE auctions SET end_time = ? WHERE auction_id = ?", Timestamp.valueOf(end), id);
+    }
+
+    // --- BỘ MÁY THỰC THI (HELPER METHODS) ---
+
+    private List<Auction> queryList(String sql, Object... params) {
         List<Auction> list = new ArrayList<>();
-        String sql = "SELECT * FROM auctions";
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
+             PreparedStatement ps = prepare(conn, sql, params);
              ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                // Xử lý current_winner_id vì trong DB nó có thể là NULL
-                Integer winnerId = rs.getInt("current_winner_id");
-                if (rs.wasNull()) winnerId = null;
-
-                list.add(new Auction(
-                        rs.getInt("auction_id"),
-                        rs.getInt("item_id"),
-                        rs.getInt("seller_id"),
-                        rs.getString("auction_status"),
-                        rs.getDouble("starting_price"),
-                        rs.getDouble("current_price"),
-                        rs.getInt("total_bids"),
-                        winnerId,
-                        rs.getTimestamp("start_time").toLocalDateTime(),
-                        rs.getTimestamp("end_time").toLocalDateTime(),
-                        rs.getTimestamp("created_at").toLocalDateTime()
-                ));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+            while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
-    //Cập nhật thời gian kết thúc (Gia hạn thêm 30s)
 
-    public boolean updateEndTime(int auctionId, LocalDateTime newEndTime) {
-        String sql = "UPDATE auctions SET end_time = ? WHERE auction_id = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+    private boolean executeUpdate(String sql, Object... params) {
+        try (Connection conn = DBConnection.getConnection()) {
+            return executeUpdate(conn, sql, params);
+        } catch (SQLException e) { e.printStackTrace(); return false; }
+    }
 
-            ps.setTimestamp(1, Timestamp.valueOf(newEndTime));
-            ps.setInt(2, auctionId);
-
+    private boolean executeUpdate(Connection conn, String sql, Object... params) throws SQLException {
+        try (PreparedStatement ps = prepare(conn, sql, params)) {
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
-    public Auction getAuctionById(int auctionId) {
-        String sql = "SELECT * FROM auctions WHERE auction_id = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, auctionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    // Bạn phải dùng rs.get... để lấy giá trị từ các cột trong SQL
-                    return new Auction(
-                            rs.getInt("auction_id"),
-                            rs.getInt("item_id"),
-                            rs.getInt("seller_id"),
-                            rs.getString("auction_status"), // Giả sử tên cột là auction_status
-                            rs.getDouble("starting_price"),
-                            rs.getDouble("current_price"),
-                            rs.getInt("total_bids"),
-                            rs.getInt("current_winner_id"), // Nếu cột này cho phép NULL, cần xử lý cẩn thận
-                            rs.getTimestamp("start_time").toLocalDateTime(),
-                            rs.getTimestamp("end_time").toLocalDateTime(),
-                            rs.getTimestamp("created_at").toLocalDateTime()
-                    );
-                }
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return null;
+
+    private PreparedStatement prepare(Connection conn, String sql, Object... params) throws SQLException {
+        PreparedStatement ps = conn.prepareStatement(sql);
+        for (int i = 0; i < params.length; i++) {
+            ps.setObject(i + 1, params[i]);
+        }
+        return ps;
     }
 
+    private Auction map(ResultSet rs) throws SQLException {
+        int winnerId = rs.getInt("current_winner_id");
+        return new Auction(
+                rs.getInt("auction_id"), rs.getInt("item_id"), rs.getInt("seller_id"),
+                rs.getString("auction_status"), rs.getDouble("starting_price"),
+                rs.getDouble("current_price"), rs.getInt("total_bids"),
+                rs.wasNull() ? null : winnerId,
+                rs.getTimestamp("start_time").toLocalDateTime(),
+                rs.getTimestamp("end_time").toLocalDateTime(),
+                rs.getTimestamp("created_at").toLocalDateTime()
+        );
+    }
 }
