@@ -16,7 +16,7 @@ public class ItemCardController {
     private static Map<Integer, Item> itemsList = new HashMap<>();
     public void setData(Item item) {
         name.setText("Tên sản phẩm: " + item.getName());
-        startPrice.setText("Giá khởi điểm: " + item.getStartPrice() + " UETệ");
+        startPrice.setText("Giá khởi điểm: " + item.getStartingPrice() + " UETệ");
         try {
             Image image = new Image(getClass().getResourceAsStream("/"+  item.getImgItem()));
             imgItem.setImage(image);

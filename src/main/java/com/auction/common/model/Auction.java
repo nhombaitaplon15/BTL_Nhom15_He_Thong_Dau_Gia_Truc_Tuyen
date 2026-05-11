@@ -42,6 +42,9 @@ public class Auction implements Serializable {
     public String getAuctionStatus() { return auctionStatus; }
     public void setAuctionStatus(String auctionStatus) { this.auctionStatus = auctionStatus; }
 
+    public double getStartingPrice() { return startingPrice; }
+    public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
+
     public double getCurrentPrice() { return currentPrice; }
     public void setCurrentPrice(double currentPrice) { this.currentPrice = currentPrice; }
 

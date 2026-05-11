@@ -20,16 +20,16 @@ public class AuctionService {
 
     public void handlePlaceBid(User currentUser, Auction auction, double bidAmount) {
 
-        // --- 1. CÁC CHỐT CHẶN (Check nhanh trên RAM để tránh mở DB vô ích) ---
+        // 1. CÁC CHỐT CHẶN (Check nhanh trên RAM để tránh mở DB vô ích)
         validateBidGuards(currentUser, auction, bidAmount);
 
-        // --- 2. THỰC THI GIAO DỊCH (SQL TRANSACTION) ---
+        // 2. THỰC THI GIAO DỊCH (SQL TRANSACTION)
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false); // BẮT ĐẦU CHUỖI AN TOÀN
 
             try {
                 // Bước A: Cập nhật giá và người thắng trong bảng Auction
-                // Sử dụng hàm updateBid(conn, ...) đã sửa ở DAO
+                // Sử dụng hàm updateBid(conn, ...)
                 if (!auctionDAO.updateBid(conn, auction.getAuctionId(), currentUser.getId(), bidAmount)) {
                     throw new SQLException("Đặt giá thất bại (có người vừa trả giá cao hơn bạn)!");
                 }
@@ -52,10 +52,10 @@ public class AuctionService {
                 // Bước E: Logic Anti-sniping (Gia hạn thời gian)
                 handleAntiSniping(conn, auction);
 
-                // --- NẾU ĐẾN ĐÂY MỌI THỨ OK THÌ MỚI LƯU THỰC SỰ ---
+                // Lưu mọi thứ
                 conn.commit();
 
-                // --- 3. CẬP NHẬT RAM (Chỉ khi DB đã chốt xong) ---
+                //  cập nhật Ram khi đã xong trong DB
                 syncRAM(currentUser, auction, bidAmount);
 
                 System.out.println(">>> Đặt giá thành công: " + currentUser.getUsername() + " bid " + bidAmount);

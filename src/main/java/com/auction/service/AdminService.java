@@ -18,10 +18,7 @@ public class AdminService {
     public AdminService(ManagerService managerService) {
         this.managerService = managerService;
     }
-
-    /**
-     * Duyệt phiên: WAITING_FOR_ADMIN -> OPEN
-     */
+// duyệt phiên
     public boolean approveAuction(int auctionId) {
         // Tận dụng hàm validate để bắt lỗi ID không tồn tại hoặc sai trạng thái
         Auction auction = validatePendingAuction(auctionId);
@@ -41,9 +38,7 @@ public class AdminService {
         }
     }
 
-    /**
-     * Từ chối phiên đấu giá kèm lý do
-     */
+//  từ chối phiên đấu giá kèm lí do
     public void rejectAuction(int auctionId, String reason) {
         if (reason == null || reason.trim().isEmpty()) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Lý do từ chối không được để trống!");
@@ -60,9 +55,7 @@ public class AdminService {
         }
     }
 
-    /**
-     * Bắt lỗi tập trung: Kiểm tra tồn tại và trạng thái WAITING_FOR_ADMIN
-     */
+    // Bắt lỗi tập trung: Kiểm tra tồn tại và trạng thái WAITING_FOR_ADMIN
     private Auction validatePendingAuction(int auctionId) {
         // Dùng ManagerService để lấy Object (nhớ ManagerService của bạn phải có hàm getAuction)
         Auction auction = managerService.getAuction(auctionId);
@@ -77,9 +70,7 @@ public class AdminService {
         }
         return auction;
     }
-
-    // --- THỐNG KÊ (Sử dụng Stream tối ưu) ---
-
+    // THỐNG KÊ (Sử dụng Stream tối ưu)
     public List<Auction> getPendingAuctions() {
         return managerService.getAllAuctions().stream()
                 .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus()))
@@ -99,7 +90,7 @@ public class AdminService {
         }
     }
 
-    // --- LOGGING ---
+    //  LOGGING
 
     private void logAction(int auctionId, String action) {
         auditLog.put(auctionId, action);

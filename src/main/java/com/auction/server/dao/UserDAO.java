@@ -30,13 +30,13 @@ public class UserDAO {
                 if (rs.next()) {
                     // Sử dụng UserFactory để tạo đối tượng, ID và Balance được giữ nguyên
                     return UserFactory.createUser(
-                            rs.getInt("id"),
+                            rs.getInt("user_id"),
                             rs.getString("username"),
                             rs.getString("email"),
                             rs.getString("password"),
                             rs.getString("phone"),
                             rs.getString("status"),
-                            rs.getString("user_role"),
+                            rs.getString("role"),
                             rs.getDouble("balance")
                     );
                 }

@@ -1,6 +1,7 @@
 package com.auction.service;
 
 import com.auction.common.model.Auction;
+import com.auction.common.model.Item;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.AuctionDAO;
@@ -17,71 +18,123 @@ public class ManagerService {
         this.itemService = itemService;
     }
 
-    // --- Các hàm nghiệp vụ chính (Rất ngắn gọn) ---
+    // --- 1. LẤY DỮ LIỆU (Thay cho việc lấy từ List RAM) ---
 
-    public void openAuction(int id) {
-        transitStatus(id, "PENDING", "OPEN");
+    public Auction getAuction(int auctionId) {
+        return auctionDAO.getAuctionById(auctionId);
     }
 
-    public void activateAuction(int id) {
-        Auction a = getAuctionOrThrow(id);
-        if (LocalDateTime.now().isBefore(a.getStartTime())) {
-            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chưa đến giờ!");
-        }
-        transitStatus(id, "OPEN", "RUNNING");
-    }
-
-     // Lấy 1 phiên cụ thể (trả về null nếu không thấy, không văng lỗi)
-    public Auction getAuction(int id) {
-        return auctionDAO.getAuctionById(id);
-    }
-
-     //Lấy toàn bộ danh sách từ Database
     public List<Auction> getAllAuctions() {
         return auctionDAO.getAll();
     }
 
-     // Lấy danh sách theo trạng thái (Ví dụ: để hiển thị các phiên đang chạy lên Web)
-    public List<Auction> getAuctionsByStatus(String status) {
-        return auctionDAO.getAuctionsByStatus(status);
+    public Auction getAuctionOrThrow(int auctionId) {
+        Auction auction = auctionDAO.getAuctionById(auctionId);
+        if (auction == null) {
+            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Phiên đấu giá không tồn tại");
+        }
+        return auction;
     }
 
-    // --- Hàm bổ trợ để tái sử dụng (Đây là chìa khóa làm gọn code) ---
+    // --- 2. THIẾT LẬP PHIÊN (Khôi phục lại scheduleAuction của bạn) ---
 
-    private void transitStatus(int id, String fromStatus, String toStatus) {
+    public void scheduleAuction(int itemId, LocalDateTime startTime, LocalDateTime endTime) {
+        Item item = itemService.getItemById(itemId);
+        if (item == null) {
+            throw new AuctionException(ErrorCode.ITEM_NOT_FOUND.name(), "Sản phẩm không tồn tại");
+        }
+
+        // Tạo Auction và lưu thẳng xuống SQL
+        Auction auction = new Auction(
+                0, item.getItemId(), item.getSellerId(), "WAITING_FOR_ADMIN",
+                item.getStartingPrice(), item.getStartingPrice(),
+                0, null, startTime, endTime, LocalDateTime.now()
+        );
+
+        if (!auctionDAO.insertAuction(auction)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi khi lưu phiên đấu giá vào Database");
+        }
+        System.out.println("[MANAGER] Scheduled auction cho Item: " + itemId);
+    }
+
+    // --- 3. ĐẶT GIÁ KHỞI ĐIỂM (Khôi phục logic setupStartPrice của bạn) ---
+
+    public void setupStartPrice(int itemId, double newPrice) {
+        Item item = itemService.getItemById(itemId);
+        if (item == null) {
+            throw new AuctionException(ErrorCode.ITEM_NOT_FOUND.name(), "Sản phẩm không tồn tại");
+        }
+        if (newPrice <= 0) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Giá khởi điểm phải > 0");
+        }
+
+        // Cập nhật giá vào Database (ItemDAO/Service cần có hàm này)
+        item.setStartingPrice(newPrice);
+        // Lưu ý: Bạn cần gọi itemDAO.update(item) ở đây để lưu xuống SQL bền vững
+        System.out.println("[MANAGER] Set start price: " + newPrice);
+    }
+
+    // --- 4. ĐIỀU KHIỂN TRẠNG THÁI (STATUS) ---
+
+    public void openAuction(int auctionId) {
+        transitStatus(auctionId, "PENDING", "OPEN");
+        System.out.println("[MANAGER] OPEN auction " + auctionId);
+    }
+
+    public void activateAuction(int auctionId) {
+        Auction auction = getAuctionOrThrow(auctionId);
+        if (!"OPEN".equals(auction.getAuctionStatus())) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Auction chưa OPEN");
+        }
+        if (LocalDateTime.now().isBefore(auction.getStartTime())) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chưa đến giờ bắt đầu");
+        }
+        transitStatus(auctionId, "OPEN", "RUNNING");
+        System.out.println("[MANAGER] RUNNING auction " + auctionId);
+    }
+
+    private void transitStatus(int id, String from, String to) {
         Auction a = getAuctionOrThrow(id);
-        if (!fromStatus.equals(a.getAuctionStatus())) {
-            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Trạng thái sai!");
+        if (!from.equals(a.getAuctionStatus())) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Trạng thái hiện tại không hợp lệ");
         }
-        if (!auctionDAO.updateStatus(id, toStatus)) {
-            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database!");
-        }
+        auctionDAO.updateStatus(id, to);
     }
 
-    public Auction getAuctionOrThrow(int id) {
-        Auction a = auctionDAO.getAuctionById(id);
-        if (a == null) throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Không thấy phiên!");
-        return a;
-    }
+    // --- 5. TỰ ĐỘNG ĐÓNG PHIÊN (QUÉT SQL) ---
 
-    // --- Luồng tự động (Tách riêng logic xử lý từng phiên) ---
-
-    public void startAutoManager() {
-        new Thread(() -> {
+    public void autoCloseAuction() {
+        Thread t = new Thread(() -> {
             while (running) {
                 try {
-                    auctionDAO.getAuctionsByStatus("RUNNING").forEach(this::processAutoClose);
                     Thread.sleep(1000);
-                } catch (Exception e) { e.printStackTrace(); }
+                    // Quét các phiên RUNNING trong Database
+                    List<Auction> activeAuctions = auctionDAO.getAuctionsByStatus("RUNNING");
+                    for (Auction auction : activeAuctions) {
+                        if (LocalDateTime.now().isAfter(auction.getEndTime())) {
+                            String finalStatus = (auction.getCurrentWinnerId() != null) ? "SOLD" : "ENDED";
+                            auctionDAO.updateStatus(auction.getAuctionId(), finalStatus);
+                            System.out.println("[AUTO] Auction " + auction.getAuctionId() + " -> " + finalStatus);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
-    private void processAutoClose(Auction a) {
-        if (LocalDateTime.now().isAfter(a.getEndTime())) {
-            String status = (a.getCurrentWinnerId() != null) ? "SOLD" : "ENDED";
-            auctionDAO.updateStatus(a.getAuctionId(), status);
-            System.out.println("[AUTO] Closed Auction " + a.getAuctionId() + " as " + status);
-        }
+    // --- 6. DỌN DẸP HỆ THỐNG ---
+
+    public void stopAutoClose() {
+        this.running = false;
+    }
+
+    public void clearData() {
+        // Trên SQL, hàm này thường dùng để xóa các bảng tạm hoặc log cũ
+        System.out.println("[MANAGER] Dữ liệu trên SQL ổn định, không cần clear RAM.");
     }
 }

@@ -24,7 +24,24 @@ public class AuctionDAO {
     }
 
     // --- CÁC HÀM CẬP NHẬT (UPDATES) ---
+    // --- 1. THÊM MỚI PHIÊN ĐẤU GIÁ (Dùng cho scheduleAuction) ---
+    public boolean insertAuction(Auction a) {
+        String sql = "INSERT INTO auctions (item_id, seller_id, auction_status, starting_price, current_price, total_bids, current_winner_id, start_time, end_time, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+        return executeUpdate(sql,
+                a.getItemId(),
+                a.getSellerId(),
+                a.getAuctionStatus(),
+                a.getStartingPrice(),
+                a.getCurrentPrice(),
+                a.getTotalBids(),
+                a.getCurrentWinnerId(),
+                Timestamp.valueOf(a.getStartTime()),
+                Timestamp.valueOf(a.getEndTime()),
+                Timestamp.valueOf(a.getCreatedAt())
+        );
+    }
     public boolean updateStatus(int id, String status) {
         return executeUpdate("UPDATE auctions SET auction_status = ? WHERE auction_id = ?", status, id);
     }
@@ -33,9 +50,20 @@ public class AuctionDAO {
         return executeUpdate(conn, "UPDATE auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 WHERE auction_id = ? AND current_price < ?",
                 amount, winnerId, id, amount);
     }
+    // --- 2. CẬP NHẬT GIÁ (Bản tự đóng connection - Overload) ---
+    public boolean updateBid(int id, int winnerId, double amount) {
+        String sql = "UPDATE auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 " +
+                "WHERE auction_id = ? AND current_price < ?";
+        return executeUpdate(sql, amount, winnerId, id, amount);
+    }
 
     public boolean updateEndTime(Connection conn, int id, LocalDateTime end) throws SQLException {
         return executeUpdate(conn, "UPDATE auctions SET end_time = ? WHERE auction_id = ?", Timestamp.valueOf(end), id);
+    }
+    // --- 3. CẬP NHẬT THỜI GIAN (Bản tự đóng connection - Overload) ---
+    public boolean updateEndTime(int id, LocalDateTime end) {
+        String sql = "UPDATE auctions SET end_time = ? WHERE auction_id = ?";
+        return executeUpdate(sql, Timestamp.valueOf(end), id);
     }
 
     // --- BỘ MÁY THỰC THI (HELPER METHODS) ---
@@ -81,5 +109,8 @@ public class AuctionDAO {
                 rs.getTimestamp("end_time").toLocalDateTime(),
                 rs.getTimestamp("created_at").toLocalDateTime()
         );
+    }
+    public boolean deleteAll() {
+        return executeUpdate("DELETE FROM auctions");
     }
 }
