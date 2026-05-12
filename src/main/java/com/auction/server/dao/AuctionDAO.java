@@ -65,6 +65,9 @@ public class AuctionDAO {
         String sql = "UPDATE auctions SET end_time = ? WHERE auction_id = ?";
         return executeUpdate(sql, Timestamp.valueOf(end), id);
     }
+    public List<Auction> getAuctionsByWinner(int winnerId) {
+        return queryList("SELECT * FROM auctions WHERE current_winner_id = ? AND auction_status = 'FINISHED'", winnerId);
+    }
 
     // --- BỘ MÁY THỰC THI (HELPER METHODS) ---
 

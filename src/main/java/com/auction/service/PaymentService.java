@@ -13,7 +13,7 @@ public class PaymentService {
     private final TransactionDAO transDAO = new TransactionDAO();
     private static final int ADMIN_ID = 1;
     private static final double SYSTEM_FEE_RATE = 0.15;
-
+    // tạm giữ tiền
     public void holdFunds(int bidderId, double amount, int auctionId) {
         // Kiểm tra số dư trước khi mở Transaction nặng
         if (paymentDAO.getBalance(bidderId) < amount) {
@@ -43,7 +43,7 @@ public class PaymentService {
             e.printStackTrace();
         }
     }
-
+    // giải ngân
     public void releaseFunds(int sellerId, double totalAmount, int auctionId) {
         double fee = totalAmount * SYSTEM_FEE_RATE;
         double finalAmount = totalAmount - fee;
@@ -66,7 +66,7 @@ public class PaymentService {
             }
         } catch (SQLException e) { e.printStackTrace(); }
     }
-
+    // hoàn tiền
     public void refundBuyer(int bidderId, double amount, int auctionId) {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);

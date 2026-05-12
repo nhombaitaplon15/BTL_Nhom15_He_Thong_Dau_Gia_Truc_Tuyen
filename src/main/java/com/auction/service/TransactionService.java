@@ -8,9 +8,7 @@ import com.auction.server.dao.TransactionDAO;
 public class TransactionService {
     private final TransactionDAO transDAO = new TransactionDAO();
 
-    /**
-     * Gửi yêu cầu nạp tiền (Chờ duyệt)
-     */
+    // gửi yêu cầu nạp rút chờ duyệt
     public void handleDepositRequest(User currentUser, double amount) {
         if (amount <= 0) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số tiền phải lớn hơn 0");
@@ -25,9 +23,7 @@ public class TransactionService {
         System.out.println(">>> Đã gửi yêu cầu nạp " + amount + ". Chờ Admin duyệt.");
     }
 
-    /**
-     * Admin phê duyệt nạp/rút
-     */
+    // admin phê duyệt nạp rút
     public void handleApproveTransaction(User adminUser, int transId, User targetUser, double amount, String type) {
         // 1. Kiểm tra quyền Admin
         if (!adminUser.isAdmin()) {

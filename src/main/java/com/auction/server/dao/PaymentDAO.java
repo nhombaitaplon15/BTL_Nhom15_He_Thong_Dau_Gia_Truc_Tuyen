@@ -8,7 +8,7 @@ public class PaymentDAO {
     public boolean updateBalance(Connection conn, int userId, double amount, String operator) throws SQLException {
         if (!"+".equals(operator) && !"-".equals(operator)) return false;
 
-        String sql = "UPDATE users SET balance = balance " + operator + " ? WHERE id = ?";
+        String sql = "UPDATE users SET balance = balance " + operator + " ? WHERE user_id = ?";
         if ("-".equals(operator)) {
             sql += " AND balance >= ?";
         }
@@ -28,7 +28,7 @@ public class PaymentDAO {
         if (!"+".equals(escrowOp) && !"-".equals(escrowOp)) return false;
 
         String sql = "UPDATE users SET escrow_balance = escrow_balance " + escrowOp + " ?, " +
-                "system_revenue = system_revenue + ? WHERE id = ?";
+                "system_revenue = system_revenue + ? WHERE user_id = ?";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, escrowAmount);
@@ -40,7 +40,7 @@ public class PaymentDAO {
 
     // 3. Lấy số dư (Hàm này chỉ đọc, nên tự tạo Connection cũng được cho tiện)
     public double getBalance(int userId) {
-        String sql = "SELECT balance FROM users WHERE id = ?";
+        String sql = "SELECT balance FROM users WHERE user_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
