@@ -1,67 +1,139 @@
 package com.auction.service;
-import com.auction.common.model.Items;
-import com.auction.common.model.Auction;
 
-import java.time.LocalDateTime;
+import com.auction.common.model.Art;
+import com.auction.common.model.Electronics;
+import com.auction.common.model.Items;
+import com.auction.common.model.Vehicle;
+import com.auction.exception.AuctionException;
+import com.auction.exception.ErrorCode;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ItemService {
-private Map<Integer, Items> itemsList = new HashMap<>();                 // list sản phẩm có id và những thứ chứ trong Items
-    public Items findItem(int id) {                                         // hàm tìm kiếm sản phẩm trong list bằng ID sản phẩm
-        return itemsList.get(id);
+
+    private static Map<Integer, Items> itemsList = new HashMap<>();
+
+    static {
+        Items vehicle = new Vehicle(484, "Bugatti", 484000000,
+            "Bugatti La Voiture Noire được trang bị động cơ W16 tăng áp kép," +
+                " dung tích 8.0 lít, mô-men xoắn cực đại 1.599Nm. " +
+                "Siêu xe này mất 2,4 giây để để tăng tốc từ 0-96,6 km/h.", " Bugatti La Voiture Noire", "view/images/Bugatti_La_Voiture_Noire.png") ;
+        Items art = new Art(9,"Van Gogh",1000,"Bức tranh khắc họa quang cảnh bên ngoài phòng bệnh của Van Gogh " +
+            "ở một bệnh viện tâm thần nằm tại miền Nam nước Pháp.","Bức Đêm đầy sao", "view/images/Tranh_Van_Gogh.png", 1889 , true );
+
+        Items electronics = new Electronics("Đồng hồ Romain Jerome Super Mario Bros",25,"Romain Jerome",18950,"Chiếc đồng hồ có đường kính 46mm và được làm bằng chất liệu titan màu đen." +
+            " Bên trong là bộ máy cơ tự động RJ001-A hoạt động ở xung nhịp 4Hz, có thể trữ năng lượng trong 42 giờ. " +
+            "Trên bề mặt đồng hồ là một tấm nền 3 lớp mô phỏng các hình ảnh đặc trưng như anh chàng Mario, cây nấm, " +
+            "đám mây hay bụi cây được tráng sứ.", "view/images/Đồng_hồ_Romain_Jerome_Super_Mario_Bros.png","năm 1985", 12) ;
+        itemsList.put(484,vehicle) ;
+        itemsList.put(9,art) ;
+        itemsList.put(25,electronics) ;
+
+
     }
-    public boolean addItem(Items item) throws Exception {                   // hàm thêm sản phẩm
-        try {
-            if (item == null) {                                             // nếu không có sản phẩm
-                throw new Exception("Sản phẩm không được để trống !");
-            }
-            if (item.getName() == null) {                                   // sản phẩm không có tên throw
-                throw new Exception("Tên sản phẩm không được để trống!");
-            }
-            if (itemsList.containsKey(item.getId())) {                      // ID sản phẩm có thì không thể thêm thành sản phẩm mới được
-                throw new Exception("ID sản phẩm đã tồn tại !");
-            }
-            itemsList.put(item.getId(), item);                              // nếu không lỗi thì cho sản phẩm vào trong danh sách
-            System.out.println(" Đã thêm sản phẩm: " + item.getName());
-            return true;
-        } catch(Exception e) {                                              // sai thì bắt ngoại lệ để in lỗi
-            System.out.println("[Lỗi] :" + e.getMessage());
-            throw e;
+
+    // lấy tất cả các mặt hàng
+    public List<Items> getAllItems() {
+        return new ArrayList<>(itemsList.values());
+    }
+
+    // lấy hàng ra theo id
+    public Items getItemById(int id) {
+
+        Items item = itemsList.get(id);
+
+        if (item == null) {
+            throw new AuctionException(
+                    ErrorCode.ITEM_NOT_FOUND.name(),
+                    "Sản phẩm không tồn tại"
+            );
         }
+
+        return item;
     }
-    public boolean updateItem(Items item) throws Exception {                 //hàm cập nhật sản phẩm
-        try {
-            if (item == null) {
-                throw new Exception(" Sản phẩm không được để trống!");
-            }
-            if (!itemsList.containsKey(item.getId())) {                      // ID sản phẩm mà không có trong itemList thì không update được
-                throw new Exception("ID sản phẩm không tồn tại!");
-            }
-            Items oldItem = itemsList.get(item.getId());                     // đây là sản phẩm cần được update
-            oldItem.setName(item.getName());                                 // update name
-            oldItem.setProducer(item.getProducer());
-            oldItem.setStartPrice(item.getStartPrice());
-            oldItem.setDescription(item.getDescription());
-            oldItem.setImgItem(item.getImgItem());
-            System.out.println("Cập nhật sản phẩm thành công");
-            return true;
-        } catch (Exception e) {
-            System.out.println("[Lỗi] :" + e.getMessage());
-            throw e;
+
+    // tìm hàng
+    public Items findItem(int id) {
+        return getItemById(id);
+    }
+
+    // thêm mặt hàng
+    public void addItem(Items item) {
+
+        if (item == null) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_ITEM.name(),
+                    "Item không được null"
+            );
         }
-    }
-    public boolean deleteItem(int itemId) throws Exception{                  // hàm xóa sản phẩm
-        try {
-            if (!itemsList.containsKey(itemId)) {                            // nếu trong ItemList mà không có ID sản phẩm thì không xóa sp
-                throw new Exception("ID sản phẩm không tồn tại để xóa!");
-            }
-            itemsList.remove(itemId);
-            System.out.println("Xóa sản phẩm thành công");
-            return true;
-        } catch (Exception e) {
-            System.out.println("[Lỗi] :" + e.getMessage());
-            throw e;
+
+        if (item.getName() == null || item.getName().trim().isEmpty()) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_ITEM.name(),
+                    "Tên sản phẩm không được để trống"
+            );
         }
+
+        if (item.getStartPrice() < 0) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_ITEM.name(),
+                    "Giá khởi điểm không được âm"
+            );
+        }
+
+        if (itemsList.containsKey(item.getId())) {
+            throw new AuctionException(
+                    ErrorCode.ITEM_DUPLICATE.name(),
+                    "Sản phẩm không được trùng nhau"
+            );
+
+        }
+
+        itemsList.put(item.getId(), item);
+
+        System.out.println("[ITEM] Thêm thành công: " + item.getName());
     }
+
+    // cập nhật thông tin cho mặt hàng
+    public void updateItem(int id, String producer, String description, String name, String imgItem) {
+
+        Items item = itemsList.get(id);
+
+        if (item == null) {
+            throw new AuctionException(
+                    ErrorCode.ITEM_NOT_FOUND.name(),
+                    "Sản phẩm không tồn tại"
+            );
+        }
+
+        item.setName(name);
+        item.setProducer(producer);
+        item.setDescription(description);
+        item.setImgItem(imgItem);
+
+        System.out.println("[ITEM] Cập nhật thành công ID: " + id);
+    }
+
+    // xóa mặt hàng
+    public void deleteItem(int id) {
+
+        Items item = itemsList.get(id);
+
+        if (item == null) {
+            throw new AuctionException(
+                    ErrorCode.ITEM_NOT_FOUND.name(),
+                    "Sản phẩm không tồn tại"
+            );
+        }
+
+        itemsList.remove(id);
+
+        System.out.println("[ITEM] Đã xóa sản phẩm ID: " + id);
+    }
+    public void clearData() {
+        itemsList.clear();
+    }
+
 }

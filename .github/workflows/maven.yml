@@ -1,0 +1,28 @@
+name: Java CI with Maven
+
+# Kịch bản này chạy khi bạn PUSH code hoặc tạo Pull Request vào nhánh chính
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    # Chạy trên máy ảo Ubuntu phiên bản mới nhất
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Lấy code từ repo của bạn đưa vào máy ảo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt môi trường Java 21 (Khớp với dự án của bạn)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Chạy lệnh Maven để Build và chạy toàn bộ Unit Test
+      # Nó sẽ chạy file BiddingServiceTest.java mà bạn đã viết
+      - name: Build and Test with Maven
+        run: mvn -B clean verify

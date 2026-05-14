@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Bidder_View_Controller">
+   <children>
+      <BorderPane layoutX="-7.0" prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+         <top>
+            <MenuBar BorderPane.alignment="CENTER">
+              <menus>
+                <Menu mnemonicParsing="false" text="Trang chủ ">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="Tổng quan hệ thống" />
+                        <MenuItem mnemonicParsing="false" text="Sản phẩm nổi bật" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Danh sách sản phẩm">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="Tìm kiếm 🔍" />
+                        <MenuItem mnemonicParsing="false" text="Danh sách hiển thị" />
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Lịch sử đấu giá">
+                  <items>
+                    <MenuItem mnemonicParsing="false" text="About" />
+                  </items>
+                </Menu>
+                  <Menu mnemonicParsing="false" text="Cài đặt">
+                    <items>
+                      <MenuItem mnemonicParsing="false" text="Thông tin tài khoản" />
+                        <MenuItem mnemonicParsing="false" text="Đăng xuất" />
+                    </items>
+                  </Menu>
+              </menus>
+            </MenuBar>
+         </top>
+         <bottom>
+            <Button mnemonicParsing="false" onAction="#Welcome_back" text="Quay lại" BorderPane.alignment="CENTER" />
+         </bottom>
+         <center>
+            <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+               <children>
+                  <FlowPane fx:id="flowPaneItem" hgap="25.0" layoutX="20.0" layoutY="44.0" prefHeight="480.0" prefWidth="960.0" />
+                  <Label layoutX="387.0" layoutY="14.0" prefHeight="27.0" prefWidth="225.0" text="Sản phẩm đấu giá hiện có">
+                     <font>
+                        <Font size="18.0" />
+                     </font>
+                  </Label>
+               </children>
+            </AnchorPane>
+         </center>
+      </BorderPane>
+   </children>
+</AnchorPane>

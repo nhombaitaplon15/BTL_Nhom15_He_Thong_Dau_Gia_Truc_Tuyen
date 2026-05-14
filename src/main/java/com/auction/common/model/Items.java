@@ -1,18 +1,20 @@
 package com.auction.common.model;
 
 public abstract class Items extends Entity implements java.io.Serializable{
-    protected String producer;
-    protected int startPrice;
+    protected String producer; // nhà sản xuất
+    protected double startPrice;
     protected String description;   //mô tả của sản phẩm
     protected String name;
     protected String imgItem;
-    public Items (int id,String producer,int startPrice, String description, String name, String imgItem){
+    protected String itemStatus; // trạng thái của mặt hàng: PENDING -> OPEN -> RUNNING -> FINISHED/UNSOLD -> PAID -> COMPLETED, CANCELED
+    public Items (int id,String producer,double startPrice, String description, String name, String imgItem){
         super(id);
         this.producer = producer;
         this.startPrice = startPrice;
         this.description = description;
         this.name = name;
         this.imgItem = imgItem;
+        this.itemStatus = "PENDING";
     }
     public String getProducer() {
         return producer;
@@ -26,10 +28,10 @@ public abstract class Items extends Entity implements java.io.Serializable{
     public void setName(String name) {
         this.name = name;
     }
-    public int getStartPrice() {
+    public double getStartPrice() {
         return startPrice;
     }
-    public void setStartPrice(int startPrice) {
+    public void setStartPrice(double startPrice) {
         this.startPrice = startPrice;
     }
     public String getDescription(){
@@ -41,7 +43,7 @@ public abstract class Items extends Entity implements java.io.Serializable{
     public String getImgItem(){
         return imgItem;
     }
-    public void setImgItem(String imgItem) {
-        this.imgItem = imgItem;
-    }
+    public void setImgItem(String imgItem) {this.imgItem = imgItem;}
+    public String getItemStatus() {return itemStatus;}
+    public void setItemStatus(String itemStatus) {this.itemStatus = itemStatus;}
 }

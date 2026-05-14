@@ -1,10 +1,10 @@
 package com.auction.common.model;
 
 import java.io.Serializable;
-//implements Serializable (để Java có thể biến đối tượng này thành byte và truyền qua mạng)
+//implements Serializable để Java có thể biến đối tượng này thành byte và truyền qua mạng
 public class Message implements Serializable {
-    private String command;// lenh yeu cau
-    private Object data;
+    private String command;// lệnh yêu cầu
+    private Object data; // dữ liệu đính kèm
     public Message(String command, Object data) {
         this.command = command;
         this.data = data;

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Admin_View_Controller">
+    <children>
+        <BorderPane layoutX="-7.0" prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <top>
+                <MenuBar BorderPane.alignment="CENTER">
+                    <menus>
+                        <Menu mnemonicParsing="false" text="Trang chủ ">
+                            <items>
+                                <MenuItem mnemonicParsing="false" text="Tổng quan hệ thống" />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm nổi bật" />
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Danh sách đấu giá ">
+                            <items>
+                                <MenuItem mnemonicParsing="false" text="Tìm kiếm 🔍" />
+                                <MenuItem mnemonicParsing="false" text="Phiên đấu giá đang diễn ra" />
+                        <MenuItem mnemonicParsing="false" text="Phiên đấu giá đã diễn ra" />
+                        <MenuItem mnemonicParsing="false" text="Phiên đấu giá đang chờ duyệt " />
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Quản lí giao dịch ">
+                            <items>
+                                <MenuItem mnemonicParsing="false" text="Nạp tiền" />
+                        <MenuItem mnemonicParsing="false" text="Rút tiền" />
+                        <MenuItem mnemonicParsing="false" text="Thanh toán đơn hàng" />
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Cài đặt">
+                            <items>
+                                <MenuItem mnemonicParsing="false" text="Thông tin tài khoản" />
+                                <MenuItem mnemonicParsing="false" text="Đăng xuất" />
+                            </items>
+                        </Menu>
+                    </menus>
+                </MenuBar>
+            </top>
+         <center>
+            <TableView prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+              <columns>
+                <TableColumn prefWidth="93.79999083280563" text="Auction ID" />
+                <TableColumn prefWidth="129.80001831054688" text="Item" />
+                  <TableColumn minWidth="0.0" prefWidth="154.1999969482422" text="Start Time" />
+                  <TableColumn prefWidth="160.20001220703125" text="End Time" />
+                  <TableColumn prefWidth="207.800048828125" text="Current Price" />
+                  <TableColumn prefWidth="153.800048828125" text="Highest Bidder" />
+                  <TableColumn prefWidth="104.4000244140625" text="Auction Status" />
+              </columns>
+            </TableView>
+         </center>
+         <bottom>
+                <Button mnemonicParsing="false" onAction="#Welcome_back" text="Quay lại" BorderPane.alignment="CENTER" />
+         </bottom>
+        </BorderPane>
+    </children>
+</AnchorPane>

@@ -5,47 +5,28 @@ import com.auction.common.model.Bidder;
 import com.auction.common.model.Seller;
 import com.auction.common.model.User;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
-public class DBConnection {
-    public User checkLogin(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+public class DBConnection {  // cầu nối với database
+    // thông tin kêt nối
+    private static final String URL = "jdbc:postgresql://shinkansen.proxy.rlwy.net:36856/railway?options=-c%20timezone=UTC";
+    private static final String USERNAME = "postgres";
+    private static final String PASSWORD = "VvQwsVyCLGuitsfXKuTpbLpRemIBxsIa";
 
-        // Sử dụng Try-with-resources để tự động đóng kết nối
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, username);
-            ps.setString(2, password);
+    // gọi đến cơ sở dữ liệu
+    public static Connection getConnection() throws SQLException {
+        try {
+            // khai báo driver để kết nối với cơ sở dữ liệu
+            Class.forName("org.postgresql.Driver");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int id = rs.getInt("id");
-                    String name = rs.getString("name");
-                    String email = rs.getString("email");
-                    String pass = rs.getString("password");
-                    String phone = rs.getString("phone");
-                    String status = rs.getString("status");
-                    String role = rs.getString("role"); // Cột role trong DB: 'ADMIN' hoặc 'USER'
+            // thiết lập kết nối
+            return DriverManager.getConnection(URL, USERNAME, PASSWORD);
 
-                    // Nếu là ADMIN thì tạo đối tượng Admin, ngược lại tạo User
-                    if ("ADMIN".equalsIgnoreCase(role)) {
-                        return new Admin(id, name, email, pass, phone, status);
-                    } else if ("BIDDER".equalsIgnoreCase(role)) {
-                        return new Bidder(id, name, email, pass, phone, status);
-                    } else if ("SELLER".equalsIgnoreCase(role)) {
-                        return new Seller(id, name, email, pass, phone, status);
-                    } else {
-                        return null; // Hoặc một loại mặc định nào đó sếp quy định
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Lỗi truy vấn Database: " + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
+            e.printStackTrace();
+            return null;
         }
-        return null; // Trả về null nếu không khớp tài khoản
     }
 }
