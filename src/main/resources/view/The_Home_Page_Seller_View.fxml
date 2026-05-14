@@ -4,22 +4,19 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Seller_View_Controller">
+<AnchorPane fx:id="mainAnchorPane" prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Seller_View_Controller">
     <children>
-        <BorderPane prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <BorderPane fx:id="mainBorderPane" prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <top>
                 <MenuBar BorderPane.alignment="CENTER">
                     <menus>
-                        <Menu mnemonicParsing="false" text="Trang chủ ">
+                        <Menu mnemonicParsing="false" text="Trang chủ " />
+                        <Menu mnemonicParsing="false" text="Danh sách sản phẩm của bạn ">
                             <items>
-                                <MenuItem mnemonicParsing="false" text="Tổng quan hệ thống" />
-                                <MenuItem mnemonicParsing="false" text="Sản phẩm nổi bật" />
-                            </items>
-                        </Menu>
-                        <Menu mnemonicParsing="false" text="Danh sách sản phẩm">
-                            <items>
-                                <MenuItem mnemonicParsing="false" text="Tìm kiếm 🔍" />
-                                <MenuItem mnemonicParsing="false" text="Danh sách hiển thị" />
+                                <MenuItem mnemonicParsing="false" onAction="#showSearchItem" text="Tìm kiếm 🔍" />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm đã bán " />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm đang đấu giá" />
+                        <MenuItem mnemonicParsing="false" text="Sản phẩm chờ được đấu giá" />
                             </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text=" Lịch sử các phiên đấu giá của bạn ">
