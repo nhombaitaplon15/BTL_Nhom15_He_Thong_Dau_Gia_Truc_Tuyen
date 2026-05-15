@@ -9,5 +9,6 @@
       <ImageView fx:id="imgItem" fitHeight="200.0" fitWidth="300" pickOnBounds="true" preserveRatio="true" />
       <Label fx:id="name" prefHeight="40.0" prefWidth="300.0" text="Tên sản phẩm: " />
       <Label fx:id="startPrice" text="Giá khởi điểm: " />
+      <Button fx:id="btnBidNow" mnemonicParsing="false" onAction="#handleBidNow" text="Đấu giá ngay" style="-fx-background-color: #2ecc71; -fx-text-fill: white;" />
    </children>
 </VBox>
