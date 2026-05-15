@@ -45,7 +45,14 @@ public class AuctionDAO {
     public boolean updateStatus(int id, String status) {
         return executeUpdate("UPDATE auctions SET auction_status = ? WHERE auction_id = ?", status, id);
     }
-
+    public boolean updateStatus(Connection conn, int auctionId, String status) throws SQLException {
+        String sql = "UPDATE auctions SET auction_status = ? WHERE auction_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, auctionId);
+            return ps.executeUpdate() > 0;
+        }
+    }
     public boolean updateBid(Connection conn, int id, int winnerId, double amount) throws SQLException {
         return executeUpdate(conn, "UPDATE auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 WHERE auction_id = ? AND current_price < ?",
                 amount, winnerId, id, amount);

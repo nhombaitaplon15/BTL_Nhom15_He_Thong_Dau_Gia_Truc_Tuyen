@@ -4,6 +4,10 @@ import com.auction.common.model.Item;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.ItemDAO;
+import com.auction.server.dao.DBConnection; // Bổ sung để mở Connection
+
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 public class ItemService {
@@ -29,17 +33,33 @@ public class ItemService {
 
     /**
      * Thêm hàng mới (Dùng cho cả Admin và Seller)
+     * ĐÃ SỬA: Bọc SQL Transaction để hứng ID tự động tăng an toàn
      */
     public void addItem(Item item) {
-        // Kiểm tra dữ liệu đầu vào
+        // 1. Kiểm tra dữ liệu đầu vào (Giữ nguyên)
         validateItem(item);
 
-        // Lưu vào DB
-        boolean success = itemDAO.insertItem(item);
-        if (!success) {
-            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể lưu sản phẩm vào Database!");
+        // 2. Mở Connection để chạy luồng lưu trữ có ID tự sinh
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // Bật chế độ quản lý giao dịch an toàn
+
+            try {
+                // 🛠️ FIX LỖI GẠCH ĐỎ: Truyền conn vào hàm insertItem mới, hứng về item_id tự tăng kiểu int
+                int generatedItemId = itemDAO.insertItem(conn, item);
+
+                // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ
+                item.setItemId(generatedItemId);
+
+                conn.commit(); // Lưu vĩnh viễn dữ liệu xuống SQL
+                System.out.println("[SERVICE] Đã thêm sản phẩm thành công với ID tự tăng: " + generatedItemId);
+
+            } catch (SQLException e) {
+                conn.rollback(); // Nếu dính lỗi dọc đường, hủy bỏ ngay lập tức để tránh dữ liệu rác
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi thực thi SQL: " + e.getMessage());
+            }
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối cơ sở dữ liệu!");
         }
-        System.out.println("[SERVICE] Đã thêm sản phẩm thành công: " + item.getName());
     }
 
     /**

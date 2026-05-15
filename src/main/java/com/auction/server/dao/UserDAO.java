@@ -60,8 +60,22 @@ public class UserDAO {
             ps.setString(5, user.getRole());
             ps.setString(6, user.getStatus());
             ps.setDouble(7, user.getBalance());
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) { return false; }
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows > 0) {
+                // Lấy ID tự tăng vừa được sinh ra dưới Database
+                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        int generatedId = generatedKeys.getInt(1);
+                        user.setId(generatedId); // Nạp ID vào Object để các hàm sau có ID dùng luôn
+                        return true;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi đăng ký tài khoản: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false; // Đăng ký thất bại
     }
 
     // 4. Cập nhật mật khẩu (Dùng cho cả đổi và quên mật khẩu)

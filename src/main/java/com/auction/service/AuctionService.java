@@ -47,7 +47,7 @@ public class AuctionService {
                 }
 
                 // Bước D: Ghi Log giao dịch để Admin đối soát
-                transDAO.createTransaction(conn, currentUser.getId(), bidAmount, "BID_AUCTION_" + auction.getAuctionId());
+                transDAO.createTransaction(conn, currentUser.getId(), bidAmount, "BID_AUCTION_" + auction.getAuctionId(), "SUCCESS");
 
                 // Bước E: Logic Anti-sniping (Gia hạn thời gian)
                 handleAntiSniping(conn, auction);

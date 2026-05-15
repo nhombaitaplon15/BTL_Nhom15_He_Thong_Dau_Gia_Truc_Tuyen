@@ -10,13 +10,13 @@ public class UserFactory {
         if (role == null) return null;
         switch (role.toUpperCase()) {
             case "ADMIN":
-                return new Admin(id, name, email, password, phone, status, 0.0);
+                return new Admin(id, name, email, password, phone, status, balance);
             case "SELLER":
-                return new Seller(id, name, email, password, phone, status, 0.0);
+                return new Seller(id, name, email, password, phone, status, balance);
             case "BIDDER":
-                return new Bidder(id, name, email, password, phone, status, 0.0);
-            default:
-                throw new IllegalArgumentException("Vai trò không hợp lệ: " + role);
+                return new Bidder(id, name, email, password, phone, status, balance);
+            default: // Mọi trường hợp lạ khác cũng cho thành Bidder cho an toàn
+                return new Bidder(id, name, email, password, phone, status, balance);
         }
     }
 }

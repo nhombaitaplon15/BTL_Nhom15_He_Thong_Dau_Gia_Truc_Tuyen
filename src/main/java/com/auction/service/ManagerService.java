@@ -2,9 +2,12 @@ package com.auction.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
+import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.AuctionDAO;
+import com.auction.server.dao.UserDAO;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,6 +15,7 @@ public class ManagerService {
 
     private final ItemService itemService;
     private final AuctionDAO auctionDAO = new AuctionDAO();
+    private final UserDAO userDAO = new UserDAO();
     private volatile boolean running = true;
 
     public ManagerService(ItemService itemService) {
@@ -22,6 +26,9 @@ public class ManagerService {
 
     public Auction getAuction(int auctionId) {
         return auctionDAO.getAuctionById(auctionId);
+    }
+    public User getUserById(int userId) {
+        return userDAO.getUserById(userId);
     }
 
     public List<Auction> getAllAuctions() {

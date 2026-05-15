@@ -61,6 +61,11 @@ public class ClientHandler implements Runnable {
 
                     // 2. Lấy thông tin cá nhân mới nhất (số dư, tên...)
                     case "GET_MY_INFO" -> handleGetMyInfo();
+                    case "REJECT_WIN" -> {
+                        int auctionId = (Integer) request.getData(); // Client gửi auctionId lên
+                        biddingService.rejectWin(currentUser, auctionId);
+                        sendResponse("SUCCESS", "Hủy sản phẩm thành công. Bạn bị phạt 7% giá trị đấu giá!", null);
+                    }
                     default -> sendResponse("FAILED", "Lệnh không hợp lệ", null);
                 }
             }
