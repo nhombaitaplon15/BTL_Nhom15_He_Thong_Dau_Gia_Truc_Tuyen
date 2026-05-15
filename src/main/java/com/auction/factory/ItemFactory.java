@@ -3,6 +3,8 @@ package com.auction.factory;
 import com.auction.common.model.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class ItemFactory {
     /**
@@ -18,8 +20,9 @@ public class ItemFactory {
         double price = rs.getDouble("starting_price");
         String cond = rs.getString("item_condition");
         int sellerId = rs.getInt("seller_id");
-        String img = rs.getString("img_item");
-        var created = rs.getTimestamp("created_at").toLocalDateTime();
+        String img = rs.getString("img_item");// Ví dụ sửa trong ItemFactory.java
+        Timestamp createdAtTs = rs.getTimestamp("created_at");
+        LocalDateTime created = (createdAtTs != null) ? createdAtTs.toLocalDateTime() : LocalDateTime.now();
         // hạn chế if else
         return switch (type) {
             case "VEHICLE" -> new Vehicle(id, name, desc, price, cond, sellerId, img, created,
@@ -27,7 +30,7 @@ public class ItemFactory {
                     rs.getInt("mileage"), rs.getString("fuel_type"), rs.getString("license_plate"));
 
             case "ELECTRONICS" -> new Electronics(id, name, desc, price, cond, sellerId, img, created,
-                    rs.getString("brand"), rs.getString("model"), rs.getInt("warranty_years")); // warranty_years trong DB hiểu là tháng
+                    rs.getString("brand"), rs.getString("model"), rs.getInt("warranty_months"));
 
             case "ART" -> new Art(id, name, desc, price, cond, sellerId, img, created,
                     rs.getString("artist"), rs.getInt("year_created"), rs.getString("medium"), rs.getBoolean("has_certificate"));

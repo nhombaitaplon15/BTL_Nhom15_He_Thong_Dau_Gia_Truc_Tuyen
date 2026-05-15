@@ -104,13 +104,21 @@ public class ItemDAO {
     }
 
     // 4. Xóa Item
-    public boolean deleteItem(int id) {
+    public boolean deleteItem(int itemId) {
         String sql = "DELETE FROM items WHERE item_id = ?";
+
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
+
+            // Truyền ID cần xóa vào dấu ?
+            ps.setInt(1, itemId);
+
+            // executeUpdate() trả về số dòng bị ảnh hưởng. Nếu > 0 nghĩa là xóa thành công.
+            int affectedRows = ps.executeUpdate();
+            return affectedRows > 0;
+
         } catch (SQLException e) {
+            System.err.println("Lỗi khi xóa sản phẩm: " + e.getMessage());
             return false;
         }
     }

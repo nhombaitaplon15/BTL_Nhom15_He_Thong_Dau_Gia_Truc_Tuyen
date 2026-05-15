@@ -5,10 +5,10 @@ import java.sql.*;
 
 public class TransactionDAO {
     public boolean updateTransactionStatus(Connection conn, int transId, String status) throws SQLException {
-        String sql = "UPDATE transaction SET status=? WHERE transaction_id=?";
+        String sql = "UPDATE transactions SET status=? WHERE transaction_id=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, transId);
-            pstmt.setString(2, status);
+            pstmt.setString(1, status);
+            pstmt.setInt(2, transId);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Lỗi khi cập nhật trạng thái giao dịch: " + e.getMessage());
@@ -42,7 +42,7 @@ public class TransactionDAO {
     // phê duyệt giao dịch (Chỉ admin gọi)
     public boolean processApproval(int transId, int userId, double amount, String type) {
         // SQL 1: Cập nhật trạng thái phiếu giao dịch
-        String sqlUpdateTrans = "UPDATE transactions SET status = 'APPROVED' WHERE id = ?";
+        String sqlUpdateTrans = "UPDATE transactions SET status = 'APPROVED' WHERE transaction_id = ?";
         // SQL 2: Cập nhật số dư User (Logic toán tử linh hoạt)
         // Nếu type là DEPOSIT thì dùng +, nếu là WITHDRAW thì dùng -
         String operator = type.equalsIgnoreCase("DEPOSIT") ? "+" : "-";
@@ -85,7 +85,7 @@ public class TransactionDAO {
     }
     // từ chối giao dịch
     public boolean rejectTransaction(int transId) {
-        String sql = "UPDATE transactions SET status = 'REJECTED' WHERE id = ?";
+        String sql = "UPDATE transactions SET status = 'REJECTED' WHERE transaction_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, transId);

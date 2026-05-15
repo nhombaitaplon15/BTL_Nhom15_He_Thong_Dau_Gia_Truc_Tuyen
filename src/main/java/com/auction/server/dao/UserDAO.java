@@ -114,7 +114,7 @@ public class UserDAO {
                         rs.getInt("user_id"),
                         rs.getString("username"),
                         rs.getString("email"),
-                        null, // Password không cần thiết trả về lúc này nên để null cho bảo mật
+                        rs.getString("password"),
                         rs.getString("phone"),
                         rs.getString("status"),
                         rs.getString("role"),

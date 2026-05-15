@@ -2,7 +2,7 @@ package com.auction.common.model;
 
 import java.time.LocalDateTime;
 
-public class Payment {
+public class Payment implements java.io.Serializable {
     private int logId;
     private String transactionType; // "HOLD_FUNDS", "RELEASE_FUNDS", "REFUND"
     private int fromUserId;         // Đổi sang ID để khớp với DB
