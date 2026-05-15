@@ -1,141 +1,135 @@
 package com.auction.service;
 
-import com.auction.common.model.Admin;
-import com.auction.common.model.Bidder;
-import com.auction.common.model.Seller;
-import com.auction.common.model.User;
+import com.auction.common.model.*;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.auction.factory.UserFactory;
+import com.auction.server.dao.UserDAO;
 public class UserService {
+    private UserDAO userDAO = new UserDAO();
+    // xử lí logic đăng kí mặc định là bidder không cho phép đăng kí là admin
+    public boolean handleRegister(User userRequest) {
+        try {
+            // 1. Lấy dữ liệu từ Object userRequest mà Client gửi lên
+            String username = userRequest.getUsername();
+            String password = userRequest.getPassword();
+            String email = userRequest.getEmail();
+            String phone = userRequest.getPhone();
 
-  private static Map<String, User> userMap = new HashMap<>();
+            // 2. Kiểm tra định dạng (Truyền các chuỗi đã lấy ra)
+            validateFormat(password, phone);
 
-  static {
-    User admin1 = new Admin(9, "Nguyễn Khánh Linh", "klinhnguyen932007@gmail.com", "09032007", "0865273735", "ACTIVE");
-    User admin2 = new Admin(7, "Phan Thùy Dương", "phanthuyduong01012007@gmail.com", "14112007", "0364084207", "ACTIVE");
-    User admin3 = new Admin(25022023, "Trịnh Hoài Thu", "trinhhoaithu2137a1@gmail.com", "25022023", "0975889135", "ACTIVE");
-    User admin4 = new Admin(3009, "Nguyễn Thúy Diệp", "dipdipomom@gmail.com", "25021671", "0123456789", "ACTIVE");
-    userMap.put("Nguyễn Khánh Linh", admin1);
-    userMap.put("Phan Thùy Dương", admin2);
-    userMap.put("Trịnh Hoài Thu", admin3);
-    userMap.put("Nguyễn Thúy Diệp", admin4);
-  }
+            // 3. Kiểm tra trùng lặp trong DB
+            checkDuplicates(username, email, phone);
 
-  // kiểm tra dữ liệu đã trùng chưa và đăng kí
-  public void handleRegister(String user, String pass, String mail, String phone, String role) {
+            // 4. Khởi tạo đối tượng "xịn" thông qua Factory
+            // (Sử dụng tên biến khác đi, ví dụ: finalUser)
+            User finalUser = UserFactory.createUser(0, username, email, password, phone, "ACTIVE", "BIDDER", 0.0);
 
-    if (!phone.matches("^\\d{10}$")) {
-      throw new AuctionException(
-          ErrorCode.INVALID_INPUT.name(),
-          "Số điện thoại phải đúng 10 chữ số!"
-      );
+            // 5. Lưu vào SQL
+            if (!userDAO.register(finalUser)) {
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể lưu tài khoản!");
+            }
+
+            System.out.println(">>> [REGISTER SUCCESS] User: " + username);
+            return true; // Trả về true để ClientHandler biết mà gửi SUCCESS
+
+        } catch (AuctionException e) {
+            // Ném lỗi logic (sai định dạng, trùng lặp) ra để ClientHandler bắt và gửi về Client
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Lỗi đăng ký: " + e.getMessage());
+            return false;
+        }
+    }
+    // xử lí đăng nhập
+    public User handleLogin(User credentials) {
+        User user = userDAO.checkLogin(credentials.getUsername(), credentials.getPassword());
+        // Guard: Không tìm thấy user hoặc sai pass
+        if (user == null) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tài khoản hoặc mật khẩu không chính xác!");
+        }
+        // Guard: Tài khoản bị khóa
+        if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tài khoản hiện đang bị khóa bởi Admin!");
+        }
+        return user;
+    }
+    // đổi mật khẩu
+    public void handleChangePassword(User currentUser, String oldP, String newP, String confirmP) {
+        // Guards: Kiểm tra logic mật khẩu
+        if (!currentUser.getPassword().equals(oldP))
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Mật khẩu cũ không đúng!");
+        if (newP.equals(oldP))
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Mật khẩu mới không được giống mật khẩu cũ!");
+        if (newP.length() < 8)
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Mật khẩu mới phải từ 8 ký tự!");
+        if (!newP.equals(confirmP))
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Xác nhận mật khẩu không khớp!");
+        // Update SQL
+        if (!userDAO.updatePassword(currentUser.getUsername(), newP)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database: Không thể cập nhật mật khẩu!");
+        }
+        currentUser.setPassword(newP); // Cập nhật đối tượng trong RAM
+        // do người dùng thao tác trực tiếp trên ứng dụng nên nếu k lưu thì gây lag hoặc sai lệch giao diện
+    }
+    // xử lí logic quên mật khẩu
+    public void handleForgotPassword(String username, String phone, String newPass) {
+        // Guard: Kiểm tra username và phone có khớp trong DB không
+        // Lưu ý: Bạn cần dùng isFieldExists hoặc viết thêm hàm checkPhoneMatch trong DAO
+        if (!userDAO.isFieldExists("username", username)) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tên đăng nhập không tồn tại!");
+        }
+
+        // Thực thi reset
+        if (!userDAO.updatePassword(username, newPass)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể reset mật khẩu!");
+        }
+    }
+    public User getUserById(int userId) {
+        try {
+            // gọi DAO để lấy thông tin mới nhất ừ Database
+            User user = userDAO.getUserById(userId);
+            if (user == null) {
+                System.out.println(">>> [LỖI] Không tìm thấy User với ID: " + userId);
+            }
+            return user;
+        } catch (Exception e) {
+            System.err.println(">>> [LỖI] getUserById: " + e.getMessage());
+            return null;
+        }
+    }
+    // chuyển đổi vai trò, giữ nguyên id
+    public void handleSwitchRole(User currentUser) {
+        // Guard: Admin không được đổi vai
+        if (currentUser.isAdmin()) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin không thể thực hiện chức năng này!");
+        }
+        String targetRole = currentUser.getRole().equalsIgnoreCase("BIDDER") ? "SELLER" : "BIDDER";
+        // Cập nhật SQL
+        if (userDAO.updateRole(currentUser.getId(), targetRole)) {
+            currentUser.setRole(targetRole); // Đồng bộ đối tượng Java
+            System.out.println(">>> Đã chuyển sang vai trò: " + targetRole);
+        } else {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể cập nhật vai trò!");
+        }
+    }
+    // hàm hỗ trợ tránh code smells
+    private void validateFormat(String pass, String phone) {
+        if (!phone.matches("^\\d{10}$")) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số điện thoại phải có đúng 10 chữ số!");
+        }
+        if (pass.length() < 8) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Mật khẩu phải từ 8 ký tự trở lên!");
+        }
+    }
+    private void checkDuplicates(String user, String mail, String phone) {
+        if (userDAO.isFieldExists("username", user))
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tên đăng nhập đã tồn tại!");
+        if (userDAO.isFieldExists("email", mail))
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Email đã được sử dụng!");
+        if (userDAO.isFieldExists("phone", phone))
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại đã đăng ký!");
     }
 
-    if (pass.length() < 8) {
-      throw new AuctionException(
-          ErrorCode.INVALID_INPUT.name(),
-          "Mật khẩu quá ngắn!"
-      );
-    }
-
-    if (userMap.containsKey(user)) {
-      throw new AuctionException(
-          ErrorCode.UNAUTHORIZED.name(),
-          "Tên đăng nhập đã tồn tại!"
-      );
-    }
-
-    for (User u : userMap.values()) {
-      if (u.getEmail().equals(mail)) {
-        throw new AuctionException(
-            ErrorCode.UNAUTHORIZED.name(),
-            "Email đã được sử dụng!"
-        );
-      }
-      if (u.getPhone().equals(phone)) {
-        throw new AuctionException(
-            ErrorCode.UNAUTHORIZED.name(),
-            "Số điện thoại đã đăng ký!"
-        );
-      }
-    }
-
-    int newId = userMap.size() + 1;
-    User newUser;
-
-    if ("SELLER".equalsIgnoreCase(role)) {
-      newUser = new Seller(newId, user, mail, pass, phone, "ACTIVE");
-    } else {
-      newUser = new Bidder(newId, user, mail, pass, phone, "ACTIVE");
-    }
-
-    userMap.put(user, newUser);
-    System.out.println("Đăng ký thành công: " + user);
-  }
-
-  // kiểm tra dữ liệu khi đăng nhập
-  public User handleLogin(String username, String password) {
-
-    User user = userMap.get(username);
-
-    if (user == null) {
-      throw new AuctionException(
-          ErrorCode.USER_NOT_FOUND.name(),
-          "Người dùng không tồn tại"
-      );
-    }
-
-    if (!user.getPassword().equals(password)) {
-      throw new AuctionException(
-          ErrorCode.UNAUTHORIZED.name(),
-          "Sai mật khẩu!"
-      );
-    }
-
-    System.out.println("Login OK: " + username);
-    return user;
-  }
-
-  // thay đổi mật khẩu
-  public void handleChangePassword(User currentUser, String oldP, String newP, String confirmP) {
-
-    if (!currentUser.getPassword().equals(oldP)) {
-      throw new AuctionException(
-          ErrorCode.UNAUTHORIZED.name(),
-          "Mật khẩu cũ không đúng!"
-      );
-    }
-
-    if (newP.equals(oldP)) {
-      throw new AuctionException(
-          ErrorCode.INVALID_INPUT.name(),
-          "Mật khẩu mới không được trùng mật khẩu cũ!"
-      );
-    }
-
-    if (newP.length() < 8) {
-      throw new AuctionException(
-          ErrorCode.INVALID_INPUT.name(),
-          "Mật khẩu phải >= 8 ký tự!"
-      );
-    }
-
-    if (!newP.equals(confirmP)) {
-      throw new AuctionException(
-          ErrorCode.INVALID_INPUT.name(),
-          "Xác nhận mật khẩu không khớp!"
-      );
-    }
-
-    currentUser.setPassword(newP);
-
-    System.out.println("Đổi mật khẩu thành công!");
-  }
-  public void clearData() {
-    userMap.clear();
-  }
 }

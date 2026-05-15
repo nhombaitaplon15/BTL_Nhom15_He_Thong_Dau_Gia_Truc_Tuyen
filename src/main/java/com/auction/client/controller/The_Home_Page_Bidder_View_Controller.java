@@ -1,6 +1,6 @@
 package com.auction.client.controller;
 
-import com.auction.common.model.Items;
+import com.auction.common.model.Item;
 import com.auction.service.ItemService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,7 +19,7 @@ import java.util.ResourceBundle;
 
 public class The_Home_Page_Bidder_View_Controller implements Initializable {
     @FXML private FlowPane flowPaneItem;
-    private List<Items>  list= new ArrayList<>() ;
+    private List<Item>  list= new ArrayList<>() ;
     private ItemService itemService = new ItemService();
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -27,11 +27,11 @@ public class The_Home_Page_Bidder_View_Controller implements Initializable {
     }
 
     public void loadItemsToUI() {
-        List<Items> items = itemService.getAllItems();
+        List<Item> items = itemService.getAllItems();
 
         flowPaneItem.getChildren().clear();
 
-        for (Items item : items) {
+        for (Item item : items) {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
                 Parent card = loader.load();
