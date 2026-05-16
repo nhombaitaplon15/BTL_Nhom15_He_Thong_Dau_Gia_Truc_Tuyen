@@ -1,32 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Seller_View_Controller">
+<AnchorPane fx:id="mainAnchorPane" prefHeight="600.0" prefWidth="1000.0" stylesheets="@css/HomeSeller.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Seller_View_Controller">
     <children>
-        <BorderPane prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <BorderPane fx:id="mainBorderPane" prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <top>
                 <MenuBar BorderPane.alignment="CENTER">
                     <menus>
-                        <Menu mnemonicParsing="false" text="Trang chủ ">
+                        <Menu mnemonicParsing="false" text="Trang chủ " />
+                        <Menu mnemonicParsing="false" text="Danh sách sản phẩm của bạn ">
                             <items>
-                                <MenuItem mnemonicParsing="false" text="Tổng quan hệ thống" />
-                                <MenuItem mnemonicParsing="false" text="Sản phẩm nổi bật" />
-                            </items>
-                        </Menu>
-                        <Menu mnemonicParsing="false" text="Danh sách sản phẩm">
-                            <items>
-                                <MenuItem mnemonicParsing="false" text="Tìm kiếm 🔍" />
-                                <MenuItem mnemonicParsing="false" text="Danh sách hiển thị" />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm đã bán " />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm đang đấu giá" />
+                                <MenuItem mnemonicParsing="false" text="Sản phẩm chờ được đấu giá" />
+                        <MenuItem mnemonicParsing="false" onAction="#showInsertItem" text="Đăng bán sản phẩm" />
                             </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text=" Lịch sử các phiên đấu giá của bạn ">
                             <items>
                                 <MenuItem mnemonicParsing="false" text="Phiên đấu giá sắp diễn ra" />
-                        <MenuItem mnemonicParsing="false" text="Phiên đấu giá đang chờ duyệt" />
-                        <MenuItem mnemonicParsing="false" text="Phiên đấu giá đã kết thúc" />
+                                <MenuItem mnemonicParsing="false" text="Phiên đấu giá đang chờ duyệt" />
+                                <MenuItem mnemonicParsing="false" text="Phiên đấu giá đã kết thúc" />
+                                <MenuItem mnemonicParsing="false" onAction="#showSearchItem" text="Tìm kiếm 🔍" />
                             </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text="Cài đặt">
@@ -38,29 +37,31 @@
                     </menus>
                 </MenuBar>
             </top>
-            <bottom>
-                <Button mnemonicParsing="false" onAction="#Welcome_back" text="Quay lại" BorderPane.alignment="CENTER" />
-            </bottom>
-         <center>
-            <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-               <children>
-                  <Label layoutX="377.0" layoutY="14.0" text="Các phiên đấu giá của bạn ">
-                     <font>
-                        <Font size="18.0" />
-                     </font></Label>
-                  <TableView layoutX="17.0" layoutY="53.0" prefHeight="486.0" prefWidth="959.0">
-                    <columns>
-                        <TableColumn prefWidth="83.40000915527344" text="Auction ID" />
-                        <TableColumn prefWidth="167.79998779296875" text="Item" />
-                        <TableColumn minWidth="0.0" prefWidth="128.39999389648438" text="Start Time" />
-                        <TableColumn prefWidth="130.800048828125" text="End Time" />
-                        <TableColumn prefWidth="183.4000244140625" text="Current Price" />
-                        <TableColumn prefWidth="128.79998779296875" text="Highest Bidder" />
-                        <TableColumn prefWidth="133.60002441406255" text="Auction Status" />
-                    </columns>
-                  </TableView>
-               </children></AnchorPane>
-         </center>
+            <center>
+                <AnchorPane prefHeight="484.0" prefWidth="1000.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label layoutX="394.0" text="Các phiên đấu giá của bạn ">
+                            <font>
+                                <Font size="18.0" />
+                            </font></Label>
+                        <TableView fx:id="tableViewAuction" layoutY="27.0" prefHeight="477.0" prefWidth="1004.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
+                            <columns>
+                        <TableColumn prefWidth="53.19999539852142" text="STT" />
+                                <TableColumn fx:id="colAuctionId" prefWidth="110.8000259399414" text="Auction ID" />
+                                <TableColumn fx:id="colItem" prefWidth="99.4000244140625" text="Item" />
+                                <TableColumn fx:id="colStartTime" minWidth="0.0" prefWidth="149.20001220703125" text="Start Time" />
+                                <TableColumn fx:id="colEndTime" prefWidth="149.60000610351562" text="End Time" />
+                                <TableColumn fx:id="colCurrentPrice" prefWidth="126.4000244140625" text="Current Price" />
+                                <TableColumn fx:id="colHighestBidder" minWidth="0.0" prefWidth="155.99993896484375" text="Highest Bidder" />
+                                <TableColumn fx:id="colStatus" prefWidth="152.0" text="Auction Status" />
+                            </columns>
+                     <styleClass>
+                        <String fx:value="table-row-cell" />
+                        <String fx:value="table-view" />
+                     </styleClass>
+                        </TableView>
+                    </children></AnchorPane>
+            </center>
         </BorderPane>
     </children>
 </AnchorPane>

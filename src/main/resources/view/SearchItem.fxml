@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+
+<AnchorPane prefHeight="228.0" prefWidth="529.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <TextField layoutX="4.0" layoutY="1.0" prefHeight="26.0" prefWidth="431.0" promptText="🔎" />
+        <Button layoutX="442.0" layoutY="2.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="81.0" text="Tìm kiếm">
+            <font>
+                <Font name="Times New Roman" size="14.0" />
+            </font>
+        </Button>
+        <ListView layoutX="4.0" layoutY="28.0" prefHeight="200.0" prefWidth="431.0" visible="false" />
+    </children>
+</AnchorPane>

@@ -14,4 +14,5 @@ module com.auction {
     exports com.auction;
 //    exports com.auction.test;
 //    opens com.auction.test to javafx.fxml;
+    opens com.auction.common.model to javafx.base;
 }

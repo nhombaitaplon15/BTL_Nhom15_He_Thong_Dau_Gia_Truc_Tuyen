@@ -42,10 +42,10 @@ public class ItemDAO {
 
     // 3. Thêm mới một Item (Xử lý đa hình)
     public boolean insertItem(Item item) {
-        String sql = "INSERT INTO items (name, description, item_type, starting_price, item_condition, " +
-                "seller_id, img_item, created_at, brand, model, warranty_years, artist, " +
+        String sql = "INSERT INTO items (item_id, name, description, item_type, starting_price, item_condition," +
+                "seller_id, created_at, brand, model, warranty_months, artist, " +
                 "year_created, medium, has_certificate, make, model_vehicle, manufacture_year, " +
-                "mileage, fuel_type, license_plate) VALUES (?,?,?,?,?,?,?,NOW(),?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "mileage, fuel_type, img_item) VALUES (?,?,?,?,?,?,?,NOW(),?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -78,7 +78,7 @@ public class ItemDAO {
                 ps.setString(11, a.getArtist());
                 ps.setInt(12, a.getYearCreated());
                 ps.setString(13, a.getMedium());
-                ps.setBoolean(14, a.isHasCertificate());
+                ps.setString(14, a.isHasCertificate());
             }
 
             return ps.executeUpdate() > 0;
@@ -98,5 +98,29 @@ public class ItemDAO {
         } catch (SQLException e) {
             return false;
         }
+    }
+    public List<Item> getItemsBySellerAndStatus(int sellerId, String auctionStatus) {
+        List<Item> items = new ArrayList<>();
+
+        // Dùng lệnh JOIN để móc nối bảng items và bảng auctions
+        String sql = "SELECT i.* FROM items i " +
+            "JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE i.seller_id = ? AND a.auction_status = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sellerId);
+            ps.setString(2, auctionStatus);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    items.add(ItemFactory.createFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return items;
     }
 }

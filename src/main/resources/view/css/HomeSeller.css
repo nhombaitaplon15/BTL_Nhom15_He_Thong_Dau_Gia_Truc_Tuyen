@@ -1,0 +1,77 @@
+.root {
+    -fx-font-family: "Times New Roman";
+    -fx-background-color: #FFFDE7;
+}
+.menu-bar{
+    -fx-background-color: #f7c600;
+}
+/* xóa viền và nền mặc định */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #FFF59D;     /* đổi viền vàng và bo góc */
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+.table-view .column-header-background {
+    -fx-background-color: #FFF9C4; /* nền thanh tiêu đề */
+    -fx-background-radius: 5px 5px 0 0;
+}
+/* Xóa nền xám của từng ô tiêu đề nhỏ */
+.table-view .column-header {
+    -fx-background-color: transparent;
+}
+/* Đổi màu chữ tiêu đề cho nét và nổi bật */
+.table-view .column-header .label {
+    -fx-text-fill: #5D4037;        /* Chữ màu nâu trầm hợp với nền vàng */
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+/* 3. Đổi màu nền cho các dòng CÓ dữ liệu */
+.table-row-cell {
+    -fx-background-color: white;   /* Nền trắng giúp dữ liệu dễ đọc nhất */
+    -fx-border-color: transparent transparent #F0F0F0 transparent; /* Dòng kẻ kẻ ngang mờ ở dưới */
+    -fx-pref-height: 35px;         /* Tăng chiều cao mỗi dòng lên một chút cho thoáng */
+}
+/* Hiệu ứng sọc ngựa vằn (Dòng chẵn 1 màu, lẻ 1 màu) giúp không bị hoa mắt */
+.table-row-cell:odd {
+    -fx-background-color: #FAFAFA; /* Màu xám cực nhẹ cho dòng lẻ */
+}
+/* 4. XỬ LÝ CÁC DÒNG TRỐNG BÊN DƯỚI (Rất quan trọng) */
+.table-row-cell:empty {
+     /*Chuyển các dòng thừa thành màu trắng hoặc trong suốt để bảng nhìn gọn gàng*/
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;  /*Xóa luôn dòng kẻ ngang của ô trống*/
+}
+/* 5. Màu nền khi bạn Click chuột chọn 1 dòng trong bảng */
+.table-row-cell:selected {
+    -fx-background-color: #FFF176; /* Sáng màu vàng đậm lên khi được chọn */
+    -fx-table-cell-border-color: transparent;
+}
+/* Giữ cho chữ vẫn màu đen khi dòng được chọn (mặc định JavaFX đổi thành trắng rất khó đọc) */
+.table-row-cell:selected .text {
+    -fx-fill: black;
+}
+/* 1. Đảm bảo dòng trống hoàn toàn trong suốt */
+.table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* 2. Xóa nền và XÓA LUÔN ĐƯỜNG KẺ DỌC của các ô (cell) nằm trong dòng trống */
+.table-row-cell:empty .table-cell {
+    -fx-background-color: transparent;
+    -fx-border-width: 0px; /* Cú chốt để làm mất các đường kẻ dọc */
+}
+.table-view {
+    -fx-background-color: transparent;
+}
+
+/* 2. Xóa màu nền của khu vực cuộn (virtual-flow) */
+.table-view .virtual-flow {
+    -fx-background-color: transparent;
+}
+
+/* 3. Xóa màu nền của lớp lót sâu nhất (viewport) - Đây chính là thủ phạm gây ra màu trắng! */
+.table-view .virtual-flow .viewport {
+    -fx-background-color: transparent;
+}

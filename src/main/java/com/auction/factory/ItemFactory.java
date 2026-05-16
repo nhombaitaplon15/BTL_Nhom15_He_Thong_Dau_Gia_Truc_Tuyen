@@ -30,7 +30,7 @@ public class ItemFactory {
                     rs.getString("brand"), rs.getString("model"), rs.getInt("warranty_years")); // warranty_years trong DB hiểu là tháng
 
             case "ART" -> new Art(id, name, desc, price, cond, sellerId, img, created,
-                    rs.getString("artist"), rs.getInt("year_created"), rs.getString("medium"), rs.getBoolean("has_certificate"));
+                    rs.getString("artist"), rs.getInt("year_created"), rs.getString("medium"), rs.getString("has_certificate"));
 
             default -> throw new IllegalArgumentException("Loại hàng lạ: " + type);
         };

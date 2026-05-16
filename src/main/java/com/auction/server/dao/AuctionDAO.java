@@ -116,4 +116,7 @@ public class AuctionDAO {
     public boolean deleteAll() {
         return executeUpdate("DELETE FROM auctions");
     }
+    public List<Auction> getAuctionsBySeller(int sellerId) {
+        return queryList("SELECT * FROM auctions WHERE seller_id = ?", sellerId);
+    }
 }
