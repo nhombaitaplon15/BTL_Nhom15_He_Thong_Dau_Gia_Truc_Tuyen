@@ -5,7 +5,6 @@ module com.auction {
     requires java.sql;
     requires org.postgresql.jdbc;
     requires java.desktop;
-    //requires com.auction;
 
     // Cho phép JavaFX đọc các file Controller của em
     opens com.auction.client.controller to javafx.fxml;
@@ -15,4 +14,5 @@ module com.auction {
     exports com.auction;
 //    exports com.auction.test;
 //    opens com.auction.test to javafx.fxml;
+    opens com.auction.common.model to javafx.base;
 }

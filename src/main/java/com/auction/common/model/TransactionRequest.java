@@ -1,5 +1,4 @@
 package com.auction.common.model;
-
 import java.time.LocalDateTime;
 
 public class TransactionRequest { // Yêu cầu nạp/rút tiền trong ví

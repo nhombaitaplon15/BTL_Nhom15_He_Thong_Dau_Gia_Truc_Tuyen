@@ -2,8 +2,8 @@ package com.auction.client.controller;
 
 
 import com.auction.common.model.User;
-//import com.auction.server.dao.DBConnection;
-//import com.auction.server.dao.UserDAO;
+import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.UserDAO;
 import com.auction.service.UserService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -32,10 +32,10 @@ public class LoginController {
       return;
     }
 
-    UserService userService = new UserService();
+    UserDAO  userDAO = new UserDAO();
 
     try {
-      User user = userService.handleLogin(inputUser, inputPass);
+      User user = userDAO.checkLogin(inputUser, inputPass);
 
       showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
           "Đăng nhập thành công!\nChào: " + user.getUsername() + "\nVai trò: " + user.getRole());

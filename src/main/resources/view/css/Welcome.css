@@ -15,3 +15,6 @@
     -fx-background-size: 100% 100%; /* Ép ảnh giãn ra lấp đầy 100% chiều ngang và dọc */
     -fx-background-repeat: no-repeat;
 }
+.root {
+    -fx-font-family: "Times New Roman";
+}

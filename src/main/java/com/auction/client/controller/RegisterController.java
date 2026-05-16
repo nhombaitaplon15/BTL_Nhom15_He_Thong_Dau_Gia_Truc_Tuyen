@@ -1,6 +1,9 @@
 package com.auction.client.controller;
 
+import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
+import com.auction.factory.UserFactory;
+import com.auction.server.dao.UserDAO;
 import com.auction.service.UserService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -21,10 +24,9 @@ public class RegisterController {
     @FXML private PasswordField txtPassword;
     @FXML private TextField txtEmail;
     @FXML private TextField txtPhone;
-    @FXML private RadioButton sellerRadio;
-    @FXML private RadioButton bidderRadio;
 
-    private static UserService userService = new UserService();
+    private static UserDAO userDAO = new UserDAO();
+    private double balance;
 
     @FXML
     public void handleRegister(ActionEvent event) {
@@ -33,20 +35,13 @@ public class RegisterController {
         String email = txtEmail.getText().trim();
         String phone = txtPhone.getText().trim();
 
-        String role = "";
-        if (sellerRadio.isSelected()) role = "SELLER";
-        else if (bidderRadio.isSelected()) role = "BIDDER";
-
-        if (role.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng điền đủ thông tin!");
-            return;
-        }
         try {
-            userService.handleRegister(username, password, email, phone, role);
+            User finalUser = UserFactory.createUser(0, username, email, password, phone, "ACTIVE", "BIDDER", 0.0);
             showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
-                "Đăng kí thành công!\nChào: " + username + "\nVai trò: " + role);
+                "Đăng kí thành công!\nChào: " + username );
+            userDAO.register(finalUser);
 
-            chuyenTrangChu(event, role);;
+            chuyenTrangChu(event);;
 
         } catch (AuctionException e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi đăng ký", e.getMessage());
@@ -63,10 +58,9 @@ public class RegisterController {
         alert.showAndWait();
     }
 
-    private void chuyenTrangChu(ActionEvent event, String role) {
+    private void chuyenTrangChu(ActionEvent event) {
         try {
-            String fxmlFile = role.equals("SELLER") ? "/view/The_Home_Page_Seller_View.fxml" : "/view/The_Home_Page_Bidder_View.fxml";
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource( "/view/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
@@ -77,8 +71,6 @@ public class RegisterController {
             showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải giao diện trang chủ!");
         }
     }
-
-
 
     @FXML
     public void Welcome_back(ActionEvent event){
