@@ -61,6 +61,11 @@ public class ClientHandler implements Runnable {
 
                     // 2. Lấy thông tin cá nhân mới nhất (số dư, tên...)
                     case "GET_MY_INFO" -> handleGetMyInfo();
+                    case "REJECT_WIN" -> {
+                        int auctionId = (Integer) request.getData(); // Client gửi auctionId lên
+                        biddingService.rejectWin(currentUser, auctionId);
+                        sendResponse("SUCCESS", "Hủy sản phẩm thành công. Bạn bị phạt 7% giá trị đấu giá!", null);
+                    }
                     default -> sendResponse("FAILED", "Lệnh không hợp lệ", null);
                 }
             }
@@ -111,10 +116,16 @@ public class ClientHandler implements Runnable {
     // hàm xử lí đăng kí
     private void handleRegister(Message request) {
         User newUser = (User) request.getData();
+
+        // 🛠️ CHẶN BẢO MẬT: Nếu client cố tình gửi quyền ADMIN lên, hạ cấp xuống BIDDER ngay
+        if ("ADMIN".equalsIgnoreCase(newUser.getRole())) {
+            newUser.setRole("BIDDER");
+        }
+
         if (userService.handleRegister(newUser)) {
             sendResponse("SUCCESS", "Đăng ký thành công", null);
         } else {
-            sendResponse("FAILED", "Đăng ký thất bại (Email có thể đã tồn tại)", null);
+            sendResponse("FAILED", "Đăng ký thất bại (Email hoặc Username đã tồn tại)", null);
         }
     }
     // Hàm gửi tin nhắn phản hồi về Client cho nhanh
@@ -126,7 +137,7 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) { e.printStackTrace(); }
     }
     private void handleGetDetail(Message request) {
-        int auctionId = (int) request.getData();
+        int auctionId = (Integer) request.getData();
         Auction detail = managerService.getAuction(auctionId);
         sendResponse("SUCCESS", "OK", detail);
     }
@@ -137,6 +148,7 @@ public class ClientHandler implements Runnable {
         this.currentUser = updatedUser;
         sendResponse("SUCCESS", "OK", updatedUser);
     }
+
     private void close() {
         try {
             if (socket != null) socket.close();
