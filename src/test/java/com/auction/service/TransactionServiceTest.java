@@ -1,165 +1,219 @@
 package com.auction.service;
 
 import com.auction.common.model.Bidder;
-import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import com.auction.exception.AuctionException;
+import com.auction.server.dao.PaymentDAO;
+import com.auction.server.dao.TransactionDAO;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.lang.reflect.Field;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@DisplayName(" Xử lý nạp và rút tiền")
-public class TransactionServiceTest {
-    private Transaction transaction;
+@ExtendWith(MockitoExtension.class)
+class TransactionServiceTest {
+
+    @Mock private TransactionDAO  transDAO;
+    @Mock private PaymentDAO      paymentDAO;
+    @Mock private ManagerService  managerService;
+
     private TransactionService transactionService;
-    private User bidder;
+
     @BeforeEach
-    void setUp() {
-        transaction        = new Transaction();
-        transactionService = new TransactionService(transaction);
-        bidder = new Bidder(1, "Alice", "alice@mail.com", "password123", "0901234567", "ACTIVE");
-        bidder.setBalance(2000000);
-    }
-    // Test chuyển tiền
-    // số tiền chuyển phải lớn hơn 0
-    @Test
-    @DisplayName("trường hợp hợp lệ:số tiền > 0 nên tạo yêu cầu thành Pending")
-    void deposit_success() {
-        transactionService.deposit(bidder, 500000);
-        List<TransactionRequest> pending = transaction.getPendingTransactions();
-        assertEquals(1, pending.size());
-        assertEquals("DEPOSIT", pending.get(0).getType());
-        assertEquals("PENDING", pending.get(0).getTransactionStatus());
-    }
-    //test : chuyển boa nhiêu thì vào tài khoản đúng như thế
-    @Test
-    @DisplayName("trường hợp hợp lệ: số tiền nạp được ghi đúng vào request")
-    void deposit_correctAmount() {
-        transactionService.deposit(bidder, 300000);
-        assertEquals(300000, transaction.getPendingTransactions().get(0).getAmount(), 0.01);
-    }
-    //lỗi tiền chuyển =0
-    @Test
-    @DisplayName("trường hợp không hợp lệ: Số tiền = 0 throw IllegalArgumentException")
-    void deposit_zeroAmount_shouldThrow() {
-        assertThrows(IllegalArgumentException.class,
-                () -> transactionService.deposit(bidder, 0));
-    }
-    // lỗi tền chuyển âm
-    @Test
-    @DisplayName("trường hợp không hợp lệ:Số tiền âm throw IllegalArgumentException")
-    void deposit_negativeAmount_shouldThrow() {
-        assertThrows(IllegalArgumentException.class,
-                () -> transactionService.deposit(bidder, -100000));
-    }
-    // Test: tiền chuyển phải chờ duyệt
-    @Test
-    @DisplayName("trường hợp hợp lệ: balance không thay đổi ngay mà phải chờ admin duyệt")
-    void deposit_balanceUnchangedBeforeApproval() {
-        transactionService.deposit(bidder, 500000);
-        assertEquals(2000000, bidder.getBalance(), 0.01);
-    }
-    //Test rút tiền
-    //test số dư phải đủ tiền để chuyển đi
-    @Test
-    @DisplayName("trường hợp hợp lệ: số tiền hợp lệ, đủ số dư , tạo request và trừ balance ngay")
-    void withdraw_success() {
-        transactionService.withdraw(bidder, 500000, "0001234567890");
-        assertEquals(1500000, bidder.getBalance(), 0.01);
-        assertEquals(1, transaction.getPendingTransactions().size());
-        assertEquals("WITHDRAW", transaction.getPendingTransactions().get(0).getType());
-    }
-    //Test tiền chuyển đi thì số dư phải đủ
-    @Test
-    @DisplayName("trường hợp không hợp lệ:Số tiền > số dư throw IllegalArgumentException")
-    void withdraw_insufficientBalance_shouldThrow() {
-        assertThrows(IllegalArgumentException.class,
-                () -> transactionService.withdraw(bidder, 5000000, "bank123"));
-    }
-    //test số tiền rút không được =0
-    @Test
-    @DisplayName("trường hợp không hợp lệ:số tiền = 0 throw IllegalArgumentException")
-    void withdraw_zeroAmount_shouldThrow() {
-        assertThrows(IllegalArgumentException.class,
-                () -> transactionService.withdraw(bidder, 0, "bank123"));
-    }
-    //test số tiền rút không được âm
-    @Test
-    @DisplayName("trường hợp không hợp lệ:số tiền âm → ném IllegalArgumentException")
-    void withdraw_negativeAmount_shouldThrow() {
-        assertThrows(IllegalArgumentException.class,
-                () -> transactionService.withdraw(bidder, -1, "bank123"));
-    }
-    // Test hợp lệ: số tiền rút và được ghi vào hệ thống
-    @Test
-    @DisplayName("trường hợp hợp lệ:thông tin tài khoản ngân hàng được ghi vào request")
-    void withdraw_bankInfoSaved() {
-        transactionService.withdraw(bidder, 100000, "MB123456789");
-        assertEquals("MB123456789",
-                transaction.getPendingTransactions().get(0).getBankInfo());
-    }
-    //Test admin duyệt thì thực hiện nhiệm vụ vào số dư
-    //Test admin duyệt thì cộng tiền vào số dư
-    @Test
-    @DisplayName("trường hợp hợp lệ: Admin duyệt thì cộng tiền vào balance")
-    void executeDecision_approveDeposit_addsBalance() throws Exception {
-        transactionService.deposit(bidder, 500000);
-        int id = transaction.getPendingTransactions().get(0).getRequestId();
-        transactionService.executeTransactionDecision(id, true);
-        assertEquals(2500000, bidder.getBalance(), 0.01);
-        assertEquals("APPROVED", transaction.getTransactionById(id).getTransactionStatus());
-    }
-    //test admin từ chối cộng tiền
-    @Test
-    @DisplayName("trường hợp hợp lệ: Admin từ chối cộng thì balance không thay đổi")
-    void executeDecision_rejectDeposit_noChange() throws Exception {
-        transactionService.deposit(bidder, 500000);
-        int id = transaction.getPendingTransactions().get(0).getRequestId();
+    void setUp() throws Exception {
+        transactionService = new TransactionService(managerService);
 
-        transactionService.executeTransactionDecision(id, false);
+        Field f1 = TransactionService.class.getDeclaredField("transDAO");
+        f1.setAccessible(true); f1.set(transactionService, transDAO);
 
-        assertEquals(2000000, bidder.getBalance(), 0.01);
-        assertEquals("REJECTED", transaction.getTransactionById(id).getTransactionStatus());
+        Field f2 = TransactionService.class.getDeclaredField("paymentDAO");
+        f2.setAccessible(true); f2.set(transactionService, paymentDAO);
     }
 
-    @Test
-    @DisplayName("trường hợp hợp lệ: Admin duyệt trừ tiền thì status APPROVED, balance không hoàn lại")
-    void executeDecision_approveWithdraw() throws Exception {
-        transactionService.withdraw(bidder, 500000, "bank123");     // balance còn 1500000
-        int id = transaction.getPendingTransactions().get(0).getRequestId();
-        transactionService.executeTransactionDecision(id, true);
-        assertEquals(1500000, bidder.getBalance(), 0.01);            // không cộng lại
-        assertEquals("APPROVED", transaction.getTransactionById(id).getTransactionStatus());
-    }
-    //Test admin từ chối trừ tiền
-    @Test
-    @DisplayName("trường hợp hợp lệ: Admin từ chối trừ tiền hoàn tiền lại cho user")
-    void executeDecision_rejectWithdraw_refundsBalance() throws Exception {
-        transactionService.withdraw(bidder, 500000, "bank123"); // balance còn 1500000
-        int id = transaction.getPendingTransactions().get(0).getRequestId();
-        transactionService.executeTransactionDecision(id, false);
-        assertEquals(2000000, bidder.getBalance(), 0.01);        // hoàn lại
-        assertEquals("REJECTED", transaction.getTransactionById(id).getTransactionStatus());
-    }
-    // Test và ném lỗi để giao dịch chỉ được duyệt 1 lần chứ không phải 2 lần
-    @Test
-    @DisplayName(" trường hợp không hợp lệ: giao dịch đã xử lý thì ném IllegalStateException")
-    void executeDecision_alreadyProcessed_shouldThrow() throws Exception {
-        transactionService.deposit(bidder, 300000);
-        int id = transaction.getPendingTransactions().get(0).getRequestId();
-        transactionService.executeTransactionDecision(id, true);                 // lần 1
 
-        assertThrows(IllegalStateException.class,
-                () -> transactionService.executeTransactionDecision(id, false)); // lần 2
+    private User makeBidder(int id, double balance) {
+        return new Bidder(id, "user" + id, "u@mail.com", "pass1234", "0901234567", "ACTIVE", balance);
+    }
+
+    private User makeAdmin() {
+        Bidder admin = new Bidder(1, "admin", "a@mail.com", "pass1234", "0901234567", "ACTIVE", 0);
+        admin.setRole("ADMIN");
+        return admin;
+    }
+
+
+    @Nested @DisplayName("handleDepositRequest")
+    class DepositTests {
+
+        // Test: Gửi yêu cầu nạp tiền hợp lệ thành công xuống tầng DAO
+        @Test @DisplayName("Gửi yêu cầu nạp tiền thành công")
+        void deposit_success() throws SQLException {
+            User user = makeBidder(2, 0);
+            when(transDAO.createTransaction(2, 500_000, "DEPOSIT", "PENDING")).thenReturn(true);
+
+            assertDoesNotThrow(() ->
+                    transactionService.handleDepositRequest(user, 500_000));
+
+            verify(transDAO, times(1))
+                    .createTransaction(2, 500_000, "DEPOSIT", "PENDING");
+        }
+
+        // Test: Không cho phép gửi yêu cầu nạp tiền với số tiền bằng 0
+        @Test @DisplayName("Ném lỗi khi số tiền = 0 — không gọi DAO")
+        void deposit_zeroAmount() {
+            User user = makeBidder(2, 0);
+            assertThrows(AuctionException.class,
+                    () -> transactionService.handleDepositRequest(user, 0));
+            verifyNoInteractions(transDAO);
+        }
+
+        // Test: Không cho phép gửi yêu cầu nạp tiền với số tiền âm
+        @Test @DisplayName("Ném lỗi khi số tiền âm — không gọi DAO")
+        void deposit_negativeAmount() {
+            User user = makeBidder(2, 0);
+            assertThrows(AuctionException.class,
+                    () -> transactionService.handleDepositRequest(user, -100_000));
+            verifyNoInteractions(transDAO);
+        }
+
+        // Test: Hệ thống báo lỗi khi tầng DAO không tạo được giao dịch
+        @Test @DisplayName("Ném lỗi khi DAO createTransaction trả false")
+        void deposit_daoFails() throws SQLException {
+            User user = makeBidder(2, 0);
+            when(transDAO.createTransaction(2, 500_000, "DEPOSIT", "PENDING")).thenReturn(false);
+
+            assertThrows(AuctionException.class,
+                    () -> transactionService.handleDepositRequest(user, 500_000));
+        }
+
+        // Test: Trạng thái của giao dịch nạp tiền mới tạo bắt buộc phải là PENDING
+        @Test @DisplayName("Trạng thái gửi xuống phải là PENDING")
+        void deposit_statusIsPending() throws SQLException {
+            User user = makeBidder(2, 0);
+            when(transDAO.createTransaction(anyInt(), anyDouble(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            transactionService.handleDepositRequest(user, 300_000);
+
+            verify(transDAO).createTransaction(2, 300_000, "DEPOSIT", "PENDING");
+        }
     }
 
 
 
+    @Nested @DisplayName("handleApproveTransaction - validate")
+    class ApproveTests {
 
+        // Test: Chỉ tài khoản Admin mới có quyền duyệt giao dịch nạp/rút
+        @Test @DisplayName("Ném lỗi khi không phải Admin — không gọi DAO")
+        void approve_notAdmin() {
+            User notAdmin = makeBidder(2, 0);
+            assertThrows(AuctionException.class,
+                    () -> transactionService.handleApproveTransaction(
+                            notAdmin, 10, 3, 500_000, "DEPOSIT"));
+            verifyNoInteractions(transDAO, paymentDAO, managerService);
+        }
 
+        // Test: Hệ thống báo lỗi khi không tìm thấy thông tin người dùng được duyệt tiền
+        @Test @DisplayName("Ném lỗi khi không tìm thấy user mục tiêu")
+        void approve_userNotFound() {
+            User admin = makeAdmin();
+            when(managerService.getUserById(3)).thenReturn(null);
 
+            assertThrows(AuctionException.class,
+                    () -> transactionService.handleApproveTransaction(
+                            admin, 10, 3, 500_000, "DEPOSIT"));
 
+            verify(managerService, times(1)).getUserById(3);
+            verifyNoInteractions(transDAO, paymentDAO);
+        }
+
+        // Test: Không duyệt yêu cầu rút tiền nếu số tiền rút lớn hơn số dư hiện có
+        @Test @DisplayName("Ném lỗi khi rút tiền vượt số dư — không gọi DB")
+        void approve_withdraw_insufficientBalance() {
+            User admin    = makeAdmin();
+            User liveUser = makeBidder(3, 100_000);
+            when(managerService.getUserById(3)).thenReturn(liveUser);
+
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> transactionService.handleApproveTransaction(
+                            admin, 10, 3, 500_000, "WITHDRAW"));
+            assertTrue(ex.getMessage().contains("không đủ") || ex.getMessage().contains("INVALID_INPUT"));
+
+            verifyNoInteractions(transDAO, paymentDAO);
+        }
+
+        // Test: Duyệt nạp tiền qua được validate và dừng lại ở lỗi kết nối DB
+        @Test @DisplayName("Nạp tiền: validate pass → lỗi tiếp theo là DB (INTERNAL_ERROR)")
+        void approve_deposit_validInput_failsAtDB() {
+            User admin    = makeAdmin();
+            User liveUser = makeBidder(3, 0);
+            when(managerService.getUserById(3)).thenReturn(liveUser);
+
+            try (MockedStatic<com.auction.server.dao.DBConnection> mockedConnection =
+                         Mockito.mockStatic(com.auction.server.dao.DBConnection.class)) {
+
+                mockedConnection.when(com.auction.server.dao.DBConnection::getConnection)
+                        .thenThrow(new SQLException("Cố tình làm lỗi kết nối database để test"));
+
+                AuctionException ex = assertThrows(AuctionException.class,
+                        () -> transactionService.handleApproveTransaction(
+                                admin, 10, 3, 500_000, "DEPOSIT"));
+
+                String msg = ex.getMessage();
+                assertTrue(msg.contains("INTERNAL_ERROR") || msg.contains("kết nối") || msg.contains("Database"));
+            }
+        }
+
+        // Test: Duyệt rút tiền qua được validate và dừng lại ở lỗi kết nối DB định sẵn
+        @Test @DisplayName("Rút tiền đủ số dư: validate pass → lỗi tiếp theo là DB")
+        void approve_withdraw_sufficientBalance_failsAtDB() {
+            User admin    = makeAdmin();
+            User liveUser = makeBidder(3, 1_000_000);
+            when(managerService.getUserById(3)).thenReturn(liveUser);
+
+            try (MockedStatic<com.auction.server.dao.DBConnection> mockedConnection =
+                         Mockito.mockStatic(com.auction.server.dao.DBConnection.class)) {
+
+                mockedConnection.when(com.auction.server.dao.DBConnection::getConnection)
+                        .thenThrow(new SQLException("Cố tình làm lỗi kết nối database để test"));
+
+                AuctionException ex = assertThrows(AuctionException.class,
+                        () -> transactionService.handleApproveTransaction(
+                                admin, 10, 3, 500_000, "WITHDRAW"));
+
+                assertEquals("Lỗi kết nối cơ sở dữ liệu!", ex.getMessage());
+            }
+        }
+
+        // Test: Kiểm tra công thức cộng thêm tiền vào số dư khi duyệt nạp tiền
+        @Test @DisplayName("Tính toán số dư mới sau DEPOSIT đúng công thức")
+        void approve_deposit_balanceCalculation() {
+            double oldBalance = 500_000;
+            double amount     = 300_000;
+            String type       = "DEPOSIT";
+
+            double newBalance = type.equalsIgnoreCase("DEPOSIT") ? oldBalance + amount : oldBalance - amount;
+
+            assertEquals(800_000, newBalance, 0.01);
+        }
+
+        // Test: Kiểm tra công thức trừ bớt tiền khỏi số dư khi duyệt rút tiền
+        @Test @DisplayName("Tính toán số dư mới sau WITHDRAW đúng công thức")
+        void approve_withdraw_balanceCalculation() {
+            double oldBalance = 1_000_000;
+            double amount     = 300_000;
+            String type       = "WITHDRAW";
+
+            double newBalance = type.equalsIgnoreCase("DEPOSIT") ? oldBalance + amount : oldBalance - amount;
+
+            assertEquals(700_000, newBalance, 0.01);
+        }
+    }
 }

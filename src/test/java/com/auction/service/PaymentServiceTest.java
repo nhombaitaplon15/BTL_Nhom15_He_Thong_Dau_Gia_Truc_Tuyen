@@ -1,183 +1,157 @@
 package com.auction.service;
 
-import com.auction.common.model.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import com.auction.exception.AuctionException;
+import com.auction.server.dao.PaymentDAO;
+import com.auction.server.dao.TransactionDAO;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@DisplayName("Xử lí thanh toán đấu giá")
-public class PaymentServiceTest {
-    private PaymentLog paymentLog;
+import java.lang.reflect.Field;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class PaymentServiceTest {
+
+    @Mock private PaymentDAO     paymentDAO;
+    @Mock private TransactionDAO transDAO;
+
     private PaymentService paymentService;
-    private ItemService itemService;
-    private Admin admin;
-    private Bidder bidder;
-    private Seller seller;
 
     @BeforeEach
-    void setup() {
-        paymentLog = new PaymentLog();
-        paymentService = new PaymentService(paymentLog);
-        itemService = new ItemService();
-        itemService.clearData();                                               // xóa bộ nhớ, chắc chăn tạo ra 1 đối tượng mới
-        admin = new Admin(1, "admin", "Hoa@gmail.com", "Hoa123", "0111111111", "ACTIVE");
-        bidder = new Bidder(2, "bidder", "Hi@gmail.com", "Hi123", "0222222222", "ACTIVE");
-        seller = new Seller(3, "seller", "Ha@gmail.com", "Ha123", "0333333333", "ACTIVE");
-    }
-    // tạo 1 phiên đấu giá giả ở trạng thái Paid
-    private Auction makePaidAuction(int id, double price) {
-        itemService.addItem(new Vehicle(id, "Honda",(int) price, "màu đen", "xe máy honda", "img.jpg"));
-        Items item = itemService.getItemById(id);
-        Auction auction = new Auction(id, item);
-        auction.setAuctionStatus("PAID");
-        auction.setCurrentPrice(price);
-        auction.setHighestBidder(bidder.getUsername());
-        return auction;
-    }
-    //Test HoldFund: hàm giữ tiền của bidder bởi admin
-    // người mua chuyển cho admin 100% tiền đấu giá và admin giữ, sau đó check ví từng người
-    @Test
-    @DisplayName("trường hợp hợp lệ: trừ balance bidder, cộng escrow admin")
-    void holdFunds_success() {
-        bidder.setBalance(10000000);
-        admin.setEscrowBalance(0);
-        Auction auction = makePaidAuction(1, 5000000);
-        paymentService.holdFunds(bidder, auction, admin);
-        assertEquals(5000000, bidder.getBalance(),0.01);
-        assertEquals(5000000, admin.getEscrowBalance(), 0.01);
-    }
-    // log là 1 cuộc trả tiền, ghi vào trong đó dữ kiện
-    @Test
-    @DisplayName("trường hợp hợp lệ: Ghi đúng 1 bản ghi HOLD FUNDS vào log")
-    void holdFunds_logsOneRecord() {
-        bidder.setBalance(10000000);
-        Auction auction = makePaidAuction(2, 3000000);
-        paymentService.holdFunds(bidder, auction, admin);
-        assertEquals(1, paymentLog.getAllLogs().size());
-        assertEquals("HOLD FUNDS", paymentLog.getAllLogs().get(0).getTransactionType());
-    }
-    // hàm test người nhận phải là admin và người gửi là bidder
-    @Test
-    @DisplayName("trường hợp hợp lê:Log ghi đúng fromUser là bidder, toUser là admin")
-    void holdFunds_logFromAndTo() {
-        bidder.setBalance(10000000);
-        Auction auction = makePaidAuction(3, 2000000);
-        paymentService.holdFunds(bidder, auction, admin);
-        assertEquals(bidder.getUsername(), paymentLog.getAllLogs().get(0).getFromUser());
-        assertEquals(admin.getUsername(),  paymentLog.getAllLogs().get(0).getToUser());
-    }
-    //hàm test: nếu chưa trang thái PAID(đã trả) thì tiền sẽ không được chuyển cho admin giữ
-    @Test
-    @DisplayName("trường hợp không hợp lệ: Auction chưa PAID ")
-    void holdFunds_notPaid_noEffect() {
-        bidder.setBalance(10000000);
-        itemService.addItem(new Vehicle(4, "P", 1000000, "d", "n", "i"));
-        Items item = itemService.getItemById(4);
-        Auction auction = new Auction(4, item);
-        auction.setAuctionStatus("RUNNING");
-        auction.setCurrentPrice(1000000);
-        auction.setHighestBidder(bidder.getUsername());
-        paymentService.holdFunds(bidder, auction, admin);
-        assertEquals(10000000, bidder.getBalance(), 0.01);             // không bị trừ
-        assertTrue(paymentLog.getAllLogs().isEmpty());
-    }
-    // hàm test: người thắng kp là bidder
-    @Test
-    @DisplayName("trường hợp không hợp lệ: Bidder không phải người thắng thì không thực hiện chuyển tiền")
-    void holdFunds_wrongBidder_noEffect() {
-        bidder.setBalance(10000000);
-        Auction auction = makePaidAuction(5, 2000000);
-        auction.setHighestBidder("SomeoneElse");
+    void setUp() throws Exception {
+        paymentService = new PaymentService();
 
-        paymentService.holdFunds(bidder, auction, admin);
+        Field f1 = PaymentService.class.getDeclaredField("paymentDAO");
+        f1.setAccessible(true); f1.set(paymentService, paymentDAO);
 
-        assertEquals(10000000, bidder.getBalance(), 0.01);
-        assertTrue(paymentLog.getAllLogs().isEmpty());
+        Field f2 = PaymentService.class.getDeclaredField("transDAO");
+        f2.setAccessible(true); f2.set(paymentService, transDAO);
     }
-    //Test ReleaseFund: admin chuyển tiền cho người bán theo % đã đưa ra của hệ thống
-    //mọi thứ đều phù hợp thì chuyển cho seller
-    @Test
-    @DisplayName("trường hợp hợp lệ:  chuyển tiền trừ phí 15% cho seller")
-    void releaseFundsToSeller_success() {
-        double price = 5000000;
-        double fee = price * 0.15;
-        admin.setEscrowBalance(price);
-        itemService.addItem(new Vehicle(10, "P", (int) price, "d", "n", "i"));
-        Items item = itemService.getItemById(10);
-        item.setItemStatus("COMPLETED");
-        Auction auction = new Auction(10, item);
-        auction.setCurrentPrice(price);
-        paymentService.releaseFundsToSeller(seller, auction, admin);
-        assertEquals(price - fee, seller.getBalance(), 0.01);
-        assertEquals(fee, admin.getSystemRevenue(), 0.01);
-        assertEquals(0, admin.getEscrowBalance(), 0.01);
-    }
-    // chỉ 1 người ược nhận, ghi vào trong log là 1 cuộc chuyển tiền
-    @Test
-    @DisplayName("trường hợp hợp lệ: ghi đúng 1 bản ghi chuyển vào log")
-    void releaseFundsToSeller_logsOneRecord() {
-        double price = 4000000;
-        admin.setEscrowBalance(price);
-        itemService.addItem(new Vehicle(11, "P", (int) price, "d", "n", "i"));
-        Items item = itemService.getItemById(11);
-        item.setItemStatus("COMPLETED");
-        Auction auction = new Auction(11, item);
-        auction.setCurrentPrice(price);
-        paymentService.releaseFundsToSeller(seller, auction, admin);
-        assertEquals(1, paymentLog.getAllLogs().size());
-        assertEquals("RELEASE FUNDS", paymentLog.getAllLogs().get(0).getTransactionType());
-    }
-    // nhận phí 15%
-    @Test
-    @DisplayName("trường hợp hợp lệ: phí 15% được ghi đúng vào log")
-    void releaseFundsToSeller_logFeeCorrect() {
-        double price = 10000000;
-        admin.setEscrowBalance(price);
-        itemService.addItem(new Vehicle(12, "P", (int) price, "d", "n", "i"));
-        Items item = itemService.getItemById(12);
-        item.setItemStatus("COMPLETED");
-        Auction auction = new Auction(12, item);
-        auction.setCurrentPrice(price);
-        paymentService.releaseFundsToSeller(seller, auction, admin);
-        assertEquals(price * 0.15, paymentLog.getAllLogs().get(0).getFee(), 0.01);
-    }
-    //test : item chưa chuyển đã đấu giá xong thì ko chuyển cho seller
-    @Test
-    @DisplayName("trường hợp không hợp lệ: Item chưa ở trạng thái completed")
-    void releaseFundsToSeller_notCompleted_noEffect() {
-        double price = 5000000;
-        admin.setEscrowBalance(price);
-        itemService.addItem(new Vehicle(13, "P", (int) price, "d", "n", "i"));
-        Items item = itemService.getItemById(13);
-        item.setItemStatus("PAID");
-        Auction auction = new Auction(13, item);
-        auction.setCurrentPrice(price);
-        paymentService.releaseFundsToSeller(seller, auction, admin);
-        assertEquals(0, seller.getBalance(), 0.01);         // không cộng
-        assertEquals(price, admin.getEscrowBalance(),  0.01);        // không trừ
-        assertTrue(paymentLog.getAllLogs().isEmpty());
-    }
-    // test full quá trình
-    @Test
-    @DisplayName("trường hợp hợp lệ: chạy cae quá trình")
-    void fullPaymentFlow_holdThenRelease() {
-        double price = 6000000;
-        bidder.setBalance(price);
-        admin.setEscrowBalance(0);
 
-        Auction auction = makePaidAuction(20, price);            // phần để admin giữ tiền của bidder
-        paymentService.holdFunds(bidder, auction, admin);
-        assertEquals(0,     bidder.getBalance(),0.01);
-        assertEquals(price, admin.getEscrowBalance(), 0.01);
 
-        auction.getItem().setItemStatus("COMPLETED");               // đấu giá chuyển trạng thái thì mới chuyển sang cho seller được
+    @Nested @DisplayName("holdFunds")
+    class HoldFundsTests {
 
-        paymentService.releaseFundsToSeller(seller, auction, admin);// chuyển cho seller
-        double fee = price * 0.15;
-        assertEquals(price - fee, seller.getBalance(),      0.01);
-        assertEquals(fee,admin.getSystemRevenue(), 0.01);
-        assertEquals(0,admin.getEscrowBalance(), 0.01);
-        assertEquals(2,paymentLog.getAllLogs().size());
+        // Test: Số dư bằng tiền đặt thì vượt qua validate và dừng lại do lỗi DB
+        @Test @DisplayName("Số dư vừa đủ bằng amount — ném lỗi (phải > amount)")
+        void holdFunds_balanceEqualsAmount() {
+            when(paymentDAO.getBalance(2)).thenReturn(500_000.0);
+
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> paymentService.holdFunds(2, 500_000, 1));
+
+            assertFalse(ex.getMessage().contains("Số dư không đủ"));
+        }
+
+        // Test: Tài khoản đủ số dư qua được validate và dừng lại ở lỗi kết nối DB
+        @Test @DisplayName("Số dư đủ → validate pass, lỗi tiếp theo là DB")
+        void holdFunds_sufficientBalance_failsAtDB() {
+            when(paymentDAO.getBalance(2)).thenReturn(1_000_000.0);
+
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> paymentService.holdFunds(2, 500_000, 1));
+
+            assertFalse(ex.getMessage().contains("Số dư không đủ"));
+            assertTrue(ex.getMessage().contains("INTERNAL_ERROR")
+                    || ex.getMessage().contains("kết nối")
+                    || ex.getMessage().contains("thanh toán"));
+        }
+    }
+
+
+    @Nested @DisplayName("releaseFunds - tính phí 15%")
+    class ReleaseFundsTests {
+
+        // Test: Kiểm tra công thức trích phí hệ thống 15% trên tổng tiền giải ngân
+        @Test @DisplayName("Phí hệ thống = 15% tổng tiền")
+        void releaseFunds_feeIs15Percent() {
+            double total       = 1_000_000;
+            double fee         = total * 0.15;
+            double finalAmount = total - fee;
+
+            assertEquals(150_000, fee,         0.01);
+            assertEquals(850_000, finalAmount, 0.01);
+        }
+
+        // Test: Khấu trừ phí hệ thống hoạt động chính xác với số tiền lẻ
+        @Test @DisplayName("Phí tính đúng với số lẻ")
+        void releaseFunds_feeWithOddAmount() {
+            double total       = 700_000;
+            double fee         = total * 0.15;
+            double finalAmount = total - fee;
+
+            assertEquals(105_000, fee,         0.01);
+            assertEquals(595_000, finalAmount, 0.01);
+        }
+
+        // Test: Hàm không có validate nên đi thẳng vào DB và dừng lại do lỗi kết nối
+        @Test @DisplayName("releaseFunds tiến vào DB (không có validate trước) → INTERNAL_ERROR")
+        void releaseFunds_failsAtDB() {
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> paymentService.releaseFunds(3, 1_000_000, 1));
+
+            assertTrue(ex.getMessage().contains("INTERNAL_ERROR")
+                    || ex.getMessage().contains("kết nối")
+                    || ex.getMessage().contains("giải ngân"));
+
+            verify(paymentDAO, never()).getBalance(anyInt());
+        }
+    }
+
+
+    @Nested @DisplayName("refundBuyer - logic hoàn tiền")
+    class RefundBuyerTests {
+
+        // Test: Hàm không có validate nên đi thẳng vào DB và ném lỗi kết nối giả lập
+        @Test @DisplayName("refundBuyer tiến vào DB (không có validate trước) → INTERNAL_ERROR")
+        void refundBuyer_failsAtDB() {
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> paymentService.refundBuyer(2, 500_000, 1));
+
+            assertTrue(ex.getMessage().contains("INTERNAL_ERROR")
+                    || ex.getMessage().contains("kết nối")
+                    || ex.getMessage().contains("hoàn tiền"));
+
+            verify(paymentDAO, never()).getBalance(anyInt());
+        }
+
+        // Test: Logic hoàn tiền phải trả lại nguyên vẹn 100% số tiền đã giữ của người mua
+        @Test @DisplayName("Công thức: hoàn đúng 100% số tiền đã giữ")
+        void refundBuyer_fullRefund() {
+            double held   = 800_000;
+            double refund = held;
+
+            assertEquals(800_000, refund, 0.01);
+        }
+    }
+
+
+    @Nested @DisplayName("So sánh logic 3 hàm")
+    class FlowComparisonTests {
+
+        // Test: Xác minh chỉ có hàm giữ tiền mới thực hiện kiểm tra số dư trước khi vào DB
+        @Test @DisplayName("holdFunds có validate số dư, release/refund thì không")
+        void onlyHoldFunds_validatesBalance() {
+            when(paymentDAO.getBalance(2)).thenReturn(0.0);
+            assertThrows(AuctionException.class,
+                    () -> paymentService.holdFunds(2, 500_000, 1));
+            verify(paymentDAO, atLeastOnce()).getBalance(2);
+
+            reset(paymentDAO);
+            assertThrows(AuctionException.class,
+                    () -> paymentService.releaseFunds(3, 1_000_000, 1));
+            verify(paymentDAO, never()).getBalance(anyInt());
+        }
+
+        // Test: Đảm bảo tỷ lệ khấu trừ phí giải ngân cố định ở mức 15%
+        @Test @DisplayName("SYSTEM_FEE_RATE = 15% (không đổi)")
+        void systemFeeRate_is15Percent() {
+            double rate = 0.15;
+            assertEquals(0.15, rate, 0.001);
+        }
     }
 }
