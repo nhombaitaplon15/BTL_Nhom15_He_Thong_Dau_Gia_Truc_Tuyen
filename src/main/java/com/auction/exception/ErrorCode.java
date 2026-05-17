@@ -1,4 +1,5 @@
 package com.auction.exception;
+
 // thiết lập các mã lỗi
 public enum ErrorCode {
 
@@ -22,5 +23,11 @@ public enum ErrorCode {
 
     // system
     CONCURRENCY,
-    INVALID_INPUT
+    INVALID_INPUT,
+    INTERNAL_ERROR, // Thêm dấu phẩy ở đây
+
+    // transaction (Thêm mới cho nạp/rút)
+
+    TRANSACTION_FAILED,
+    INSUFFICIENT_BALANCE
 }

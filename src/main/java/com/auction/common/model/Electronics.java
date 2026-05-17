@@ -1,29 +1,44 @@
 package com.auction.common.model;
 
-public class Electronics extends Items implements java.io.Serializable{
+import java.time.LocalDateTime;
 
-    protected String date; // ngày sản xuất
-    protected int warrantyExpiryDate; // ngày hết hạn bảo hành
-    protected String brand; // nhãn hiệu
-    protected String condition; // tình trạng
-    public Electronics (String name,int id,String producer,int startPrice, String description,String imgitem, String date, int warrantyExpiryDate ){
-        super(id,producer,startPrice,description,name, imgitem);
-        this.date= date;
-        this.warrantyExpiryDate= warrantyExpiryDate;
-        this.brand= brand;
-        this.condition= condition;
+/**
+ * Đại diện cho nhóm hàng điện tử (iPhone, Laptop...).
+ */
+public class Electronics extends Item {
+    private String brand;         // Hãng (VD: Apple)
+    private String model;         // Dòng máy (VD: iPhone 15 Pro Max)
+    private int warrantyMonths;    // Số năm bảo hành
+
+    public Electronics(int itemId, String name, String description, double startingPrice,
+                          String condition, int sellerId, String imgItem, LocalDateTime createdAt,
+                          String brand, String model, int warrantyMonths) {
+        super(itemId, name, description, "ELECTRONICS", startingPrice, condition, sellerId, imgItem, createdAt);
+        this.brand = brand;
+        this.model = model;
+        this.warrantyMonths = warrantyMonths;
     }
-    public String getBrand() { return brand; }
-    public void setBrand(String brand) { this.brand = brand; }
+    public String getBrand() {
+        return brand;
+    }
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+    public String getModel() {
+        return model;
+    }
+    public void setModel(String model) {
+        this.model = model;
+    }
+    public int getWarrantyMonths() {
+        return warrantyMonths;
+    }
+    public void setWarrantyMonths(int warrantyMonths) {
+        this.warrantyMonths = warrantyMonths;
+    }
 
-    public String getCondition() { return condition; }
-    public void setCondition(String condition) { this.condition = condition; }
-
-    public String getDate() { return date; }
-    public void setDate(String date) { this.date = date; }
-
-    public int getWarrantyExpiryDate() { return warrantyExpiryDate; }
-    public void setWarrantyExpiryDate(int warrantyExpiryDate) { this.warrantyExpiryDate = warrantyExpiryDate; }
-
-
+    @Override
+    public String getDetailedSpecs() {
+        return String.format("%s %s | Bảo hành: %d tháng", brand, model, warrantyMonths);
+    }
 }

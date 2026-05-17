@@ -25,6 +25,7 @@ public class RegisterController {
     @FXML private RadioButton bidderRadio;
 
     private static UserService userService = new UserService();
+    private double balance;
 
     @FXML
     public void handleRegister(ActionEvent event) {
@@ -42,9 +43,9 @@ public class RegisterController {
             return;
         }
         try {
-            userService.handleRegister(username, password, email, phone, role);
+            userService.handleRegister(username, password, email, phone);
             showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
-                "Đăng kí thành công!\nChào: " + username + "\nVai trò: " + role);
+                "Đăng kí thành công!\nChào: " + username );
 
             chuyenTrangChu(event, role);;
 
