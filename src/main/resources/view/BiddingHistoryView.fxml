@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<HBox prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #F8FAFC;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.BiddingHistoryController">
+    <children>
+        <VBox fx:id="sideMenu" prefWidth="280.0" style="-fx-background-color: #2563EB;" HBox.hgrow="NEVER">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <children>
+                        <Label text="⚡" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="20.0" /></font>
+                        </Label>
+                        <Label text="HỆ THỐNG" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="20.0" /></font>
+                        </Label>
+                    </children>
+                    <VBox.margin><Insets bottom="15.0" left="25.0" top="25.0" /></VBox.margin>
+                </HBox>
+
+                <VBox prefHeight="100.0" prefWidth="230.0" style="-fx-background-color: #3B82F6; -fx-background-radius: 12;">
+                    <children>
+                        <Label text="Tài khoản" textFill="#E2E8F0">
+                            <font><Font name="Times New Roman" size="13.0" /></font>
+                        </Label>
+                        <Label fx:id="lblAccountName" text="Nguyễn Thị Hà" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                            <VBox.margin><Insets top="4.0" /></VBox.margin>
+                        </Label>
+                        <HBox alignment="BASELINE_LEFT" spacing="5.0">
+                            <children>
+                                <Label text="Số dư:" textFill="#E2E8F0">
+                                    <font><Font name="Times New Roman" size="14.0" /></font>
+                                </Label>
+                                <Label fx:id="lblBalance" text="0 đ" textFill="#FBBF24">
+                                    <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                                </Label>
+                            </children>
+                            <VBox.margin><Insets top="8.0" /></VBox.margin>
+                        </HBox>
+                    </children>
+                    <padding><Insets bottom="15.0" left="20.0" top="15.0" /></padding>
+                    <VBox.margin><Insets bottom="15.0" left="25.0" right="25.0" /></VBox.margin>
+                </VBox>
+
+                <VBox prefHeight="350.0" prefWidth="297.0" spacing="8.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <Button fx:id="btnMenuLive" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#onLiveMenuClick" prefHeight="50.0" prefWidth="280.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="🏛 Sàn Đấu Giá Live" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                            <padding><Insets left="25.0" /></padding>
+                        </Button>
+
+                        <Button fx:id="btnMenuHistory" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#onHistoryMenuClick" prefHeight="50.0" prefWidth="260.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 0 25 25 0; -fx-cursor: hand;" text="⏱ Lịch Sử Đặt Giá" textFill="#2563EB">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                            <padding><Insets left="25.0" /></padding>
+                        </Button>
+
+                        <Button fx:id="btnMenuTransactions" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#onTransactionsMenuClick" prefHeight="50.0" prefWidth="280.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="💳 Lịch Sử Giao Dịch" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                            <padding><Insets left="25.0" /></padding>
+                        </Button>
+
+                        <Button fx:id="btnMenuWallet" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#onWalletMenuClick" prefHeight="50.0" prefWidth="280.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="💰 Nạp / Rút Tiền" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                            <padding><Insets left="25.0" /></padding>
+                        </Button>
+
+                        <Button fx:id="btnMenuProfile" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#onProfileMenuClick" prefHeight="50.0" prefWidth="308.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="👤 Hồ Sơ Cá Nhân" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                            <padding><Insets left="25.0" /></padding>
+                        </Button>
+                    </children>
+                </VBox>
+
+                <VBox prefHeight="130.0" spacing="10.0" style="-fx-background-color: #1E40AF;">
+                    <children>
+                        <Button fx:id="btnSwitchRole" mnemonicParsing="false" onAction="#onSwitchRoleClick" prefHeight="40.0" prefWidth="230.0" style="-fx-background-color: #10B981; -fx-background-radius: 8; -fx-cursor: hand;" text="🔄 Chuyển sang Người bán" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="13.0" /></font>
+                            <VBox.margin><Insets left="25.0" top="15.0" /></VBox.margin>
+                        </Button>
+
+                        <Button fx:id="btnLogout" mnemonicParsing="false" onAction="#onLogoutClick" prefHeight="40.0" prefWidth="230.0" style="-fx-background-color: #EF4444; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng Xuất Hệ Thống" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="13.0" /></font>
+                            <VBox.margin><Insets bottom="15.0" left="25.0" /></VBox.margin>
+                        </Button>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+
+        <AnchorPane fx:id="contentArea" prefHeight="720.0" prefWidth="833.0" HBox.hgrow="ALWAYS">
+            <children>
+                <Button fx:id="btnToggleMenu" layoutX="15.0" layoutY="33.0" mnemonicParsing="false" onAction="#handleToggleMenu" prefHeight="32.0" prefWidth="35.0" style="-fx-background-color: #E2E8F0; -fx-background-radius: 6; -fx-cursor: hand;" text="☰" AnchorPane.leftAnchor="15.0" AnchorPane.topAnchor="33.0">
+                    <font><Font name="System Bold" size="14.0" /></font>
+                </Button>
+
+                <Label layoutX="65.0" layoutY="35.0" text="LỊCH SỬ ĐẶT GIÁ CỦA BẠN" textFill="#1E3A8A" AnchorPane.leftAnchor="65.0" AnchorPane.topAnchor="35.0">
+                    <font><Font name="Times New Roman Bold" size="24.0" /></font>
+                </Label>
+
+                <HBox alignment="CENTER_RIGHT" layoutY="35.0" spacing="12.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="30.0">
+                    <children>
+                        <TextField fx:id="txtSearch" prefHeight="10.0" prefWidth="194.0" promptText="Tìm kiếm tên vật phẩm..." style="-fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: #CBD5E1; -fx-font-family: 'Times New Roman';" />
+                        <Button fx:id="btnRefresh" onAction="#handleRefresh" prefHeight="22.0" prefWidth="110.0" style="-fx-background-color: #2563EB; -fx-background-radius: 6; -fx-cursor: hand;" text="🔄 Làm Mới" textFill="WHITE">
+                            <font>
+                        <Font name="Times New Roman Bold" size="12.0" />
+                     </font>
+                        </Button>
+                    </children>
+                </HBox>
+
+                <TableView fx:id="historyTable" layoutX="35.0" layoutY="95.0" prefHeight="430.0" prefWidth="930.0" style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #E2E8F0; -fx-font-family: 'Times New Roman';" AnchorPane.bottomAnchor="105.0" AnchorPane.leftAnchor="35.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="95.0">
+                    <columns>
+                        <TableColumn fx:id="colId" prefWidth="60.0" style="-fx-alignment: CENTER;" text="STT" />
+                        <TableColumn fx:id="colAuctionId" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Mã Phiên" />
+                        <TableColumn fx:id="colItemName" prefWidth="290.0" text="Tên Vật Phẩm" />
+                        <TableColumn fx:id="colBidAmount" prefWidth="150.0" style="-fx-alignment: CENTER-RIGHT;" text="Giá Đã Đặt" />
+                        <TableColumn fx:id="colBidTime" prefWidth="170.0" style="-fx-alignment: CENTER;" text="Thời Gian Đặt" />
+                        <TableColumn fx:id="colStatus" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Trạng Thái" />
+                    </columns>
+                    <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
+                </TableView>
+
+                <HBox layoutY="640.0" spacing="15.0" AnchorPane.bottomAnchor="35.0" AnchorPane.rightAnchor="35.0">
+                    <children>
+                        <Button onAction="#handleViewDetail" prefHeight="42.0" prefWidth="200.0" style="-fx-background-color: #1E40AF; -fx-background-radius: 6; -fx-cursor: hand;" text="Xem Chi Tiết Phiên Đấu Giá" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="13.0" /></font>
+                        </Button>
+                        <Button onAction="#handleReportIssue" prefHeight="42.0" prefWidth="120.0" style="-fx-background-color: #EF4444; -fx-background-radius: 6; -fx-cursor: hand;" text="Báo Cáo Sự Cố" textFill="WHITE">
+                            <font><Font name="Times New Roman Bold" size="13.0" /></font>
+                        </Button>
+                    </children>
+                </HBox>
+            </children>
+        </AnchorPane>
+    </children>
+</HBox>
