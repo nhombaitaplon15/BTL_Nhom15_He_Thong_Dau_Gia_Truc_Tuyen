@@ -13,7 +13,7 @@ public class UserService {
     public boolean handleRegister(String username, String password, String email, String phone) {
         try {
             // Kiểm tra định dạng (Truyền các chuỗi đã lấy ra)
-            validateFormat(password, phone);
+            validateFormat(password, phone, email);
 
             // Kiểm tra trùng lặp trong DB
             checkDuplicates(username, email, phone);
@@ -110,20 +110,29 @@ public class UserService {
         if (userDAO.updateRole(currentUser.getId(), targetRole)) {
             currentUser.setRole(targetRole); // Đồng bộ đối tượng Java trong phiên làm việc
             System.out.println(">>> Đã chuyển sang vai trò: " + targetRole);
-        } else {
+        }
+        else {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể cập nhật vai trò!");
         }
     }
 
     // CÁC HÀM HỖ TRỢ TRÁNH CODE SMELLS (VALIDATION)
-    private void validateFormat(String pass, String phone) {
+    private void validateFormat(String pass, String phone, String email) {
         if (!phone.matches("^\\d{10}$")) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số điện thoại phải có đúng 10 chữ số!");
         }
         if (pass.length() < 8) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Mật khẩu phải từ 8 ký tự trở lên!");
         }
+        String lowerEmail = email.toLowerCase().trim();
+        if (!lowerEmail.contains("@") || !lowerEmail.contains(".")) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Email không hợp lệ!");
+        }
+        if (!lowerEmail.endsWith(".com") && !lowerEmail.endsWith(".net") && !lowerEmail.endsWith(".vn") && !lowerEmail.endsWith(".org") && !lowerEmail.endsWith(".edu.vn")) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Hệ thống chỉ chấp nhận các email có đuôi kết thúc bằng: .com, .net, .vn, .org, .edu.vn");
+        }
     }
+
 
     private void checkDuplicates(String user, String mail, String phone) {
         if (userDAO.isFieldExists("username", user))

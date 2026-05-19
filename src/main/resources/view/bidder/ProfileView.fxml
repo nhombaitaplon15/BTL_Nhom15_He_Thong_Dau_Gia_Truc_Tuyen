@@ -41,9 +41,6 @@
                         <VBox alignment="TOP_CENTER" prefWidth="250.0" spacing="15.0" style="-fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0; -fx-padding: 20 20 0 0;">
                             <children>
                                 <Circle fill="#EFF6FF" radius="65.0" stroke="#2563EB" strokeWidth="2.0" />
-                                <Label style="-fx-cursor: hand;" text="Chỉnh sửa ảnh" textFill="#2563EB">
-                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
-                                </Label>
                                 <VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: #F0FDF4; -fx-background-radius: 20; -fx-padding: 6 15 6 15;">
                                     <children>
                                         <Label text="✓ Tài khoản đã xác minh" textFill="#16A34A">

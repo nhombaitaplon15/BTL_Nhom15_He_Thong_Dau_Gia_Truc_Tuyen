@@ -19,8 +19,6 @@ public class RegisterController {
     @FXML private TextField txtEmail;
     @FXML private TextField txtPhone;
 
-    // ĐÃ BỎ: Các thuộc tính sellerRadio và bidderRadio phiền phức
-
     private static UserService userService = new UserService();
 
     @FXML
@@ -30,27 +28,29 @@ public class RegisterController {
         String email = txtEmail.getText().trim();
         String phone = txtPhone.getText().trim();
 
-        // Kiểm tra nhanh ở Client xem các ô nhập liệu có bị trống không
         if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phone.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng điền đầy đủ tất cả thông tin!");
             return;
         }
 
         try {
-            // Gọi thẳng Service truyền các chuỗi String trực tiếp, không lo lớp trừu tượng nữa!
+            // 1. Đăng ký tài khoản xuống DB
             userService.handleRegister(username, password, email, phone);
 
+            // 2. Hiện thông báo thành công trước
             showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
                     "Đăng ký thành công!\nChào mừng thành viên mới: " + username);
 
-            // Mặc định chuyển thẳng sang Trang chủ của Bidder (Người mua)
+            // 3. Tiến hành chuyển trang (Lỗi thường phát sinh ở đây do sai đường dẫn FXML)
             chuyenTrangChu(event);
 
         } catch (AuctionException e) {
-            // Bắt các lỗi cụ thể từ Service ném ra (Trùng tên đăng nhập, số điện thoại sai định dạng,...)
             showAlert(Alert.AlertType.ERROR, "Lỗi đăng ký", e.getMessage());
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Đã xảy ra lỗi: " + e.getMessage());
+            // In chi tiết lỗi ra console để em kiểm tra lỗi gì nếu chuyển trang thất bại
+            System.err.println("=== LỖI PHÁT SINH KHI ĐĂNG KÝ/CHUYỂN TRANG ===");
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Đăng ký xong nhưng lỗi điều hướng: " + e.getMessage());
         }
     }
 
@@ -64,17 +64,21 @@ public class RegisterController {
 
     private void chuyenTrangChu(ActionEvent event) {
         try {
-            // Mặc định điều hướng vào trang chủ Bidder sau khi đăng ký thành công
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
+            // ⚠️ EM KIỂM TRA KỸ ĐƯỜNG DẪN NÀY:
+            // Nếu file nằm trong thư mục bidder thì phải là: "/view/bidder/The_Home_Page_Bidder_View.fxml"
+            String fxmlPath = "/view/The_Home_Page_Bidder_View.fxml";
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.centerOnScreen(); // Đưa giao diện ra giữa màn hình
+            stage.centerOnScreen();
             stage.show();
         } catch (Exception e) {
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải giao diện trang chủ!");
+            System.err.println("=== LỖI KHÔNG TÌM THẤY FILE FXML TRANG CHỦ ===");
+            e.printStackTrace(); // In lỗi đỏ lòm ở terminal để check chuẩn tên file
+            showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể tải giao diện trang chủ! Kiểm tra lại tên file FXML.");
         }
     }
 
