@@ -3,6 +3,7 @@ package com.auction.server;
 import com.auction.common.model.Message;
 import com.auction.common.model.User;
 import com.auction.common.model.Auction;
+import com.auction.exception.AuctionException;
 import com.auction.service.BiddingService;
 import com.auction.service.UserService;
 import com.auction.service.ManagerService;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ClientHandler implements Runnable {
-    private Socket socket; // kết nối vật lí giữa Client và Server
+    private Socket socket; // kết nối vật lý giữa Client và Server
     private ObjectInputStream in; // luồng để nhận đối tượng (Message) từ client
     private ObjectOutputStream out; // luồng để gửi đối tượng (Message) về client
 
@@ -24,6 +25,7 @@ public class ClientHandler implements Runnable {
 
     private User currentUser; // thẻ dùng lưu danh tính của người dùng sau khi login
     // sau khi Login thành công thì biến sẽ hết NULL, giúp Server biết ai đang thực hiện lệnh
+
     public ClientHandler(Socket socket, BiddingService bidSvc, UserService userSvc, ManagerService mgrSvc) {
         this.socket = socket;
         this.biddingService = bidSvc;
@@ -41,7 +43,7 @@ public class ClientHandler implements Runnable {
             while (true) {
                 // Đợi nhận gói tin Message từ Client
                 Object received = in.readObject();
-                if (!(received instanceof Message)) continue;// Nếu sai định dạng thì bỏ qua
+                if (!(received instanceof Message)) continue; // Nếu sai định dạng thì bỏ qua
 
                 Message request = (Message) received;
                 String command = request.getCommand(); // lấy lệnh muốn thực hiện từ Client
@@ -75,21 +77,60 @@ public class ClientHandler implements Runnable {
             close();
         }
     }
-    // hàm xử lí chi tiết
-    // hàm đăng nhập
-    private void handleLogin(Message request) {
-        // Data gửi từ Client thường là 1 Map hoặc Object User chứa email/pass
-        User creds = (User) request.getData();// lấy tài khoản và mật khẩu
-        User user = userService.handleLogin(creds);// nhờ UserService kiểm tra
 
-        if (user != null) {
-            this.currentUser = user; // Lưu lại để biết ai đang dùng Thread này
+    // 🛠️ ĐÃ SỬA: HÀM ĐĂNG NHẬP (Bóc tách dữ liệu và bọc try-catch bắt lỗi từ Service gửi về)
+    private void handleLogin(Message request) {
+        try {
+            // Data từ Client gửi lên app thường là đối tượng chứa thông tin thô hoặc Map thông tin đăng nhập
+            // Vì Client vẫn có thể gửi một bọc thông tin (ví dụ mượn class con nào đó hoặc Map), ta lấy thông tin ra:
+            User creds = (User) request.getData();
+            String username = creds.getUsername();
+            String password = creds.getPassword();
+
+            // Gọi hàm handleLogin mới nhận 2 tham số kiểu String từ UserService
+            User user = userService.handleLogin(username, password);
+
+            // Nếu không ném ra ngoại lệ, tức là đăng nhập thành công!
+            this.currentUser = user; // Lưu lại phiên làm việc cho Thread này
             sendResponse("SUCCESS", "Đăng nhập thành công", user);
-        } else {
-            sendResponse("FAILED", "Sai tài khoản hoặc mật khẩu", null);
+            System.out.println("[+] [LOGIN SUCCESS] User: " + username + " với quyền: " + user.getRole());
+
+        } catch (AuctionException e) {
+            // Bắt các lỗi cụ thể như: SAI TÀI KHOẢN, MẬT KHẨU, TÀI KHOẢN BỊ KHÓA
+            sendResponse("FAILED", e.getMessage(), null);
+        } catch (Exception e) {
+            sendResponse("FAILED", "Lỗi hệ thống đăng nhập bất ngờ!", null);
+            e.printStackTrace();
         }
     }
-    // hàm xử lí đặt giá
+
+    // 🛠️ ĐÃ SỬA: HÀM ĐĂNG KÝ (Bóc tách dữ liệu String trực tiếp gửi xuống UserService)
+    private void handleRegister(Message request) {
+        try {
+            User newUser = (User) request.getData();
+
+            String username = newUser.getUsername();
+            String password = newUser.getPassword();
+            String email = newUser.getEmail();
+            String phone = newUser.getPhone();
+
+            // Gọi hàm handleRegister mới nhận các chuỗi String trực tiếp từ UserService
+            if (userService.handleRegister(username, password, email, phone)) {
+                sendResponse("SUCCESS", "Đăng ký thành công", null);
+            } else {
+                sendResponse("FAILED", "Đăng ký thất bại, lỗi hệ thống!", null);
+            }
+
+        } catch (AuctionException e) {
+            // Bắt các lỗi logic định dạng, trùng tên đăng nhập, email, số điện thoại từ Service ném ra
+            sendResponse("FAILED", e.getMessage(), null);
+        } catch (Exception e) {
+            sendResponse("FAILED", "Lỗi xử lý đăng ký hệ thống!", null);
+            e.printStackTrace();
+        }
+    }
+
+    // hàm xử lý đặt giá
     private void handlePlaceBid(Message request) {
         try {
             // 1. Bóc gói dữ liệu lấy ID phiên và Giá đặt
@@ -108,34 +149,24 @@ public class ClientHandler implements Runnable {
             sendResponse("FAILED", e.getMessage(), null);
         }
     }
+
     // hàm lấy danh sách
     private void handleGetAuctions() {
         List<Auction> list = managerService.getAllAuctions();
         sendResponse("SUCCESS", "Lấy danh sách thành công", list);
     }
-    // hàm xử lí đăng kí
-    private void handleRegister(Message request) {
-        User newUser = (User) request.getData();
 
-        // 🛠️ CHẶN BẢO MẬT: Nếu client cố tình gửi quyền ADMIN lên, hạ cấp xuống BIDDER ngay
-        if ("ADMIN".equalsIgnoreCase(newUser.getRole())) {
-            newUser.setRole("BIDDER");
-        }
-
-        if (userService.handleRegister(newUser)) {
-            sendResponse("SUCCESS", "Đăng ký thành công", null);
-        } else {
-            sendResponse("FAILED", "Đăng ký thất bại (Email hoặc Username đã tồn tại)", null);
-        }
-    }
     // Hàm gửi tin nhắn phản hồi về Client cho nhanh
     private void sendResponse(String status, String note, Object data) {
         try {
             Message response = new Message(status, note, data);
             out.writeObject(response);
             out.flush();
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
     private void handleGetDetail(Message request) {
         int auctionId = (Integer) request.getData();
         Auction detail = managerService.getAuction(auctionId);
@@ -152,6 +183,8 @@ public class ClientHandler implements Runnable {
     private void close() {
         try {
             if (socket != null) socket.close();
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

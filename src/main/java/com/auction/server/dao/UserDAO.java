@@ -50,7 +50,7 @@ public class UserDAO {
     // 3. Đăng ký tài khoản mới
     public boolean register(User user) {
         // Thêm cột balance vào SQL để đồng bộ
-        String sql = "INSERT INTO users (username, password, email, phone, user_role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, email, phone, role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getUsername());
