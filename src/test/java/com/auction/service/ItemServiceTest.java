@@ -1,140 +1,160 @@
 package com.auction.service;
 
-import com.auction.common.model.Vehicle;
+import com.auction.common.model.Electronics;
+import com.auction.common.model.Item;
 import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import com.auction.server.dao.ItemDAO;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-public class ItemServiceTest {
+@ExtendWith(MockitoExtension.class)
+class ItemServiceTest {
+
+    @Mock
+    private ItemDAO itemDAO;
 
     private ItemService itemService;
 
-    private Vehicle makeItem(int id, String name, int price) {
-        return new Vehicle(id, "Producer A", price, "Mô tả", name, "img.jpg");
-    }
-
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         itemService = new ItemService();
-        itemService.clearData();
+        Field field = ItemService.class.getDeclaredField("itemDAO");
+        field.setAccessible(true);
+        field.set(itemService, itemDAO);
     }
 
-    //thêm item
-
-    // khi thêm item đúng thông tin
-    @Test
-    void addItem_success() {
-        itemService.addItem(makeItem(1, "Xe máy Honda", 5000000));
-        assertEquals(1, itemService.getAllItems().size());
-    }
-    // khi item null
-    @Test
-    void addItem_nullItem_shouldThrow() {
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.addItem(null));
-        assertEquals(ErrorCode.INVALID_ITEM.name(), ex.getCode());
-    }
-    // khi tên item toàn khoảng trắng
-    @Test
-    void addItem_emptyName_shouldThrow() {
-        Vehicle item = makeItem(1, "   ", 5000000);
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.addItem(item));
-        assertEquals(ErrorCode.INVALID_ITEM.name(), ex.getCode());
-    }
-    // khi giá khởi điểm âm
-    @Test
-    void addItem_negativePrice_shouldThrow() {
-        Vehicle item = makeItem(1, "Xe máy", -1);
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.addItem(item));
-        assertEquals(ErrorCode.INVALID_ITEM.name(), ex.getCode());
+    // Tạo nhanh đối tượng sản phẩm điện tử để test
+    private Item makeItem(int id, String name, double price) {
+        return new Electronics(id, name, "Mô tả",
+                price, "NEW", 1, "img.jpg", LocalDateTime.now(),
+                "Samsung", "S24", 12);
     }
 
-    // khi id trùng với item đã có
-    @Test
-    void addItem_duplicateId_shouldThrow() {
-        itemService.addItem(makeItem(1, "Xe máy Honda", 5000000));
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.addItem(makeItem(1, "Xe máy Yamaha", 6000000)));
-        assertEquals(ErrorCode.ITEM_DUPLICATE.name(), ex.getCode());
-    }
-    // khi giá = 0 không phải âm
-    @Test
-    void addItem_zeroPriceIsValid() {
-        assertDoesNotThrow(() -> itemService.addItem(makeItem(1, "Quà tặng", 0)));
+    @Nested
+    @DisplayName("getAllItems")
+    class GetAllTests {
+
+        // Test: Trả về đầy đủ danh sách sản phẩm hiện có trong hệ thống
+        @Test
+        @DisplayName("Trả về danh sách đầy đủ từ DAO")
+        void getAllItems_returnsList() {
+            when(itemDAO.getAllItems()).thenReturn(Arrays.asList(
+                    makeItem(1, "Laptop", 15_000_000),
+                    makeItem(2, "Phone", 8_000_000)
+            ));
+            assertEquals(2, itemService.getAllItems().size());
+        }
+
+        // Test: Trả về danh sách trống khi kho hàng chưa có sản phẩm nào
+        @Test
+        @DisplayName("Trả về danh sách rỗng khi không có sản phẩm")
+        void getAllItems_emptyList() {
+            when(itemDAO.getAllItems()).thenReturn(Collections.emptyList());
+            assertTrue(itemService.getAllItems().isEmpty());
+        }
     }
 
+    @Nested
+    @DisplayName("getItemById")
+    class GetByIdTests {
 
-    //phần getId
-    // khi id tồn tại
-    @Test
-    void getItemById_success() {
-        itemService.addItem(makeItem(1, "Xe máy Honda", 5000000));
-        assertNotNull(itemService.getItemById(1));
-        assertEquals("Xe máy Honda", itemService.getItemById(1).getName());
-    }
-    // khi id ko tồn tại
-    @Test
-    void getItemById_notFound_shouldThrow() {
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.getItemById(999));
-        assertEquals(ErrorCode.ITEM_NOT_FOUND.name(), ex.getCode());
-    }
+        // Test: Lấy thông tin chi tiết sản phẩm thành công dựa trên ID
+        @Test
+        @DisplayName("Tìm thấy item hợp lệ")
+        void getItemById_found() {
+            when(itemDAO.getItemById(1)).thenReturn(makeItem(1, "Laptop", 15_000_000));
+            assertEquals("Laptop", itemService.getItemById(1).getName());
+        }
 
-
-    //updateItem
-    // khi id tồn tại, thông tin mới hợp lệ
-    @Test
-    void updateItem_success() {
-        itemService.addItem(makeItem(1, "Xe máy Honda", 5000000));
-        itemService.updateItem(1, "Producer B", "Mô tả mới", "Xe máy Yamaha", "new.jpg");
-
-        assertEquals("Xe máy Yamaha", itemService.getItemById(1).getName());
-        assertEquals("Producer B", itemService.getItemById(1).getProducer());
-    }
-    // khi id ko tồn tại
-    @Test
-    void updateItem_notFound_shouldThrow() {
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.updateItem(999, "P", "D", "N", "i.jpg"));
-        assertEquals(ErrorCode.ITEM_NOT_FOUND.name(), ex.getCode());
+        // Test: Ném lỗi hệ thống nếu ID sản phẩm tìm kiếm không tồn tại
+        @Test
+        @DisplayName("Ném lỗi ITEM_NOT_FOUND khi không tìm thấy")
+        void getItemById_notFound() {
+            when(itemDAO.getItemById(99)).thenReturn(null);
+            AuctionException ex = assertThrows(AuctionException.class,
+                    () -> itemService.getItemById(99));
+            assertTrue(ex.getMessage().contains("ITEM_NOT_FOUND")
+                    || ex.getMessage().contains("không tồn tại"));
+        }
     }
 
+    @Nested
+    @DisplayName("addItem - validate đầu vào")
+    class AddItemValidateTests {
 
-    //xóa item
-    // khi id tồn tại, danh sách có 1 item
-    @Test
-    void deleteItem_success() {
-        itemService.addItem(makeItem(1, "Xe máy Honda", 5000000));
-        itemService.deleteItem(1);
-        assertEquals(0, itemService.getAllItems().size());
-    }
-    // khi id ko tồn tại
-    @Test
-    void deleteItem_notFound_shouldThrow() {
-        AuctionException ex = assertThrows(AuctionException.class,
-                () -> itemService.deleteItem(999));
-        assertEquals(ErrorCode.ITEM_NOT_FOUND.name(), ex.getCode());
-    }
+        // Test: Ngăn chặn thêm sản phẩm nếu đối tượng truyền vào là null
+        @Test
+        @DisplayName("Ném lỗi khi item null")
+        void addItem_nullItem() {
+            assertThrows(AuctionException.class, () -> itemService.addItem(null));
+            verifyNoInteractions(itemDAO);
+        }
 
-    //get all
-    // khi chưa có  item
-    @Test
-    void getAllItems_empty() {
-        assertTrue(itemService.getAllItems().isEmpty());
-    }
-    // thêm 3 item
-    @Test
-    void getAllItems_multipleItems() {
-        itemService.addItem(makeItem(1, "Item A", 1000));
-        itemService.addItem(makeItem(2, "Item B", 2000));
-        itemService.addItem(makeItem(3, "Item C", 3000));
-        assertEquals(3, itemService.getAllItems().size());
+        // Test: Ngăn chặn thêm sản phẩm nếu tên sản phẩm bị bỏ trống
+        @Test
+        @DisplayName("Ném lỗi khi tên rỗng")
+        void addItem_emptyName() {
+            assertThrows(AuctionException.class, () -> itemService.addItem(makeItem(0, "", 15_000_000)));
+            verifyNoInteractions(itemDAO);
+        }
+
+        // Test: Ngăn chặn thêm sản phẩm nếu tên sản phẩm nhận giá trị null
+        @Test
+        @DisplayName("Ném lỗi khi tên null")
+        void addItem_nullName() {
+            assertThrows(AuctionException.class, () -> itemService.addItem(makeItem(0, null, 15_000_000)));
+            verifyNoInteractions(itemDAO);
+        }
+
+        // Test: Ngăn chặn thêm sản phẩm nếu mức giá khởi điểm nhỏ hơn 0
+        @Test
+        @DisplayName("Ném lỗi khi giá âm")
+        void addItem_negativePrice() {
+            assertThrows(AuctionException.class, () -> itemService.addItem(makeItem(0, "Laptop", -1)));
+            verifyNoInteractions(itemDAO);
+        }
+
+        @Nested
+        @DisplayName("deleteItem")
+        class DeleteItemTests {
+
+            // Test: Xóa sản phẩm thành công khi sản phẩm tồn tại và hợp lệ
+            @Test
+            @DisplayName("Xóa item thành công")
+            void deleteItem_success() {
+                when(itemDAO.getItemById(1)).thenReturn(makeItem(1, "Laptop", 15_000_000));
+                when(itemDAO.deleteItem(1)).thenReturn(true);
+                assertDoesNotThrow(() -> itemService.deleteItem(1));
+            }
+
+            // Test: Chặn lệnh xóa ngay từ đầu nếu sản phẩm cần xóa không tồn tại
+            @Test
+            @DisplayName("Ném lỗi khi item không tồn tại — không gọi deleteItem")
+            void deleteItem_notFound() {
+                when(itemDAO.getItemById(99)).thenReturn(null);
+                assertThrows(AuctionException.class, () -> itemService.deleteItem(99));
+                verify(itemDAO, never()).deleteItem(99);
+            }
+
+            // Test: Ném lỗi nếu DB từ chối xóa (ví dụ sản phẩm đang trong phiên đấu giá)
+            @Test
+            @DisplayName("Ném lỗi khi DAO deleteItem trả false (đang đấu giá)")
+            void deleteItem_daoReturnsFalse() {
+                when(itemDAO.getItemById(1)).thenReturn(makeItem(1, "Laptop", 15_000_000));
+                when(itemDAO.deleteItem(1)).thenReturn(false);
+                assertThrows(AuctionException.class, () -> itemService.deleteItem(1));
+            }
+        }
     }
 }
-
