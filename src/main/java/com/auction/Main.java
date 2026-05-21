@@ -10,14 +10,14 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/LoginView.fxml"));
 
-        Scene scene = new Scene(loader.load(),1000,640);
+        Scene scene = new Scene(loader.load(), 1280,720);
 
         primaryStage.setTitle("Hệ thống Đấu giá trực tuyến - Nhóm 15");
         primaryStage.setScene(scene);
 
-        primaryStage.setResizable(false);
+        primaryStage.setResizable(true);
 
         primaryStage.show();
 

@@ -48,11 +48,14 @@ public class UserDAO {
     }
 
     // 3. Đăng ký tài khoản mới
+    // 3. Đăng ký tài khoản mới (ĐÃ FIX LỖI NHẬN ID TỰ TĂNG POSTGRESQL)
     public boolean register(User user) {
-        // Thêm cột balance vào SQL để đồng bộ
-        String sql = "INSERT INTO users (username, password, email, phone, user_role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, email, phone, role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        // CẢI TIẾN QUAN TRỌNG: Thêm Statement.RETURN_GENERATED_KEYS vào đây
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getEmail());
@@ -60,14 +63,15 @@ public class UserDAO {
             ps.setString(5, user.getRole());
             ps.setString(6, user.getStatus());
             ps.setDouble(7, user.getBalance());
+
             int affectedRows = ps.executeUpdate();
             if (affectedRows > 0) {
-                // Lấy ID tự tăng vừa được sinh ra dưới Database
+                // Bây giờ generatedKeys chắc chắn sẽ có dữ liệu từ Postgres trả về
                 try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         int generatedId = generatedKeys.getInt(1);
-                        user.setId(generatedId); // Nạp ID vào Object để các hàm sau có ID dùng luôn
-                        return true;
+                        user.setId(generatedId); // Nạp ID vào Object để dùng luôn
+                        return true; // Trả về THÀNH CÔNG chuẩn xác!
                     }
                 }
             }
@@ -75,7 +79,7 @@ public class UserDAO {
             System.err.println("Lỗi đăng ký tài khoản: " + e.getMessage());
             e.printStackTrace();
         }
-        return false; // Đăng ký thất bại
+        return false;
     }
 
     // 4. Cập nhật mật khẩu (Dùng cho cả đổi và quên mật khẩu)

@@ -38,6 +38,23 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo yêu cầu nạp: " + e.getMessage());
         }
     }
+    public void handleWithdrawRequest(User currentUser, double amount) {
+        if (amount <= 0) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số tiền phải lớn hơn 0");
+        }
+        try {
+            // Gọi hàm createTransaction loại KHÔNG CÓ CONNECTION (tự lấy conn nội bộ trong DAO)
+            // Trạng thái lưu xuống ban đầu bắt buộc là "PENDING"
+            boolean success = transDAO.createTransaction(currentUser.getId(), amount, "WITHDRAW", "PENDING");
+
+            if (!success) {
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể gửi yêu cầu nạp tiền!");
+            }
+            System.out.println(">>> Đã gửi yêu cầu rút " + amount + ". Chờ Admin duyệt.");
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo yêu cầu rút: " + e.getMessage());
+        }
+    }
 
     // 2. Admin phê duyệt nạp / rút tiền
     public void handleApproveTransaction(User adminUser, int transId, int targetUserId, double amount, String type) {
