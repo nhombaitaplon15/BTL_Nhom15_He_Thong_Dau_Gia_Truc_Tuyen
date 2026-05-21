@@ -32,7 +32,7 @@
                     <Label text="Tài khoản" textFill="#E2E8F0">
                         <font><Font name="Times New Roman" size="13.0" /></font>
                     </Label>
-                    <Label fx:id="lblAccountName" text="Nguyễn Thị Hà" textFill="WHITE">
+                    <Label fx:id="lblAccountName" text="" textFill="WHITE">
                         <font><Font name="Times New Roman Bold" size="18.0" /></font>
                         <VBox.margin><Insets top="4.0" /></VBox.margin>
                     </Label>
@@ -41,7 +41,7 @@
                             <Label text="Số dư:" textFill="#E2E8F0">
                                 <font><Font name="Times New Roman" size="14.0" /></font>
                             </Label>
-                            <Label fx:id="lblBalance" text="0 đ" textFill="#FBBF24">
+                            <Label fx:id="lblBalance" text="" textFill="#FBBF24">
                                 <font><Font name="Times New Roman Bold" size="16.0" /></font>
                             </Label>
                         </children>

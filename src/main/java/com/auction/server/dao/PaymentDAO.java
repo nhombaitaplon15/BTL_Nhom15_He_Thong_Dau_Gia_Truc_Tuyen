@@ -41,7 +41,7 @@ public class PaymentDAO {
     // 3. Lấy số dư (Hàm này chỉ đọc, nên tự tạo Connection cũng được cho tiện)
     public double getBalance(int userId) {
         String sql = "SELECT balance FROM users WHERE user_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {

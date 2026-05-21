@@ -2,7 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.common.model.*;
 import com.auction.factory.ItemFactory;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,7 @@ public class ItemDAO {
     public List<Item> getAllItems() {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -28,7 +28,7 @@ public class ItemDAO {
     // 2. Lấy 1 Item theo ID cụ thể
     public Item getItemById(int id) {
         String sql = "SELECT * FROM items WHERE item_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -107,7 +107,7 @@ public class ItemDAO {
     public boolean deleteItem(int itemId) {
         String sql = "DELETE FROM items WHERE item_id = ?";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             // Truyền ID cần xóa vào dấu ?

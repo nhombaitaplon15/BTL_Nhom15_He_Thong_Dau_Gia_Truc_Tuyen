@@ -1,6 +1,6 @@
 package com.auction.server.dao;
 
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
 import java.sql.*;
 
 public class TransactionDAO {
@@ -32,7 +32,7 @@ public class TransactionDAO {
     }
     // tạo ra khi nạp rút thông thường
     public boolean createTransaction(int userId, double amount, String type,  String status) throws SQLException {
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             return createTransaction(conn, userId, amount, type, status);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -51,7 +51,7 @@ public class TransactionDAO {
         if (type.equalsIgnoreCase("WITHDRAW")) {
             sqlUpdateUser += " AND balance >= ?";
         }
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // Bước 1: Cập nhật phiếu
@@ -86,7 +86,7 @@ public class TransactionDAO {
     // từ chối giao dịch
     public boolean rejectTransaction(int transId) {
         String sql = "UPDATE transactions SET status = 'REJECTED' WHERE transaction_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, transId);
             return ps.executeUpdate() > 0;

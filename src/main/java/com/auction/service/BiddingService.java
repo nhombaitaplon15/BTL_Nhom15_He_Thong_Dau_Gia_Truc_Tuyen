@@ -49,7 +49,7 @@ public class BiddingService {
     }
     // đấu giá
     private void executeBidTransaction(User user, Auction auction, double amount) {
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false); // Bắt đầu Transaction
             try {
                 // 1, Hoàn tiền cho người đang giữ giá cao nhất cũ (nếu có)
@@ -109,7 +109,7 @@ public class BiddingService {
         double refundAmount = bidAmount - penaltyAmount;
         int adminId = 1; // ID tài khoản doanh thu hệ thống
 
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // 1. Trả lại 93% cho người mua

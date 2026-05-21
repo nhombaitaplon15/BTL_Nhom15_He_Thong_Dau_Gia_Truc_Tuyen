@@ -5,7 +5,8 @@ import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
+import com.auction.service.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -75,7 +76,7 @@ public class TransactionService {
         }
 
         // Mở một Transaction bọc luồng duyệt tiền để đảm bảo: Cộng tiền + Đổi trạng thái SUCCESS phải đi liền nhau
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn =DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // Bước A: Cập nhật số dư ví trong DB

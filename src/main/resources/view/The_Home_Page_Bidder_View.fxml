@@ -1,6 +1,3 @@
-
-
-
 <?xml version="1.0" encoding="UTF-8"?>
 
         <?import javafx.geometry.Insets?>
@@ -43,7 +40,7 @@
                             <Label text="Tài khoản" textFill="#E0F2FE">
                                 <font><Font name="Times New Roman" size="14.0" /></font>
                             </Label>
-                            <Label fx:id="lblBidderName" text="Đang tải..." textFill="WHITE">
+                            <Label fx:id="lblBidderName" text="" textFill="WHITE">
                                 <font><Font name="Times New Roman Bold" size="18.0" /></font>
                             </Label>
                             <HBox alignment="BOTTOM_LEFT" spacing="5.0" style="-fx-padding: 6 0 0 0;">
@@ -51,7 +48,7 @@
                                     <Label text="Số dư:" textFill="#E0F2FE">
                                         <font><Font name="Times New Roman" size="14.0" /></font>
                                     </Label>
-                                    <Label fx:id="lblBalance" text="0 đ" textFill="#FDE047">
+                                    <Label fx:id="lblBalance" text="" textFill="#FDE047">
                                         <font><Font name="Times New Roman Bold" size="20.0" /></font>
                                     </Label>
                                 </children>

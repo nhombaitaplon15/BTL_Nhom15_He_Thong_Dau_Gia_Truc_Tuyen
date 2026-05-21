@@ -5,7 +5,7 @@ import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.server.dao.AuctionDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import org.junit.jupiter.api.*;
@@ -166,8 +166,8 @@ class BiddingServiceTest {
             Auction auction = makeRunningAuction(1, 99, 500_000);
             when(managerService.getAuctionOrThrow(1)).thenReturn(auction);
 
-            try (MockedStatic<DBConnection> mockedDb = mockStatic(DBConnection.class)) {
-                mockedDb.when(DBConnection::getConnection)
+            try (MockedStatic<DatabaseConnection> mockedDb = mockStatic(DatabaseConnection.class)) {
+                mockedDb.when(DatabaseConnection::connect)
                         .thenThrow(new java.sql.SQLException("Mất kết nối Database"));
 
                 AuctionException ex = assertThrows(AuctionException.class,
@@ -224,8 +224,8 @@ class BiddingServiceTest {
                         LocalDateTime.now().minusHours(1), 2);
                 when(managerService.getAuctionOrThrow(1)).thenReturn(auction);
 
-                try (MockedStatic<DBConnection> mockedDb = mockStatic(DBConnection.class)) {
-                    mockedDb.when(DBConnection::getConnection)
+                try (MockedStatic<DatabaseConnection> mockedDb = mockStatic(DatabaseConnection.class)) {
+                    mockedDb.when(DatabaseConnection::connect)
                             .thenThrow(new java.sql.SQLException("Không thể thiết lập kết nối tới Cơ sở dữ liệu!"));
 
                     AuctionException ex = assertThrows(AuctionException.class,

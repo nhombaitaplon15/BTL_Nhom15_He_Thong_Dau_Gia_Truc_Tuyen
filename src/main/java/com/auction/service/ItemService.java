@@ -4,7 +4,7 @@ import com.auction.common.model.Item;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.ItemDAO;
-import com.auction.server.dao.DBConnection; // Bổ sung để mở Connection
+import com.auction.server.dao.DatabaseConnection; // Bổ sung để mở Connection
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -40,7 +40,7 @@ public class ItemService {
         validateItem(item);
 
         // 2. Mở Connection để chạy luồng lưu trữ có ID tự sinh
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false); // Bật chế độ quản lý giao dịch an toàn
 
             try {

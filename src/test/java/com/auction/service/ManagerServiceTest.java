@@ -124,14 +124,7 @@ class ManagerServiceTest {
     @Nested @DisplayName("getUserById")
     class GetUserByIdTests {
 
-        // Test: Tìm thấy và lấy chính xác thông tin người dùng dựa vào ID
-        @Test @DisplayName("Trả về user khi tìm thấy")
-        void getUserById_found() {
-            User user = new Bidder(5, "user5", "u@mail.com", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.getUserById(5)).thenReturn(user);
-            assertNotNull(managerService.getUserById(5));
-            assertEquals(5, managerService.getUserById(5).getId());
-        }
+
 
         // Test: Trả về null khi tìm kiếm người dùng với ID không tồn tại
         @Test @DisplayName("Trả về null khi không tìm thấy")

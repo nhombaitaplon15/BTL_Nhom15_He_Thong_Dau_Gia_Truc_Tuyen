@@ -64,4 +64,12 @@ public class Auction implements Serializable {
     public boolean isWaitingForAdmin() {
         return "WAITING_FOR_ADMIN".equalsIgnoreCase(this.auctionStatus);
     }
+
+    public void setItem(Item itemData) {
+    }
+
+    private Item item;
+    public Item getItem() {
+        return this.item;
+    }
 }

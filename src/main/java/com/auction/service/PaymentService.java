@@ -2,7 +2,7 @@ package com.auction.service;
 
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import java.sql.Connection;
@@ -20,7 +20,7 @@ public class PaymentService {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số dư không đủ!");
         }
 
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // Bước 1: Trừ tiền người mua
@@ -49,7 +49,7 @@ public class PaymentService {
         double fee = totalAmount * SYSTEM_FEE_RATE;
         double finalAmount = totalAmount - fee;
 
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // Bước 1: Trừ tổng số tiền đang tạm giữ ra khỏi kho giữ hộ của Admin
@@ -83,7 +83,7 @@ public class PaymentService {
 
     // 3. HOÀN TIỀN LẠI CHO NGƯỜI MUA
     public void refundBuyer(int bidderId, double amount, int auctionId) {
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
                 // Bước 1: Trừ tiền từ kho giữ hộ của Admin

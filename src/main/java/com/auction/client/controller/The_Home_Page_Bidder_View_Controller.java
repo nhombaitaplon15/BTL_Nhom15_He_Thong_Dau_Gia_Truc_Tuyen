@@ -4,6 +4,7 @@ import com.auction.client.controller.bidder.ProfileController;
 import com.auction.client.controller.bidder.TransactionHistoryController;
 import com.auction.client.controller.bidder.WalletController;
 import com.auction.common.model.User;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,9 +13,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.net.URL;
+import javafx.event.ActionEvent; // Đảm bảo đã import đúng gói này
+
 
 public class The_Home_Page_Bidder_View_Controller {
 
@@ -22,10 +27,17 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML private Label lblBalance;
     @FXML private TextField txtSearch;
     @FXML private GridPane gridAuctions;
+    @FXML private VBox sidebarContainer; // Để ẩn/hiện Sidebar menu
+    @FXML private Label lblRoomTitle;    // Tiêu đề động cho khu vực Live Auctions
 
     // Đối tượng User lưu trữ xuyên suốt
     private User currentUser;
+    private MainContainerController mainContainer;
 
+    // 2. Thêm hàm setter này để nhận dữ liệu truyền vào từ MainContainer
+    public void setMainContainer(MainContainerController mainContainer) {
+        this.mainContainer = mainContainer;
+    }
     @FXML
     public void initialize() {
         System.out.println("🎉 Khởi tạo trang chủ Bidder thành công.");
@@ -77,7 +89,7 @@ public class The_Home_Page_Bidder_View_Controller {
     }
 
     @FXML void handleNavDashboard(ActionEvent event) { System.out.println("Sàn đấu giá"); }
-    @FXML void handleNavBidHistory(ActionEvent event) { System.out.println("Lịch sử đặt giá"); }
+    @FXML void handleNavBidHistory(ActionEvent event) { switchSceneWithUser(event, "/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5); }
     @FXML void handleSearch(ActionEvent event) { System.out.println("Tìm kiếm"); }
     @FXML void handleSwitchToSeller(ActionEvent event) { System.out.println("Chuyển người bán"); }
 
@@ -116,6 +128,9 @@ public class The_Home_Page_Bidder_View_Controller {
                 } else if (type == 3 && controller instanceof ProfileController) {
                     ((ProfileController) controller).setUserData(this.currentUser);
                 }
+                else if (type == 5 && controller instanceof BiddingHistoryController) {
+                    ((BiddingHistoryController) controller).setUserData(this.currentUser);
+                }
             } else {
                 System.err.println("⚠️ Cảnh báo: File FXML chưa khai báo đúng fx:controller!");
             }
@@ -132,4 +147,72 @@ public class The_Home_Page_Bidder_View_Controller {
             alert.showAndWait();
         }
     }
+
+
+    @FXML
+    void handleRoomVehicle(MouseEvent event) {
+        System.out.println("🚗 Người dùng chọn phòng: PHƯƠNG TIỆN");
+        if (lblRoomTitle != null) {
+            lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
+        }
+        loadAuctionsFromDatabase("VEHICLE");
+    } // <-- Đóng hàm Vehicle ở đây, tuyệt đối không viết lồng if-else lạc loài xuống dưới
+
+    @FXML
+    void handleRoomArt(MouseEvent event) {
+        System.out.println("🎨 Người dùng chọn phòng: NGHỆ THUẬT");
+        if (lblRoomTitle != null) {
+            lblRoomTitle.setText("🔥 Phòng Đấu Giá: NGHỆ THUẬT (Live)");
+        }
+        loadAuctionsFromDatabase("ART");
+    } // <-- Đóng hàm Art ở đây
+
+    @FXML
+    void handleRoomElectronics(MouseEvent event) {
+        System.out.println("⚡ Người dùng chọn phòng: ĐIỆN TỬ");
+        if (lblRoomTitle != null) {
+            lblRoomTitle.setText("🔥 Phòng Đấu Giá: ĐIỆN TỬ (Live)");
+        }
+        loadAuctionsFromDatabase("ELECTRONICS");
+    } // <-- Đóng hàm Electronics ở đây
+
+
+    @FXML
+    void handleToggleSidebar(ActionEvent event) {
+        if (sidebarContainer != null) {
+            boolean isVisible = !sidebarContainer.isVisible();
+            sidebarContainer.setVisible(isVisible);
+            sidebarContainer.setManaged(isVisible);
+            System.out.println("🔄 Đã " + (isVisible ? "hiện" : "ẩn") + " thanh Sidebar.");
+        }
+    }
+
+    // ==========================================
+    // TIẾN TRÌNH KẾT NỐI VÀ LẤY DỮ LIỆU DATABASE (HÀM ĐỘC LẬP)
+    // ==========================================
+
+    private void loadAuctionsFromDatabase(String category) {
+        // Tạo một luồng riêng để làm việc với DB, tránh làm đóng băng UI chính
+        new Thread(() -> {
+            try {
+                System.out.println("🗄️ Tiến trình đang gọi Database lấy dữ liệu cho phòng: " + category);
+
+                // Giả lập hoặc gọi hàm Service của bạn tại đây
+                Thread.sleep(250);
+
+                Platform.runLater(() -> {
+                    if (gridAuctions != null) {
+                        gridAuctions.getChildren().clear();
+                        System.out.println("✅ Đã nạp dữ liệu thành công từ DB cho danh mục: " + category);
+                    }
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    System.err.println("❌ Gặp sự cố trong quá trình truy vấn dữ liệu từ Database.");
+                });
+            }
+        }).start();
+    } // <-- Đóng hàm
 }

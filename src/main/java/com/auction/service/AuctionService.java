@@ -7,7 +7,7 @@ import com.auction.exception.ErrorCode;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -24,7 +24,7 @@ public class AuctionService {
         validateBidGuards(currentUser, auction, bidAmount);
 
         // 2. THỰC THI GIAO DỊCH (SQL TRANSACTION)
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false); // BẮT ĐẦU CHUỖI AN TOÀN
 
             try {

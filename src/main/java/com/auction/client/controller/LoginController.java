@@ -2,8 +2,6 @@ package com.auction.client.controller;
 
 import com.auction.common.model.User;
 import com.auction.service.UserService;
-// Khởi tạo hoặc Injection UserService tùy theo cấu trúc của em (ví dụ qua RMI hoặc Client Service Factory)
-// Ở đây anh khai báo sẵn một biến để em sử dụng trực tiếp.
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,7 +17,7 @@ public class LoginController {
     @FXML private TextField txtUsername;
     @FXML private PasswordField txtPassword;
 
-    // Khai báo UserService kết nối DB của em
+    // Khai báo UserService kết nối DB
     private final UserService userService = new UserService();
 
     @FXML
@@ -51,12 +49,12 @@ public class LoginController {
         try {
             System.out.println("🔄 Đang xác thực tài khoản qua UserService: " + username);
 
-            // THAY THẾ GIẢ LẬP BẰNG USER SERVICE THẬT CỦA EM
+            // Gọi kết nối Database thật qua tầng Service
             User user = userService.handleLogin(username, password);
 
             if (user != null) {
                 System.out.println("🎉 Đăng nhập thành công! Quyền: " + user.getRole());
-                // Truyền hẳn thực thể User sang hàm chuyển trang chủ
+                // Chuyển vào container tổng của ứng dụng
                 chuyenTrangChu(event, user.getRole(), user);
             } else {
                 showAlert(Alert.AlertType.ERROR, "Đăng nhập thất bại", "Tài khoản hoặc mật khẩu không chính xác!");
@@ -82,11 +80,10 @@ public class LoginController {
             showAlert(Alert.AlertType.ERROR, "Lỗi đồ họa", "Không thể nạp giao diện đăng ký: " + e.getMessage());
         }
     }
-
-
     private void chuyenTrangChu(ActionEvent event, String role, User user) {
         String fxmlFile;
         try {
+            // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
             if ("ADMIN".equalsIgnoreCase(role)) {
                 fxmlFile = "/view/The_Home_Page_Admin_View.fxml";
             } else {
@@ -96,8 +93,8 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
             Parent root = loader.load();
 
-            // NẾU LÀ BIDDER: Lấy đúng Controller và truyền dữ liệu động vào
             if (!"ADMIN".equalsIgnoreCase(role)) {
+                // Ép kiểu controller để truyền dữ liệu User vừa lấy từ Database Railway sang trang chủ
                 The_Home_Page_Bidder_View_Controller homeController = loader.getController();
                 homeController.setUserData(user);
             }
@@ -107,6 +104,7 @@ public class LoginController {
 
             stage.setScene(scene);
             stage.setTitle("Elite Auction - Trang chủ hệ thống");
+            stage.setMaximized(true); // Giữ tính năng phóng to toàn màn hình cho đẹp
             stage.centerOnScreen();
             stage.show();
         } catch (Exception e) {
@@ -114,7 +112,6 @@ public class LoginController {
             showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Không thể tải giao diện trang chủ! Chi tiết: " + e.getMessage());
         }
     }
-
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
