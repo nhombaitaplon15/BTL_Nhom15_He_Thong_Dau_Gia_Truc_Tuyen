@@ -185,7 +185,7 @@ public class BiddingHistoryController implements Initializable {
             Parent root = FXMLLoader.load(getClass().getResource("/view/LoginView.fxml"));
             Stage stage = (Stage) txtSearch.getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setTitle("Elite Auction - Đăng Nhập");
+            stage.setTitle("Trang đấu giá trực tuyến - Nhóm 15");
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
