@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane style="-fx-background-color: #F4F7FE;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Settings_Page_Admin_View_Controller">
+    <children>
+        <VBox fillWidth="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+
+                <HBox alignment="CENTER_LEFT" minHeight="60.0" prefHeight="60.0" spacing="20.0" style="-fx-background-color: white;">
+                    <padding>
+                        <Insets left="30.0" right="30.0" />
+                    </padding>
+                    <children>
+                        <Button mnemonicParsing="false" onAction="#goToHomePage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Trang chủ">
+                            <font>
+                                <Font name="Times New Roman Bold" size="14.0" />
+                            </font>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#goToAuctionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Danh sách đấu giá">
+                            <font>
+                                <Font name="Times New Roman Bold" size="14.0" />
+                            </font>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#goToTransactionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Quản lý giao dịch">
+                            <font>
+                                <Font name="Times New Roman Bold" size="14.0" />
+                            </font>
+                        </Button>
+                        <Button mnemonicParsing="false" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #2B3674; -fx-border-color: #4318FF; -fx-border-width: 0 0 3 0;" text="Cài đặt">
+                            <font>
+                                <Font name="Times New Roman Bold" size="14.0" />
+                            </font>
+                        </Button>
+                    </children>
+                </HBox>
+
+                <VBox fillWidth="true" spacing="20.0" VBox.vgrow="ALWAYS">
+                    <padding>
+                        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+                    </padding>
+                    <children>
+
+                        <Label text="Cài đặt Hệ thống" textFill="#2b3674">
+                            <font>
+                                <Font name="Times New Roman Bold" size="24.0" />
+                            </font>
+                        </Label>
+
+                        <HBox spacing="30.0" VBox.vgrow="ALWAYS">
+                            <children>
+
+                                <VBox maxWidth="280.0" minWidth="220.0" prefWidth="250.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);">
+                                    <padding>
+                                        <Insets bottom="20.0" left="15.0" right="15.0" top="20.0" />
+                                    </padding>
+                                    <children>
+                                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000.0" style="-fx-background-color: transparent; -fx-text-fill: #A3AED0; -fx-cursor: hand;" text="Hệ thống chung">
+                                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                            <padding><Insets left="15.0" /></padding>
+                                        </Button>
+
+                                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000.0" style="-fx-background-color: #F4F7FE; -fx-text-fill: #4318FF; -fx-background-radius: 10; -fx-border-color: #4318FF; -fx-border-width: 0 0 0 4; -fx-border-radius: 10; -fx-cursor: hand;" text="Quy tắc Đấu giá">
+                                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                            <padding><Insets left="15.0" /></padding>
+                                        </Button>
+
+                                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000.0" style="-fx-background-color: transparent; -fx-text-fill: #A3AED0; -fx-cursor: hand;" text="Cổng Thanh toán">
+                                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                            <padding><Insets left="15.0" /></padding>
+                                        </Button>
+
+                                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000.0" style="-fx-background-color: transparent; -fx-text-fill: #A3AED0; -fx-cursor: hand;" text="Phân quyền Nhân sự">
+                                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                            <padding><Insets left="15.0" /></padding>
+                                        </Button>
+
+                                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000.0" style="-fx-background-color: transparent; -fx-text-fill: #A3AED0; -fx-cursor: hand;" text="Nhật ký hoạt động">
+                                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                            <padding><Insets left="15.0" /></padding>
+                                        </Button>
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="25.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);" HBox.hgrow="ALWAYS">
+                                    <padding>
+                                        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+                                    </padding>
+                                    <children>
+
+                                        <Label text="Cấu hình Quy tắc Đấu giá" textFill="#2b3674">
+                                            <font>
+                                                <Font name="Times New Roman Bold" size="20.0" />
+                                            </font>
+                                            <VBox.margin>
+                                                <Insets bottom="10.0" />
+                                            </VBox.margin>
+                                        </Label>
+
+                                        <VBox spacing="8.0">
+                                            <children>
+                                                <Label text="Phí nền tảng (%)" textFill="#2b3674">
+                                                    <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                                </Label>
+                                                <TextField maxWidth="300.0" prefHeight="40.0" promptText="Ví dụ: 5" style="-fx-background-radius: 8; -fx-border-color: #E9EDF7; -fx-border-radius: 8;">
+                                                    <font><Font name="Times New Roman" size="14.0" /></font>
+                                                </TextField>
+                                                <Label text="Phần trăm hoa hồng hệ thống sẽ thu trên mỗi phiên đấu giá thành công." textFill="#a3aed0">
+                                                    <font><Font name="Times New Roman" size="13.0" /></font>
+                                                </Label>
+                                            </children>
+                                        </VBox>
+
+                                        <VBox spacing="8.0">
+                                            <children>
+                                                <Label text="Tiền cọc mặc định (VNĐ)" textFill="#2b3674">
+                                                    <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                                </Label>
+                                                <TextField maxWidth="300.0" prefHeight="40.0" promptText="Ví dụ: 100000" style="-fx-background-radius: 8; -fx-border-color: #E9EDF7; -fx-border-radius: 8;">
+                                                    <font><Font name="Times New Roman" size="14.0" /></font>
+                                                </TextField>
+                                                <Label text="Số tiền tối thiểu người dùng phải có trong ví để tham gia đặt giá." textFill="#a3aed0">
+                                                    <font><Font name="Times New Roman" size="13.0" /></font>
+                                                </Label>
+                                            </children>
+                                        </VBox>
+
+                                        <VBox spacing="8.0">
+                                            <children>
+                                                <Label text="Chống cướp giờ - Anti-sniping (Giây)" textFill="#2b3674">
+                                                    <font><Font name="Times New Roman Bold" size="15.0" /></font>
+                                                </Label>
+                                                <TextField maxWidth="300.0" prefHeight="40.0" promptText="Ví dụ: 120" style="-fx-background-radius: 8; -fx-border-color: #E9EDF7; -fx-border-radius: 8;">
+                                                    <font><Font name="Times New Roman" size="14.0" /></font>
+                                                </TextField>
+                                                <Label text="Tự động cộng thêm thời gian này nếu có người ra giá ở những phút cuối cùng." textFill="#a3aed0">
+                                                    <font><Font name="Times New Roman" size="13.0" /></font>
+                                                </Label>
+                                            </children>
+                                        </VBox>
+
+                                        <VBox spacing="8.0">
+                                            <children>
+                                                <CheckBox mnemonicParsing="false" text="Tự động duyệt phiên đấu giá mới của người dùng" textFill="#2b3674">
+                                                    <font>
+                                                        <Font name="Times New Roman Bold" size="15.0" />
+                                                    </font>
+                                                </CheckBox>
+                                                <Label text="Nếu tắt, Admin phải duyệt thủ công từng phiên đấu giá trước khi hiển thị lên sàn." textFill="#a3aed0">
+                                                    <font><Font name="Times New Roman" size="13.0" /></font>
+                                                    <padding>
+                                                        <Insets left="25.0" />
+                                                    </padding>
+                                                </Label>
+                                            </children>
+                                            <VBox.margin>
+                                                <Insets top="10.0" />
+                                            </VBox.margin>
+                                        </VBox>
+
+                                        <Region VBox.vgrow="ALWAYS" />
+
+                                        <HBox alignment="BOTTOM_RIGHT">
+                                            <children>
+                                                <Button mnemonicParsing="false" prefHeight="45.0" prefWidth="150.0" style="-fx-background-color: #4318FF; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="💾 Lưu cài đặt">
+                                                    <font>
+                                                        <Font name="Times New Roman Bold" size="15.0" />
+                                                    </font>
+                                                </Button>
+                                            </children>
+                                        </HBox>
+
+                                    </children>
+                                </VBox>
+
+                            </children>
+                        </HBox>
+
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

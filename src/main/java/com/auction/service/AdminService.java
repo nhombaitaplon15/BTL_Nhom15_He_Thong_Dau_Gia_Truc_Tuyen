@@ -18,7 +18,7 @@ public class AdminService {
     public AdminService(ManagerService managerService) {
         this.managerService = managerService;
     }
-// duyệt phiên
+    // duyệt phiên
     public boolean approveAuction(int auctionId) {
         // Tận dụng hàm validate để bắt lỗi ID không tồn tại hoặc sai trạng thái
         Auction auction = validatePendingAuction(auctionId);
@@ -38,7 +38,7 @@ public class AdminService {
         }
     }
 
-//  từ chối phiên đấu giá kèm lí do
+    //  từ chối phiên đấu giá kèm lí do
     public void rejectAuction(int auctionId, String reason) {
         if (reason == null || reason.trim().isEmpty()) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Lý do từ chối không được để trống!");
@@ -102,5 +102,21 @@ public class AdminService {
 
     public void clearData() {
         auditLog.clear();
+    }
+
+    //Hàm để Admin chặn phiên đấu giá
+    public boolean blockAuction(int auctionId) {
+        // Có thể bổ sung kiểm tra trạng thái tại đây nếu cần
+        try {
+            if (auctionDAO.updateStatus(auctionId, "BLOCKED")) {
+                logAction(auctionId, "BLOCKED");
+                System.out.println(">>> [ADMIN] Đã phong tỏa khẩn cấp phiên đấu giá: " + auctionId);
+                return true;
+            }
+        } catch (Exception e) {
+            throw new com.auction.exception.AuctionException(com.auction.exception.ErrorCode.INTERNAL_ERROR.name(),
+                    "Lỗi hệ thống khi chặn phiên: " + e.getMessage());
+        }
+        return false;
     }
 }

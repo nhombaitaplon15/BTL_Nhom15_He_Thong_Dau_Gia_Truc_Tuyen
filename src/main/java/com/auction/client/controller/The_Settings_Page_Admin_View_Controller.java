@@ -8,11 +8,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class The_Home_Page_Admin_View_Controller {
+public class The_Settings_Page_Admin_View_Controller {
 
     @FXML
-    public void Welcome_back(ActionEvent event) {
-        switchPage(event, "/view/WelcomeView.fxml");
+    public void goToHomePage(ActionEvent event) {
+        switchPage(event, "/view/The_Home_Page_Admin_View.fxml");
     }
 
     @FXML
@@ -23,11 +23,6 @@ public class The_Home_Page_Admin_View_Controller {
     @FXML
     public void goToTransactionPage(ActionEvent event) {
         switchPage(event, "/view/The_Transaction_Page_Admin_View.fxml");
-    }
-
-    @FXML
-    public void goToSettingsPage(ActionEvent event) {
-        switchPage(event, "/view/The_Settings_Page_Admin_View.fxml");
     }
 
     private void switchPage(ActionEvent event, String fxmlPath) {
@@ -43,7 +38,6 @@ public class The_Home_Page_Admin_View_Controller {
 
             stage.setScene(scene);
 
-            // full màn hình
             stage.setMaximized(true);
 
             stage.show();

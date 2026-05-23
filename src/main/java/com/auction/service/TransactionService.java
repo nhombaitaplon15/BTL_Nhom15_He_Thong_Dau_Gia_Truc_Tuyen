@@ -5,8 +5,7 @@ import com.auction.exception.AuctionException;
 import com.auction.exception.ErrorCode;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.DatabaseConnection;
-import com.auction.service.*;
+import com.auction.server.dao.DBConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -39,23 +38,6 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo yêu cầu nạp: " + e.getMessage());
         }
     }
-    public void handleWithdrawRequest(User currentUser, double amount) {
-        if (amount <= 0) {
-            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số tiền phải lớn hơn 0");
-        }
-        try {
-            // Gọi hàm createTransaction loại KHÔNG CÓ CONNECTION (tự lấy conn nội bộ trong DAO)
-            // Trạng thái lưu xuống ban đầu bắt buộc là "PENDING"
-            boolean success = transDAO.createTransaction(currentUser.getId(), amount, "WITHDRAW", "PENDING");
-
-            if (!success) {
-                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể gửi yêu cầu nạp tiền!");
-            }
-            System.out.println(">>> Đã gửi yêu cầu rút " + amount + ". Chờ Admin duyệt.");
-        } catch (SQLException e) {
-            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo yêu cầu rút: " + e.getMessage());
-        }
-    }
 
     // 2. Admin phê duyệt nạp / rút tiền
     public void handleApproveTransaction(User adminUser, int transId, int targetUserId, double amount, String type) {
@@ -76,7 +58,7 @@ public class TransactionService {
         }
 
         // Mở một Transaction bọc luồng duyệt tiền để đảm bảo: Cộng tiền + Đổi trạng thái SUCCESS phải đi liền nhau
-        try (Connection conn =DatabaseConnection.connect()) {
+        try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // Bước A: Cập nhật số dư ví trong DB
@@ -109,5 +91,31 @@ public class TransactionService {
         } catch (SQLException e) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối cơ sở dữ liệu!");
         }
+    }
+    // 3. Tạo hóa đơn thanh toán khi chốt phiên đấu giá
+    public void createTransactionFromAuction(int auctionId, int winnerId, double amount) {
+        if (winnerId <= 0) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "ID người thắng không hợp lệ!");
+        }
+
+        try {
+            // Tạo một giao dịch thanh toán mới, trạng thái 'PENDING' chờ người dùng thanh toán
+            String description = "Thanh toán phiên đấu giá #" + auctionId;
+
+            // Gọi DAO để lưu xuống DB (Tùy thuộc vào cấu trúc bảng Transaction của bạn,
+            // có thể cần điều chỉnh lại tên cột type cho phù hợp, ví dụ "PAYMENT" hoặc "AUCTION_PAYMENT")
+            boolean success = transDAO.createTransaction(winnerId, amount, description, "PENDING");
+
+            if (!success) {
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể tạo hóa đơn giao dịch!");
+            }
+            System.out.println(">>> [TRANSACTION] Đã tạo hóa đơn " + amount + " cho User ID: " + winnerId);
+
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo giao dịch: " + e.getMessage());
+        }
+    }
+
+    public void handleWithdrawRequest(User currentUser, double amount) {
     }
 }
