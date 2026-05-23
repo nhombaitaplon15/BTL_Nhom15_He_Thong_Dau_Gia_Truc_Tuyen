@@ -227,6 +227,38 @@ public class BiddingHistoryController implements Initializable {
     }
     @FXML
     private void handleViewDetail() {
-        System.out.println("Không");
+        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Thông báo");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng chọn một phiên đấu giá trong danh sách để xem chi tiết!");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
+            Parent root = loader.load();
+
+            AuctionDetailController detailController = loader.getController();
+            if (detailController != null) {
+                // Truyền dữ liệu sang để kích hoạt hàm đổ chữ động
+                detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
+            }
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Chi Tiết Phiên Đấu Giá - Mã Phiên #" + selected.getAuctionId());
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            dialogStage.initOwner(historyTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.setResizable(false);
+            dialogStage.show();
+
+        } catch (Exception e) {
+            System.err.println("❌ Không thể mở màn hình xem chi tiết phiên!");
+            e.printStackTrace();
+        }
     }
 }

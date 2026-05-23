@@ -120,7 +120,38 @@ public class AuctionDAO {
                 rs.getTimestamp("created_at").toLocalDateTime()
         );
     }
+    public String getItemDescription(int itemId) {
+        String sql = "SELECT description FROM items WHERE item_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("description");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "Không có mô tả cho vật phẩm này.";
+    }
     public boolean deleteAll() {
         return executeUpdate("DELETE FROM auctions");
+    }
+    // Thêm hàm này vào lớp AuctionDAO.java của bạn
+    public String getItemImagePath(int itemId) {
+        String sql = "SELECT img_item FROM items WHERE item_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("img_item"); // Lấy chính xác dữ liệu từ cột img_item
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null; // Trả về null nếu không tìm thấy hoặc trống ảnh
     }
 }
