@@ -134,19 +134,6 @@ public class BiddingHistoryController implements Initializable {
         loadHistory();
     }
 
-    @FXML
-    private void handleViewDetail() {
-        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            System.out.println("Auction ID: " + selected.getAuctionId());
-        }
-    }
-
-    @FXML
-    private void handleReportIssue() {
-        System.out.println("Báo cáo sự cố");
-    }
-
     // ==========================================
     // CÁC HÀM SỰ KIỆN SIDEBAR MENU (CHUYỂN TRANG CHUẨN)
     // ==========================================
@@ -199,5 +186,47 @@ public class BiddingHistoryController implements Initializable {
             sideMenu.setVisible(isVisible);
             sideMenu.setManaged(isVisible);
         }
+    }
+    @FXML
+    private void handleReportIssue() {
+        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Thông báo");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng chọn phiên đấu giá gặp sự cố trong danh sách để báo cáo!");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            // Đường dẫn đến file FXML Báo cáo lỗi của bạn
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ReportIssueView.fxml"));
+            Parent root = loader.load();
+
+            // Gọi Controller báo cáo lỗi và truyền cả dòng chọn + User đang đăng nhập sang
+            ReportIssueController dialogController = loader.getController();
+            if (dialogController != null) {
+                dialogController.setIssueData(selected, this.currentUser); // Nhớ dùng hàm nhận 2 tham số đã sửa ở bước trước
+            }
+
+            // Tạo Stage dạng Pop-up
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Báo Cáo Sự Cố - Phiên #" + selected.getAuctionId());
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            dialogStage.initOwner(historyTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.setResizable(false);
+            dialogStage.showAndWait();
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi không thể mở cửa sổ báo cáo sự cố!");
+            e.printStackTrace();
+        }
+    }
+    @FXML
+    private void handleViewDetail() {
+        System.out.println("Không");
     }
 }
