@@ -1,39 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-      prefHeight="300.0" prefWidth="300.0"
-      style="-fx-background-color: #FFFFFF; -fx-background-radius: 10; -fx-border-color: #E2E8F0; -fx-border-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 4);"
-      xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controller.ItemCardController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="260.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ItemCardController">
    <children>
-      <VBox alignment="CENTER" prefHeight="180.0" prefWidth="300.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 10 10 0 0;">
-         <children>
-            <ImageView fx:id="imgItem" fitHeight="160.0" fitWidth="280.0" pickOnBounds="true" preserveRatio="true" />
-         </children>
-      </VBox>
-
-      <VBox spacing="6.0" VBox.vgrow="ALWAYS">
-         <padding>
-            <Insets top="10.0" right="15.0" bottom="10.0" left="15.0"/>
-         </padding>
-         <children>
-            <Label fx:id="name" prefWidth="270.0" text="Tên sản phẩm: " textFill="#1E293B" wrapText="true">
-               <font>
-                  <Font name="System Bold" size="15.0" />
-               </font>
-            </Label>
-            <Label fx:id="startPrice" text="Giá khởi điểm: " textFill="#2563EB">
-               <font>
-                  <Font size="14.0" />
-               </font>
-            </Label>
-         </children>
-      </VBox>
+      <ImageView fx:id="imgItem" fitHeight="200.0" fitWidth="300" pickOnBounds="true" preserveRatio="true" />
+      <Label fx:id="name" prefHeight="40.0" prefWidth="300.0" text="Tên sản phẩm: " />
+      <Label fx:id="startPrice" text="Giá khởi điểm: " />
+      <Button fx:id="btnBidNow" mnemonicParsing="false" onAction="#handleBidNow" text="Đấu giá ngay" style="-fx-background-color: #2ecc71; -fx-text-fill: white;" />
    </children>
 </VBox>
