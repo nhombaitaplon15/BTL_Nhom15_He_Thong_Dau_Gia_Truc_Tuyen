@@ -18,12 +18,12 @@ public class BiddingHistoryDAO {
                     i.name AS item_name,
                     bh.bid_amount,
                     bh.bid_time,
-                    a.status
+                    auction_status
                 FROM bidding_history bh
                 JOIN auctions a
-                    ON bh.auction_id = a.id
+                    ON bh.auction_id = a.auction_id
                 JOIN items i
-                    ON a.item_id = i.id
+                    ON a.item_id = i.item_id
                 WHERE bh.user_id = ?
                 ORDER BY bh.bid_time DESC
                 """;

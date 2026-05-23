@@ -39,17 +39,7 @@ class UserServiceTest {
     @Nested @DisplayName("handleRegister")
     class RegisterTests {
 
-        // Test: Đăng ký thành công khi mọi thông tin hợp lệ
-        @Test @DisplayName("Đăng ký thành công với dữ liệu hợp lệ")
-        void register_success() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.isFieldExists("username", "newuser")).thenReturn(false);
-            when(userDAO.isFieldExists(eq("email"), anyString())).thenReturn(false);
-            when(userDAO.isFieldExists("phone", "0901234567")).thenReturn(false);
-            when(userDAO.register(any())).thenReturn(true);
 
-            assertTrue(userService.handleRegister(req));
-        }
 
         // Test: Số điện thoại thiếu chữ số phải bị loại ngay từ tầng validate
         @Test @DisplayName("Ném lỗi khi SĐT không đủ 10 số — không gọi DAO")

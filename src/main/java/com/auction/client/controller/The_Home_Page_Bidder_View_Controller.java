@@ -3,7 +3,11 @@ package com.auction.client.controller;
 import com.auction.client.controller.bidder.ProfileController;
 import com.auction.client.controller.bidder.TransactionHistoryController;
 import com.auction.client.controller.bidder.WalletController;
+import com.auction.common.model.Auction;
+import com.auction.common.model.Item;
 import com.auction.common.model.User;
+import com.auction.server.dao.AuctionDAO;
+import com.auction.server.dao.ItemDAO;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -11,15 +15,18 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.net.URL;
-import javafx.event.ActionEvent; // Đảm bảo đã import đúng gói này
-
+import java.util.List;
 
 public class The_Home_Page_Bidder_View_Controller {
 
@@ -27,36 +34,40 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML private Label lblBalance;
     @FXML private TextField txtSearch;
     @FXML private GridPane gridAuctions;
-    @FXML private VBox sidebarContainer; // Để ẩn/hiện Sidebar menu
-    @FXML private Label lblRoomTitle;    // Tiêu đề động cho khu vực Live Auctions
+    @FXML private VBox sidebarContainer;
+    @FXML private Label lblRoomTitle;
+    @FXML private FlowPane auctionsContainer; // Đồng bộ vùng chứa thẻ sản phẩm dạng lưới tự giãn
 
-    // Đối tượng User lưu trữ xuyên suốt
     private User currentUser;
     private MainContainerController mainContainer;
 
-    // 2. Thêm hàm setter này để nhận dữ liệu truyền vào từ MainContainer
+    // Khởi tạo các đối tượng lớp DAO kết nối Database
+    private AuctionDAO auctionDAO = new AuctionDAO();
+    private ItemDAO itemDAO = new ItemDAO();
+
     public void setMainContainer(MainContainerController mainContainer) {
         this.mainContainer = mainContainer;
     }
+
     @FXML
     public void initialize() {
         System.out.println("🎉 Khởi tạo trang chủ Bidder thành công.");
+        // Mặc định tự động load phòng Xe Máy / Ô tô lên trước cho đỡ trống sàn
+        loadAuctionsFromDatabase("VEHICLE");
     }
 
-    // Nhận dữ liệu thực tế từ DB lúc Đăng nhập thành công dội sang
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
 
         if (lblBidderName != null) {
-            lblBidderName.setText(user.getUsername() != null ? user.getUsername() : user.getUsername());
+            lblBidderName.setText(user.getUsername() != null ? user.getUsername() : "Khách");
         }
-
         if (lblBalance != null) {
-            // ĐỔI %,d THÀNH %,.0f ĐỂ ĐỊNH DẠNG KIỂU DOUBLE MÀ KHÔNG BỊ HIỂN THỊ PHẦN THẬP PHÂN LẺ (.00)
             lblBalance.setText(String.format("%,.0f đ", user.getBalance()));
         }
     }
+
     @FXML
     void handleNavTransactionHistory(ActionEvent event) {
         switchSceneWithUser(event, "/view/bidder/TransactionHistoryView.fxml", "Elite Auction - Lịch Sử Giao Dịch", 1);
@@ -68,13 +79,11 @@ public class The_Home_Page_Bidder_View_Controller {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/bidder/DepositWithdrawView.fxml"));
             Parent root = loader.load();
 
-            // 🌟 QUAN TRỌNG NHẤT: Lấy Controller của trang Ví và truyền User hiện tại sang
-            com.auction.client.controller.bidder.WalletController walletController = loader.getController();
+            WalletController walletController = loader.getController();
             if (walletController != null) {
-                walletController.setUserData(this.currentUser); // Truyền dữ liệu User đăng nhập sang đây!
+                walletController.setUserData(this.currentUser);
             }
 
-            // Thực hiện chuyển màn hình
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root, 1280, 720));
             stage.show();
@@ -88,8 +97,13 @@ public class The_Home_Page_Bidder_View_Controller {
         switchSceneWithUser(event, "/view/bidder/ProfileView.fxml", "Elite Auction - Hồ Sơ Cá Nhân", 3);
     }
 
-    @FXML void handleNavDashboard(ActionEvent event) { System.out.println("Sàn đấu giá"); }
-    @FXML void handleNavBidHistory(ActionEvent event) { switchSceneWithUser(event, "/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5); }
+    @FXML void handleNavDashboard(ActionEvent event) { System.out.println("Sàn đấu giá đang mở."); }
+
+    @FXML
+    void handleNavBidHistory(ActionEvent event) {
+        switchSceneWithUser(event, "/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5);
+    }
+
     @FXML void handleSearch(ActionEvent event) { System.out.println("Tìm kiếm"); }
     @FXML void handleSwitchToSeller(ActionEvent event) { System.out.println("Chuyển người bán"); }
 
@@ -105,7 +119,6 @@ public class The_Home_Page_Bidder_View_Controller {
         }
     }
 
-    // HÀM CHUYỂN TRANG THÔNG MINH - ĐÃ FIX 100% LỖI NHẬN DIỆN CONTROLLER
     private void switchSceneWithUser(ActionEvent event, String fxmlPath, String title, int type) {
         try {
             URL fxmlLocation = getClass().getResource(fxmlPath);
@@ -115,9 +128,8 @@ public class The_Home_Page_Bidder_View_Controller {
             }
 
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
-            Parent root = loader.load(); // Nạp giao diện
+            Parent root = loader.load();
 
-            // Bắt đầu bóc tách Controller động dựa trên file FXML đã sửa ở Bước 1
             Object controller = loader.getController();
 
             if (controller != null) {
@@ -127,12 +139,9 @@ public class The_Home_Page_Bidder_View_Controller {
                     ((WalletController) controller).setUserData(this.currentUser);
                 } else if (type == 3 && controller instanceof ProfileController) {
                     ((ProfileController) controller).setUserData(this.currentUser);
-                }
-                else if (type == 5 && controller instanceof BiddingHistoryController) {
+                } else if (type == 5 && controller instanceof BiddingHistoryController) {
                     ((BiddingHistoryController) controller).setUserData(this.currentUser);
                 }
-            } else {
-                System.err.println("⚠️ Cảnh báo: File FXML chưa khai báo đúng fx:controller!");
             }
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
@@ -148,34 +157,23 @@ public class The_Home_Page_Bidder_View_Controller {
         }
     }
 
-
     @FXML
     void handleRoomVehicle(MouseEvent event) {
-        System.out.println("🚗 Người dùng chọn phòng: PHƯƠNG TIỆN");
-        if (lblRoomTitle != null) {
-            lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
-        }
+        if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
         loadAuctionsFromDatabase("VEHICLE");
-    } // <-- Đóng hàm Vehicle ở đây, tuyệt đối không viết lồng if-else lạc loài xuống dưới
+    }
 
     @FXML
     void handleRoomArt(MouseEvent event) {
-        System.out.println("🎨 Người dùng chọn phòng: NGHỆ THUẬT");
-        if (lblRoomTitle != null) {
-            lblRoomTitle.setText("🔥 Phòng Đấu Giá: NGHỆ THUẬT (Live)");
-        }
+        if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: NGHỆ THUẬT (Live)");
         loadAuctionsFromDatabase("ART");
-    } // <-- Đóng hàm Art ở đây
+    }
 
     @FXML
     void handleRoomElectronics(MouseEvent event) {
-        System.out.println("⚡ Người dùng chọn phòng: ĐIỆN TỬ");
-        if (lblRoomTitle != null) {
-            lblRoomTitle.setText("🔥 Phòng Đấu Giá: ĐIỆN TỬ (Live)");
-        }
+        if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: ĐIỆN TỬ (Live)");
         loadAuctionsFromDatabase("ELECTRONICS");
-    } // <-- Đóng hàm Electronics ở đây
-
+    }
 
     @FXML
     void handleToggleSidebar(ActionEvent event) {
@@ -183,36 +181,108 @@ public class The_Home_Page_Bidder_View_Controller {
             boolean isVisible = !sidebarContainer.isVisible();
             sidebarContainer.setVisible(isVisible);
             sidebarContainer.setManaged(isVisible);
-            System.out.println("🔄 Đã " + (isVisible ? "hiện" : "ẩn") + " thanh Sidebar.");
         }
     }
 
-    // ==========================================
-    // TIẾN TRÌNH KẾT NỐI VÀ LẤY DỮ LIỆU DATABASE (HÀM ĐỘC LẬP)
-    // ==========================================
+    // ========================================================
+    // TIẾN TRÌNH TRUY VẤN DATABASE CHUẨN (HÀM DUY NHẤT - HẾT LỖI TRÙNG)
+    // ========================================================
 
     private void loadAuctionsFromDatabase(String category) {
-        // Tạo một luồng riêng để làm việc với DB, tránh làm đóng băng UI chính
+        // 1. Dọn sạch các thẻ cũ trên lưới thật GridPane trước khi nạp dữ liệu mới
+        if (gridAuctions != null) {
+            gridAuctions.getChildren().clear();
+        }
+
         new Thread(() -> {
             try {
-                System.out.println("🗄️ Tiến trình đang gọi Database lấy dữ liệu cho phòng: " + category);
+                System.out.println("🗄️ [Database Thật] Bắt đầu kết nối lấy phiên đấu giá Live thuộc nhóm: " + category);
 
-                // Giả lập hoặc gọi hàm Service của bạn tại đây
-                Thread.sleep(250);
+                // Gọi DAO quét các phiên đang diễn ra trên hệ thống
+                List<Auction> activeAuctions = auctionDAO.getAuctionsByStatus("RUNNING");
 
-                Platform.runLater(() -> {
-                    if (gridAuctions != null) {
-                        gridAuctions.getChildren().clear();
-                        System.out.println("✅ Đã nạp dữ liệu thành công từ DB cho danh mục: " + category);
+                if (activeAuctions == null || activeAuctions.isEmpty()) {
+                    System.out.println("📢 Hệ thống kiểm tra: Hiện không có phiên đấu giá nào ở trạng thái RUNNING.");
+                    return;
+                }
+
+                // Khởi tạo tọa độ sắp xếp ô trên lưới GridPane (Thiết kế 3 cột của bạn)
+                int column = 0;
+                int row = 0;
+
+                for (Auction auction : activeAuctions) {
+                    Item itemDetail = itemDAO.getItemById(auction.getItemId());
+
+                    // Khớp mã sản phẩm thật từ bảng items với danh mục phòng được chọn
+                    if (itemDetail != null && category.equalsIgnoreCase(itemDetail.getItemType())) {
+
+                        final int currentColumn = column;
+                        final int currentRow = row;
+
+                        // Đẩy dữ liệu chuẩn hóa lên luồng giao diện người dùng
+                        Platform.runLater(() -> {
+                            try {
+                                VBox cardNode = createAuctionCardFXML(itemDetail, auction.getCurrentPrice(), auction.getAuctionId());
+                                if (cardNode != null && gridAuctions != null) {
+                                    // Gắn thẻ sản phẩm vào đúng vị trí ô (Cột, Hàng) trên GridPane thật
+                                    gridAuctions.add(cardNode, currentColumn, currentRow);
+                                    System.out.println("✅ Hiển thị thành công vật phẩm: " + itemDetail.getName());
+                                }
+                            } catch (Exception e) {
+                                System.err.println("❌ Lỗi dựng thẻ trên giao diện: " + e.getMessage());
+                            }
+                        });
+
+                        // Thuật toán dịch ô: Đầy 3 ô ở cột 0, 1, 2 thì tự động xuống hàng tiếp theo
+                        column++;
+                        if (column == 3) {
+                            column = 0;
+                            row++;
+                        }
                     }
-                });
-
+                }
             } catch (Exception e) {
+                System.err.println("❌ Lỗi truy vấn kết nối hệ thống dữ liệu trục dọc:");
                 e.printStackTrace();
-                Platform.runLater(() -> {
-                    System.err.println("❌ Gặp sự cố trong quá trình truy vấn dữ liệu từ Database.");
-                });
             }
         }).start();
-    } // <-- Đóng hàm
+    }
+    private VBox createAuctionCardFXML(Item itemDetail, double currentPrice, int auctionId) {
+        try {
+            // 1. Nạp file FXML của thẻ sản phẩm
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
+            VBox card = loader.load();
+
+            // 2. Lấy chính xác lớp Controller quản lý thẻ đó
+            ItemCardController cardController = loader.getController();
+
+            if (cardController != null) {
+                // Đẩy toàn bộ dữ liệu bốc từ Database sang cho ItemCard xử lý
+                cardController.setData(itemDetail, currentPrice, auctionId);
+            }
+
+            // 3. Bắt sự kiện click chuột trực tiếp vào miếng Card để đi tới phòng đấu giá tương ứng
+            card.setOnMouseClicked(e -> {
+                System.out.println("🔨 [Database] Người dùng click vào phiên đấu giá thực tế ID: " + auctionId);
+                // Bạn viết logic chuyển hướng sang phòng trả giá trực tuyến (BidRoom) tại đây
+            });
+
+            return card;
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi nạp thẻ ItemCard.fxml từ Database: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String calculateTimeLeft(java.time.LocalDateTime endTime) {
+        java.time.Duration duration = java.time.Duration.between(java.time.LocalDateTime.now(), endTime);
+        if (duration.isNegative() || duration.isZero()) {
+            return "Đã hết giờ";
+        }
+        long hours = duration.toHours();
+        long minutes = duration.toMinutesPart();
+        long seconds = duration.toSecondsPart();
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
 }
