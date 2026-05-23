@@ -13,6 +13,7 @@ module com.auction {
     // ĐÂY RỒI: Cần mở chính xác package con 'bidder' - nơi chứa TransactionHistoryController của em
     opens com.auction.client.controller.bidder to javafx.fxml;
 
+    opens com.auction.common.model to javafx.base, javafx.fxml;
     // Phòng hờ sau này em làm thêm giao diện cho Seller (Người bán) hoặc Admin, hãy mở sẵn luôn ở đây:
     // opens com.auction.client.controller.seller to javafx.fxml;
     // opens com.auction.client.controller.admin to javafx.fxml;
@@ -21,4 +22,6 @@ module com.auction {
     exports com.auction;
     exports com.auction.client.controller;
     exports com.auction.client.controller.bidder;
+
+    exports com.auction.common.model;
 }

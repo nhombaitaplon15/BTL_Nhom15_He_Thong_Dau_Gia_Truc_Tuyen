@@ -35,7 +35,7 @@ public class ItemCardController {
         }
     }
 
-    // 🔥 HÀM MỚI: Xử lý khi bấm nút "Đặt Giá Ngay"
+    //  HÀM : Xử lý khi bấm nút "Đặt Giá Ngay"
     @FXML
     void handleBidAction(ActionEvent event) {
         if (currentItem == null) return;

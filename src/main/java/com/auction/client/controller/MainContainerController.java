@@ -64,11 +64,9 @@ public class MainContainerController implements Initializable {
             e.printStackTrace();
         }
     }
+     //Hàm dùng chung để ẩn/hiện thanh thực đơn (Sidebar) lề trái.
+     // Được gọi bởi chính các nút bấm gạch ngang (☰) nằm ở các trang con.
 
-    /**
-     * Hàm dùng chung để ẩn/hiện thanh thực đơn (Sidebar) lề trái.
-     * Được gọi bởi chính các nút bấm gạch ngang (☰) nằm ở các trang con.
-     */
     public void toggleSidebar() {
         if (sideMenu == null) return;
 
@@ -82,7 +80,6 @@ public class MainContainerController implements Initializable {
             System.out.println("MainContainer: Đã mở thanh Menu lề trái.");
         }
     }
-
     // Khi click vào nút "🏛 Sàn Đấu Giá" trên Sidebar của bạn
     @FXML
     void onLiveMenuClick(ActionEvent event) {
@@ -90,7 +87,6 @@ public class MainContainerController implements Initializable {
         btnMenuHistory.setStyle("-fx-background-color: transparent; -fx-text-fill: #FFFFFF;");
         setPage("/view/The_Home_Page_Bidder_View.fxml");
     }
-
     // Khi click vào nút "⏱ Lịch Sử Đặt Giá" trên Sidebar của bạn
     @FXML
     void onHistoryMenuClick(ActionEvent event) {
