@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="420.0" spacing="15.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 10, 0, 0, 5);" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.bidder.AuctionDetailController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+    <children>
+        <Label fx:id="lblAuctionId" text="CHI TIẾT PHIÊN ĐẤU GIÁ" textFill="#1e293b">
+            <font>
+                <Font name="System Bold" size="18.0" />
+            </font>
+        </Label>
+
+        <ImageView fx:id="imgItem" fitHeight="180.0" fitWidth="380.0" pickOnBounds="true" preserveRatio="true" style="-fx-background-radius: 10;" />
+
+        <VBox spacing="10.0" style="-fx-background-color: #f8fafc; -fx-background-radius: 10; -fx-padding: 15;">
+            <children>
+                <Label fx:id="lblItemName" text="Tên vật phẩm: (Đang tải...)" textFill="#334155" wrapText="true">
+                    <font>
+                        <Font size="14.0" />
+                    </font>
+                </Label>
+                <Label fx:id="lblBidAmount" text="Giá bạn đã đặt: 0 đ" textFill="#0f172a">
+                    <font>
+                        <Font name="System Bold" size="14.0" />
+                    </font>
+                </Label>
+                <Label fx:id="lblStatus" text="Trạng thái: ---" textFill="#1d4ed8">
+                    <font>
+                        <Font name="System Bold" size="13.0" />
+                    </font>
+                </Label>
+                <Label fx:id="lblTimeLeft" text="⏳ Thời gian còn lại: Đang tính toán..." textFill="#ea580c">
+                    <font>
+                        <Font size="13.0" />
+                    </font>
+                </Label>
+            </children>
+        </VBox>
+        <HBox alignment="CENTER" spacing="15.0">
+            <children>
+                <Button mnemonicParsing="false" onAction="#handleClose" prefHeight="35.0" prefWidth="120.0" style="-fx-background-color: #64748b; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;" text="Đóng Cửa Sổ">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+                <Button mnemonicParsing="false" onAction="#handleGoToLive" prefHeight="35.0" prefWidth="170.0" style="-fx-background-color: #1d4ed8; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;" text="Đến Sàn Đấu Giá Live">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+            </children>
+        </HBox>
+    </children>
+</VBox>

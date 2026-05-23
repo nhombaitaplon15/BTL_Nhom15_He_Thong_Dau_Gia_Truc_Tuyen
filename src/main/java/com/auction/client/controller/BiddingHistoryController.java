@@ -8,7 +8,6 @@ import com.auction.server.dao.UserDAO;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -151,22 +150,7 @@ public class BiddingHistoryController implements Initializable {
         loadHistory();
     }
 
-    @FXML
-    private void handleViewDetail() {
-        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            System.out.println("Auction ID: " + selected.getAuctionId());
-        }
-    }
 
-    @FXML
-    private void handleReportIssue() {
-        System.out.println("Báo cáo sự cố");
-    }
-
-    // ==========================================
-    // CÁC HÀM SỰ KIỆN SIDEBAR MENU (CHUYỂN TRANG CHUẨN)
-    // ==========================================
 
     @FXML
     private void onLiveMenuClick() {
@@ -215,6 +199,81 @@ public class BiddingHistoryController implements Initializable {
             boolean isVisible = !sideMenu.isVisible();
             sideMenu.setVisible(isVisible);
             sideMenu.setManaged(isVisible);
+        }
+    }
+    @FXML
+    private void handleViewDetail() {
+        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Thông báo");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng chọn một phiên đấu giá trong danh sách để xem chi tiết!");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            // Gọi đúng file FXML theo chuẩn đặt tên view của em
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
+            Parent root = loader.load();
+
+            // Ép kiểu về đúng class AuctionDetailController nằm trong gói bidder
+            com.auction.client.controller.bidder.AuctionDetailController dialogController = loader.getController();
+            if (dialogController != null) {
+                dialogController.setAuctionData(selected, this.currentUser);
+            }
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Chi Tiết Phiên Đấu Giá #" + selected.getAuctionId());
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            dialogStage.initOwner(historyTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.setResizable(false);
+            dialogStage.showAndWait();
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi không thể mở cửa sổ chi tiết phiên đấu giá!");
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleReportIssue() {
+        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Thông báo");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng chọn phiên đấu giá gặp sự cố trong danh sách để báo cáo!");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            // Gọi đúng file FXML Report trùng tên với Controller
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ReportIssueView.fxml"));
+            Parent root = loader.load();
+
+            // Ép kiểu về đúng class ReportIssueController trong ảnh của em
+            com.auction.client.controller.bidder.ReportIssueController dialogController = loader.getController();
+            if (dialogController != null) {
+                dialogController.setIssueData(selected);
+            }
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Báo Cáo Sự Cố - Phiên #" + selected.getAuctionId());
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            dialogStage.initOwner(historyTable.getScene().getWindow());
+            dialogStage.setScene(new Scene(root));
+            dialogStage.setResizable(false);
+            dialogStage.showAndWait();
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi không thể mở cửa sổ báo cáo sự cố!");
+            e.printStackTrace();
         }
     }
 }
