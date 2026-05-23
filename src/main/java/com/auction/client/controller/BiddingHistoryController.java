@@ -72,7 +72,7 @@ public class BiddingHistoryController implements Initializable {
             lblAccountName.setText(user.getUsername() != null ? user.getUsername() : "Khách");
         }
         if (lblBalance != null) {
-            lblBalance.setText(String.format("%,.0f đ", user.getBalance()));
+            lblBalance.setText(String.format("%,.0f UETệ", user.getBalance()));
         }
 
         // Gọi nạp dữ liệu động từ DB theo ID tài khoản thực tế

@@ -54,7 +54,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
         if (lblBalance != null) {
             // ĐỔI %,d THÀNH %,.0f ĐỂ ĐỊNH DẠNG KIỂU DOUBLE MÀ KHÔNG BỊ HIỂN THỊ PHẦN THẬP PHÂN LẺ (.00)
-            lblBalance.setText(String.format("%,.0f đ", user.getBalance()));
+            lblBalance.setText(String.format("%,.0f UETệ", user.getBalance()));
         }
     }
     @FXML
