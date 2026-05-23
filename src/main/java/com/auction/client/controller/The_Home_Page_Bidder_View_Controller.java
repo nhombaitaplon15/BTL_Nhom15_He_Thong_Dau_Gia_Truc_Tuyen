@@ -191,28 +191,72 @@ public class The_Home_Page_Bidder_View_Controller {
     // TIẾN TRÌNH KẾT NỐI VÀ LẤY DỮ LIỆU DATABASE (HÀM ĐỘC LẬP)
     // ==========================================
 
+    private final com.auction.service.ItemService itemService = new com.auction.service.ItemService();
+
+    // ==========================================
+    // TIẾN TRÌNH KẾT NỐI VÀ LẤY DỮ LIỆU THỰC TẾ TỪ DATABASE
+    // ==========================================
     private void loadAuctionsFromDatabase(String category) {
-        // Tạo một luồng riêng để làm việc với DB, tránh làm đóng băng UI chính
+        // Tạo một luồng riêng để truy vấn DB, tránh làm đơ/lag giao diện chính
         new Thread(() -> {
             try {
                 System.out.println("🗄️ Tiến trình đang gọi Database lấy dữ liệu cho phòng: " + category);
 
-                // Giả lập hoặc gọi hàm Service của bạn tại đây
-                Thread.sleep(250);
+                // 1. GỌI THẲNG SERVICE ĐỂ LẤY DỮ LIỆU TỪ DATABASE (Giống hệt bên Login làm)
+                java.util.List<com.auction.common.model.Item> itemList = itemService.getItemsByType(category);
 
+                // 2. QUAY TRỞ LẠI LUỒNG UI ĐỂ VẼ GIAO DIỆN JAVAFX
                 Platform.runLater(() -> {
                     if (gridAuctions != null) {
-                        gridAuctions.getChildren().clear();
-                        System.out.println("✅ Đã nạp dữ liệu thành công từ DB cho danh mục: " + category);
+                        gridAuctions.getChildren().clear(); // Xóa sạch sản phẩm cũ phòng khác trước khi nạp mới
+
+                        System.out.println("✅ Đã nhận dữ liệu thành công từ DB cho danh mục: " + category);
+
+                        if (itemList == null || itemList.isEmpty()) {
+                            System.out.println("⚠️ Không có sản phẩm nào thuộc danh mục: " + category);
+                            return;
+                        }
+
+                        int column = 0;
+                        int row = 0;
+
+                        // 3. DUYỆT DANH SÁCH VÀ ĐỔ VÀO GRIDPANE
+                        for (com.auction.common.model.Item item : itemList) {
+                            try {
+                                // Nạp file giao diện FXML của thẻ sản phẩm
+                                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
+                                Parent itemCard = loader.load();
+
+                                // Lấy controller của thẻ ItemCard và đẩy dữ liệu vào hiển thị
+                                ItemCardController cardController = loader.getController();
+                                cardController.setData(item);
+
+                                // Xếp lưới: Đủ 3 cột thì tự động xuống hàng mới
+                                if (column == 3) {
+                                    column = 0;
+                                    row++;
+                                }
+
+                                gridAuctions.add(itemCard, column++, row);
+
+                                // Tạo khoảng cách căn chỉnh (Margin) giữa các card cho thoáng mắt
+                                GridPane.setMargin(itemCard, new javafx.geometry.Insets(15));
+
+                            } catch (Exception e) {
+                                System.err.println("❌ Lỗi khi render thẻ sản phẩm: " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        }
+                        System.out.println("🚀 Đã vẽ thành công " + itemList.size() + " sản phẩm lên màn hình!");
                     }
                 });
 
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> {
-                    System.err.println("❌ Gặp sự cố trong quá trình truy vấn dữ liệu từ Database.");
+                    System.err.println("❌ Gặp sự cố khi kết nối lấy dữ liệu từ cơ sở dữ liệu.");
                 });
             }
         }).start();
-    } // <-- Đóng hàm
+    }
 }

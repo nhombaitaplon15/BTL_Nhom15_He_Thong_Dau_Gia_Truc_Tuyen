@@ -82,4 +82,8 @@ public class ItemService {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Giá khởi điểm không được âm!");
         }
     }
+    // tìm theo kiểu items
+    public List<Item> getItemsByType(String itemType) {
+        return itemDAO.getItemsByType(itemType);
+    }
 }

@@ -5,9 +5,9 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-    private static final String URL = "jdbc:postgresql://shinkansen.proxy.rlwy.net:36856/railway?options=-c%20timezone=UTC";
+    private static final String URL = "jdbc:postgresql://kodama.proxy.rlwy.net:46536/railway";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "VvQwsVyCLGuitsfXKuTpbLpRemIBxsIa";
+    private static final String PASSWORD = "eNJOOrTZxDClFPrAggDhzicWhwDNlhUI";
 
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);

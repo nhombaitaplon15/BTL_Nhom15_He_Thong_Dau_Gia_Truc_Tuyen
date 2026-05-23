@@ -122,4 +122,26 @@ public class ItemDAO {
             return false;
         }
     }
+    // 5. Lấy danh sách sản phẩm theo loại (VEHICLE, ART, ELECTRONICS)
+    public List<Item> getItemsByType(String itemType) {
+        List<Item> items = new ArrayList<>();
+        String sql = "SELECT * FROM items WHERE item_type = ?";
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, itemType);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // Sử dụng đúng ItemFactory có sẵn trong dự án của bạn để tự động map sang class con
+                    items.add(ItemFactory.createFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi khi lấy danh sách sản phẩm theo loại (" + itemType + "): " + e.getMessage());
+            e.printStackTrace();
+        }
+        return items;
+    }
 }

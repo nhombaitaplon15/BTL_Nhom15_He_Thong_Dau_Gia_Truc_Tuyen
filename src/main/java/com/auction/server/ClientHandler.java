@@ -54,6 +54,7 @@ public class ClientHandler implements Runnable {
                     case "REGISTER" -> handleRegister(request);
                     case "PLACE_BID" -> handlePlaceBid(request);
                     case "GET_AUCTIONS" -> handleGetAuctions();
+                    case "GET_ITEMS_BY_TYPE" -> handleGetItemsByType(request);
                     case "LOGOUT" -> {
                         currentUser = null; // xóa danh tính khi đăng xuất
                         sendResponse("SUCCESS", "Đã đăng xuất", null);
@@ -158,6 +159,7 @@ public class ClientHandler implements Runnable {
 
     // Hàm gửi tin nhắn phản hồi về Client cho nhanh
     private void sendResponse(String status, String note, Object data) {
+
         try {
             Message response = new Message(status, note, data);
             out.writeObject(response);
@@ -179,7 +181,25 @@ public class ClientHandler implements Runnable {
         this.currentUser = updatedUser;
         sendResponse("SUCCESS", "OK", updatedUser);
     }
+    private void handleGetItemsByType(Message request) {
+        try {
+            // 1. Client gửi lên danh mục dạng String (VD: "VEHICLE", "ART", "ELECTRONICS")
+            String itemType = (String) request.getData();
 
+            // 2. Khởi tạo ItemService để nói chuyện với Database qua ItemDAO
+            com.auction.service.ItemService itemService = new com.auction.service.ItemService();
+
+            // 3. Gọi hàm getItemsByType mà bạn vừa thêm ở ItemDAO lúc nãy
+            List<com.auction.common.model.Item> items = itemService.getItemsByType(itemType);
+
+            // 4. Trả danh sách sản phẩm này về cho Client qua Socket mạng
+            sendResponse("SUCCESS", "Lấy danh sách sản phẩm thành công", items);
+
+        } catch (Exception e) {
+            sendResponse("FAILED", "Lỗi Server khi lấy danh sách sản phẩm: " + e.getMessage(), null);
+            e.printStackTrace();
+        }
+    }
     private void close() {
         try {
             if (socket != null) socket.close();
