@@ -42,7 +42,7 @@ public class ItemCardController {
 
         // 1. Tạo một Pop-up nhanh bắt người dùng nhập số tiền
         TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Elite Auction - Đặt giá");
+        dialog.setTitle(" Đấu giá trực tuyến nhóm 15 - Đặt giá");
         dialog.setHeaderText("Sản phẩm: " + currentItem.getName());
         dialog.setContentText("Nhập số tiền bạn muốn trả (UETệ):");
 

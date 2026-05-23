@@ -25,7 +25,7 @@ public class MainContainerController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // Cấu hình dữ liệu hiển thị mặc định ban đầu cho Sidebar của bạn
-        if (lblAccountName != null) lblAccountName.setText("Nguyễn Thị Hà");
+        if (lblAccountName != null) lblAccountName.setText("");
         if (lblBalance != null) lblBalance.setText("0 đ");
 
         // Tự động hiển thị trang Sàn Đấu Giá khi vừa mở ứng dụng lên
