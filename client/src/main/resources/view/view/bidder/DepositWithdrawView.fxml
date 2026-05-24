@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #F8FAFC;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="bidder.controller.com.auction.client.WalletController">
+    <children>
+        <VBox alignment="TOP_CENTER" spacing="25.0" style="-fx-padding: 30 60 30 60;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <HBox alignment="CENTER_LEFT" prefWidth="1160.0" spacing="20.0">
+                    <children>
+                        <Button mnemonicParsing="false" onAction="#handleBackToHome" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #2563EB; -fx-border-color: #2563EB; -fx-border-radius: 8; -fx-cursor: hand;" text="← Quay lại">
+                            <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                            <padding><Insets left="20.0" right="20.0" /></padding>
+                        </Button>
+                        <VBox spacing="4.0">
+                            <children>
+                                <Label text="💰 GIAO DỊCH TÀI CHÍNH" textFill="#2563EB">
+                                    <font><Font name="Times New Roman Bold" size="28.0" /></font>
+                                </Label>
+                                <Label text="Thực hiện nạp hoặc rút tiền an toàn qua hệ thống" textFill="#64748B">
+                                    <font><Font name="Times New Roman" size="16.0" /></font>
+                                </Label>
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+                <Separator prefWidth="1160.0" />
+                <HBox alignment="CENTER" prefWidth="1160.0" spacing="30.0">
+                    <children>
+                        <VBox alignment="CENTER" prefHeight="110.0" prefWidth="450.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 16; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.08), 15, 0, 0, 6);">
+                            <children>
+                                <Label text="SỐ DƯ KHẢ DỤNG" textFill="#64748B">
+                                    <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                                </Label>
+                                <Label id="lblBalance" fx:id="lblLargeBalance" textFill="#2563EB">
+                                    <font><Font name="Times New Roman Bold" size="36.0" /></font>
+                                </Label>
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+                <VBox maxWidth="650.0" prefWidth="650.0" spacing="20.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 16; -fx-padding: 35; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 20, 0, 0, 10);">
+                    <children>
+                        <HBox alignment="CENTER" spacing="10.0">
+                            <children>
+                                <Button id="btnDepositTab" fx:id="btnTabDeposit" mnemonicParsing="false" onAction="#handleSwitchToDeposit" prefHeight="50.0" prefWidth="280.0" style="-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 8 0 0 8; -fx-cursor: hand;" text="Nạp Tiền">
+                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                                </Button>
+                                <Button id="btnWithdrawTab" fx:id="btnTabWithdraw" mnemonicParsing="false" onAction="#handleSwitchToWithdraw" prefHeight="50.0" prefWidth="280.0" style="-fx-background-color: #F1F5F9; -fx-text-fill: #64748B; -fx-background-radius: 0 8 8 0; -fx-cursor: hand;" text="Rút Tiền">
+                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                                </Button>
+                            </children>
+                            <VBox.margin><Insets bottom="5.0" /></VBox.margin>
+                        </HBox>
+
+                        <VBox alignment="TOP_LEFT" spacing="8.0">
+                            <children>
+                                <Label text="Số tiền giao dịch (VNĐ)" textFill="#1E293B">
+                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                                </Label>
+                                <TextField fx:id="txtAmount" prefHeight="50.0" promptText="Nhập số tiền cần giao dịch" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-background-radius: 8;">
+                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                                </TextField>
+                            </children>
+                        </VBox>
+                        <VBox alignment="TOP_LEFT" spacing="8.0">
+                            <children>
+                                <Label text="Ghi chú nội dung" textFill="#1E293B">
+                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
+                                </Label>
+                                <TextField fx:id="txtNote" prefHeight="50.0" promptText="Nhập nội dung chuyển khoản / lời nhắn" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-background-radius: 8;">
+                                    <font><Font name="Times New Roman" size="18.0" /></font>
+                                </TextField>
+                            </children>
+                        </VBox>
+                        <Button id="btnSubmit" fx:id="btnSubmit" mnemonicParsing="false" onAction="#handleSubmitTransaction" prefHeight="55.0" prefWidth="600.0" style="-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 8; -fx-cursor: hand;" text="Xác Nhận Nạp Tiền">
+                            <font><Font name="Times New Roman Bold" size="20.0" /></font>
+                            <VBox.margin><Insets top="10.0" /></VBox.margin>
+                        </Button>
+                    </children>
+                </VBox>
+                <Label text="* Lưu ý: Mọi giao dịch nạp/rút sẽ được hệ thống đối soát tự động trong vòng 1 - 5 phút." textFill="#94A3B8">
+                    <font><Font name="Times New Roman Italic" size="16.0" /></font>
+                </Label>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>
