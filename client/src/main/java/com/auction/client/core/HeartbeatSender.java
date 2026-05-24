@@ -1,4 +1,4 @@
-package client.core;
+package com.auction.client.core;
 
 import com.auction.common.network.RequestCode;
 import java.util.concurrent.Executors;

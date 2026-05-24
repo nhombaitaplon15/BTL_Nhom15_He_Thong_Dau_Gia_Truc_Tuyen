@@ -1,4 +1,4 @@
-package server.core;
+package com.auction.server.core;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

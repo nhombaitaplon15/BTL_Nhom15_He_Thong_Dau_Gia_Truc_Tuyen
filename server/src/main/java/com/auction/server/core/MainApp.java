@@ -1,4 +1,4 @@
-package server.core;
+package com.auction.server.core;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

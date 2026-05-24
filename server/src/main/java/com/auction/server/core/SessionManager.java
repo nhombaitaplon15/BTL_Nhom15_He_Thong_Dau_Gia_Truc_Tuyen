@@ -1,4 +1,4 @@
-package server.core;
+package com.auction.server.core;
 
 import com.auction.common.network.Message;
 
