@@ -130,6 +130,7 @@ public class The_Home_Page_Bidder_View_Controller {
                 }
                 else if (type == 5 && controller instanceof BiddingHistoryController) {
                     ((BiddingHistoryController) controller).setUserData(this.currentUser);
+                    ((BiddingHistoryController) controller).setMainHomeController(((javafx.scene.Node) event.getSource()).getScene());
                 }
             } else {
                 System.err.println("⚠️ Cảnh báo: File FXML chưa khai báo đúng fx:controller!");
