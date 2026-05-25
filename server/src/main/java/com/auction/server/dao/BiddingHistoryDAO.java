@@ -1,4 +1,4 @@
-package server.dao;
+package com.auction.server.dao;
 
 import com.auction.common.model.BidHistoryRow;
 import java.sql.Connection;

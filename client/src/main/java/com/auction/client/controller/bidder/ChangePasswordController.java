@@ -1,4 +1,4 @@
-package client.controller.bidder;
+package com.auction.client.controller.bidder;
 
 import com.auction.common.model.User;
 import com.auction.server.service.UserService;

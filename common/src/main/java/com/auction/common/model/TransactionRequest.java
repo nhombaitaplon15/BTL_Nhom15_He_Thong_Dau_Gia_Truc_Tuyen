@@ -35,4 +35,12 @@ public class TransactionRequest implements java.io.Serializable{ // Yêu cầu n
         this.transactionStatus = status ;
         this.requestDate = LocalDateTime.now();
     }
+
+    public Object getId() {
+        return requestId;
+    }
+
+    public String getStatus() {
+        return transactionStatus;
+    }
 }

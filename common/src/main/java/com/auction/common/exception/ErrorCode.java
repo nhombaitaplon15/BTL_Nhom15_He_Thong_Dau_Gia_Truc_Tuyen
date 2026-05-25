@@ -1,4 +1,4 @@
-package com.auction.exception;
+package com.auction.common.exception;
 
 // thiết lập các mã lỗi
 public enum ErrorCode {

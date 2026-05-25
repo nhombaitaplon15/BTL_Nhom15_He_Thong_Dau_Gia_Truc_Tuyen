@@ -1,4 +1,4 @@
-package client.controller.bidder;
+package com.auction.client.controller.bidder;
 
 import com.auction.common.model.Item;
 import javafx.event.ActionEvent;
@@ -78,5 +78,9 @@ public class ItemCardController {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    public void updatePriceIfMatch(int auctionId, double newPrice) {
+
     }
 }

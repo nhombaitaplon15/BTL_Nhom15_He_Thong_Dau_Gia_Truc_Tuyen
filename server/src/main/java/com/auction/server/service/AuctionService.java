@@ -1,10 +1,10 @@
-package server.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.server.dao.AuctionDAO;
+import com.auction.common.exception.AuctionException;
+import com.auction.common.exception.ErrorCode;
+import com.auction.server.dao.AuctionDAO ;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.dao.DatabaseConnection;

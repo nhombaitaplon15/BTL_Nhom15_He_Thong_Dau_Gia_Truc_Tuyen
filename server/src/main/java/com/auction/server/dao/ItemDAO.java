@@ -1,10 +1,11 @@
-package server.dao;
+package com.auction.server.dao;
 
 import com.auction.common.model.Art;
 import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
 import com.auction.common.model.Vehicle;
-import com.auction.factory.ItemFactory;
+import com.auction.common.factory.ItemFactory;
+import com.auction.server.dao.DatabaseConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -144,6 +145,25 @@ public class ItemDAO {
         } catch (SQLException e) {
             System.err.println("❌ Lỗi khi lấy danh sách sản phẩm theo loại (" + itemType + "): " + e.getMessage());
             e.printStackTrace();
+        }
+        return items;
+    }
+
+    public List<Item> getItemsBySeller(int sellerId) {
+        List<Item> items = new ArrayList<>();
+        String sql = "SELECT * FROM items WHERE seller_id = ?";
+        try (
+                Connection conn = DatabaseConnection.connect();
+                PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setInt(1, sellerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    items.add(ItemFactory.createFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi lấy item theo seller: " + e.getMessage());
         }
         return items;
     }

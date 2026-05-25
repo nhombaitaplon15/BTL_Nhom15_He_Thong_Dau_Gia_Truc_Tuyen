@@ -1,18 +1,34 @@
-package server.service;
+package com.auction.server.service;  // [SỬA DÒNG 1] server.service -> com.auction.server.service
 
 import com.auction.common.model.Auction;
+import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.server.dao.*;
+import com.auction.common.exception.AuctionException ;  // [SỬA] com.auction.exception -> com.auction.common.exception
+import com.auction.common.exception.ErrorCode ;         // [SỬA] com.auction.exception -> com.auction.common.exception
+import com.auction.server.dao.AuctionDAO ;
+import com.auction.server.dao.DatabaseConnection ;
+import com.auction.server.dao.TransactionDAO ;
+import com.auction.server.dao.PaymentDAO ;
+import com.auction.server.dao.BiddingHistoryDAO;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * BiddingService - Xử lý toàn bộ logic nghiệp vụ đặt giá và hủy kèo.
+ *
+ * ĐÃ SỬA:
+ * 1. Dòng 1: package server.service -> com.auction.server.service
+ * 2. Import exception: com.auction.exception -> com.auction.common.exception
+ * 3. Thêm getManagerService() để AuctionRoom.processBid() có thể inject
+ *
+ * Đặt tại: server/src/main/java/com/auction/server/service/BiddingService.java
+ */
 public class BiddingService {
 
     private final ManagerService managerService;
@@ -20,113 +36,99 @@ public class BiddingService {
     private final TransactionDAO transactionDAO = new TransactionDAO();
     private final PaymentDAO paymentDAO = new PaymentDAO();
     private final Map<Integer, ReentrantLock> lockMap = new ConcurrentHashMap<>();
+    private final BiddingHistoryDAO biddingHistoryDAO = new BiddingHistoryDAO();
 
     public BiddingService(ManagerService managerService) {
         this.managerService = managerService;
     }
 
+    /** [ĐÃ THÊM] Accessor để AuctionRoom.processBid() truy cập ManagerService */
+    public ManagerService getManagerService() {
+        return managerService;
+    }
+
     public void placeBid(User user, int auctionId, double bidAmount) {
-        // 1. Kiểm tra nhanh (Fast-fail) trước khi lấy Lock
         Auction auction = managerService.getAuctionOrThrow(auctionId);
         validateBidRules(user, auction, bidAmount);
 
-        // 2. Lock theo từng phiên để tránh tranh chấp (Race Condition)
         ReentrantLock lock = lockMap.computeIfAbsent(auctionId, k -> new ReentrantLock());
         lock.lock();
         try {
-            // Kiểm tra lại lần nữa trong Lock để đảm bảo giá chưa bị ai khác đẩy lên
             if (bidAmount <= auction.getCurrentPrice()) {
                 throw new AuctionException(ErrorCode.BID_TOO_LOW.name(), "Giá đã bị thay đổi, vui lòng đặt cao hơn!");
             }
-
-            // 3. Thực hiện Transaction xuống Database
             executeBidTransaction(user, auction, bidAmount);
-
             System.out.println("[BID] " + user.getUsername() + " đặt giá " + bidAmount + " thành công!");
         } finally {
             lock.unlock();
         }
     }
-    // đấu giá
+
     private void executeBidTransaction(User user, Auction auction, double amount) {
         try (Connection conn = DatabaseConnection.connect()) {
-            conn.setAutoCommit(false); // Bắt đầu Transaction
+            conn.setAutoCommit(false);
             try {
-                // 1, Hoàn tiền cho người đang giữ giá cao nhất cũ (nếu có)
                 if (auction.getCurrentWinnerId() != null) {
                     int oldWinnerId = auction.getCurrentWinnerId();
                     double oldPrice = auction.getCurrentPrice();
-                    // hoàn lại tiền vào tài khoản người cũ
                     if (!paymentDAO.updateBalance(conn, oldWinnerId, oldPrice, "+")) {
                         throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + oldWinnerId + ")");
                     }
-                    // ghi lịch sử ví hoàn tiền
-                    transactionDAO.createTransaction(conn, oldWinnerId, oldPrice, "REFUND_OVERBID_" + auction.getAuctionId(), "SUCCESS");
+                    transactionDAO.createTransaction(conn, oldWinnerId, oldPrice,
+                            "REFUND_OVERBID_" + auction.getAuctionId(), "SUCCESS");
                 }
-                // 2, Trừ tiền người đặt giá mới (Giam tiền tạm giữ)
-                // Kiểm tra số dư tài khoản
                 if (!paymentDAO.updateBalance(conn, user.getId(), amount, "-")) {
                     throw new SQLException("Số dư tài khoản không đủ để thực hiện đặt giá!");
                 }
-                // ghi lịch sử ví trừ tiền đặt giá
-                transactionDAO.createTransaction(conn, user.getId(), amount, "BID_PLACED_" + auction.getAuctionId(), "SUCCESS");
-                // 3, Cập nhật giá và Winner mới vào bảng đấu giá
+                transactionDAO.createTransaction(conn, user.getId(), amount,
+                        "BID_PLACED_" + auction.getAuctionId(), "SUCCESS");
                 if (!auctionDAO.updateBid(conn, auction.getAuctionId(), user.getId(), amount)) {
                     throw new SQLException("Cập nhật giá mới không thành công!");
                 }
-                // Xử lý Anti-sniping: Gia hạn 30s nếu đặt giá vào phút chót
                 LocalDateTime newEndTime = calculateAntiSniping(auction.getEndTime());
                 if (newEndTime != null) {
                     auctionDAO.updateEndTime(conn, auction.getAuctionId(), newEndTime);
-                    auction.setEndTime(newEndTime); // Cập nhật Object RAM
+                    auction.setEndTime(newEndTime);
                 }
-                conn.commit(); // Thành công hết thì chốt luồng tiền và thông tin
-                // Cập nhật Object RAM sau khi DB đã OK để đồng bộ hiển thị
+                conn.commit();
                 auction.setCurrentPrice(amount);
                 auction.setCurrentWinnerId(user.getId());
                 auction.setTotalBids(auction.getTotalBids() + 1);
             } catch (SQLException e) {
-                conn.rollback(); // Lỗi bất cứ bước nào là hủy hết
+                conn.rollback();
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Giao dịch thất bại: " + e.getMessage());
             }
         } catch (SQLException e) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối Database!");
         }
     }
+
     public void rejectWin(User winner, int auctionId) {
         Auction auction = managerService.getAuctionOrThrow(auctionId);
 
-        // Kiểm tra tính hợp lệ
         if (winner.getId() != auction.getCurrentWinnerId()) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Bạn không phải người thắng phiên này!");
         }
-        if (!"FINISHED".equals(auction.getAuctionStatus())) { // Hoặc trạng thái kết thúc của sàn em
+        if (!"FINISHED".equals(auction.getAuctionStatus())) {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Phiên đấu giá chưa kết thúc!");
         }
 
         double bidAmount = auction.getCurrentPrice();
         double penaltyAmount = bidAmount * 0.07;
         double refundAmount = bidAmount - penaltyAmount;
-        int adminId = 1; // ID tài khoản doanh thu hệ thống
+        int adminId = 1;
 
         try (Connection conn = DatabaseConnection.connect()) {
             conn.setAutoCommit(false);
             try {
-                // 1. Trả lại 93% cho người mua
                 paymentDAO.updateBalance(conn, winner.getId(), refundAmount, "+");
-                // TRUYỀN ĐỦ: conn, userId, amount, type (loại giao dịch), status (SUCCESS)
-                transactionDAO.createTransaction(conn, winner.getId(), refundAmount, "REFUND_REJECT_ITEM_" + auctionId, "SUCCESS");
-
-                // 2. Nộp 7% vào doanh thu sàn (Admin)
+                transactionDAO.createTransaction(conn, winner.getId(), refundAmount,
+                        "REFUND_REJECT_ITEM_" + auctionId, "SUCCESS");
                 paymentDAO.updateBalance(conn, adminId, penaltyAmount, "+");
-                // TRUYỀN ĐỦ: conn, adminId, amount, type (loại giao dịch), status (SUCCESS)
-                transactionDAO.createTransaction(conn, adminId, penaltyAmount, "PENALTY_REVENUE_AUCTION_" + auctionId, "SUCCESS");
-
-                // 3. Đổi trạng thái phiên đấu giá trong DB thành REJECTED
+                transactionDAO.createTransaction(conn, adminId, penaltyAmount,
+                        "PENALTY_REVENUE_AUCTION_" + auctionId, "SUCCESS");
                 auctionDAO.updateStatus(conn, auctionId, "REJECTED");
-
                 conn.commit();
-                // 4. Cập nhật RAM
                 auction.setAuctionStatus("REJECTED");
             } catch (SQLException e) {
                 conn.rollback();
@@ -142,6 +144,7 @@ public class BiddingService {
         if (user.getId() == auction.getSellerId()) throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Không được tự đấu giá!");
         if (!"RUNNING".equals(auction.getAuctionStatus())) throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Phiên không trong trạng thái RUNNING!");
         if (LocalDateTime.now().isAfter(auction.getEndTime())) throw new AuctionException(ErrorCode.AUCTION_ALREADY_ENDED.name(), "Phiên đã kết thúc!");
+        if (user.getBalance() < amount) throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số dư không đủ!");
     }
 
     private LocalDateTime calculateAntiSniping(LocalDateTime currentEnd) {
@@ -150,5 +153,11 @@ public class BiddingService {
             return currentEnd.plusSeconds(30);
         }
         return null;
+    }
+    public List<BidHistoryRow> getBidHistory(int userId) {
+        if (userId <= 0) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "User ID không hợp lệ!");
+        }
+        return biddingHistoryDAO.getHistoryByUser(userId);
     }
 }

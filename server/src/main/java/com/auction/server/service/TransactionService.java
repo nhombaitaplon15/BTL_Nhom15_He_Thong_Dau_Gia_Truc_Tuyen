@@ -1,14 +1,16 @@
-package server.service;
+package com.auction.server.service;
 
+import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
+import com.auction.common.exception.AuctionException;
+import com.auction.common.exception.ErrorCode;
 import com.auction.server.dao.TransactionDAO;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.DBConnection;
+import com.auction.server.dao.PaymentDAO ;
+import com.auction.server.dao.DBConnection ;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public class TransactionService {
     private final TransactionDAO transDAO = new TransactionDAO();
@@ -115,7 +117,107 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo giao dịch: " + e.getMessage());
         }
     }
-
-    public void handleWithdrawRequest(User currentUser, double amount) {
+    public List<TransactionRequest> getAllTransactions() {
+        return transDAO.getAllTransactions();
     }
+
+    public void approveTransaction(Integer txId) {
+
+        if (txId == null) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_INPUT.name(),
+                    "Transaction ID không hợp lệ!"
+            );
+        }
+
+        // Tìm transaction theo ID
+        TransactionRequest target = null;
+
+        for (TransactionRequest tx : transDAO.getAllTransactions()) {
+            if (tx.getRequestId() == txId) {
+                target = tx;
+                break;
+            }
+        }
+
+        if (target == null) {
+            throw new AuctionException(
+                    ErrorCode.TRANSACTION_FAILED.name(),
+                    "Không tìm thấy giao dịch!"
+            );
+        }
+
+        boolean success = transDAO.processApproval(
+                target.getRequestId(),
+                target.getUser().getId(),
+                target.getAmount(),
+                target.getType()
+        );
+
+        if (!success) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    "Duyệt giao dịch thất bại!"
+            );
+        }
+    }
+
+    public void rejectTransaction(Integer txId) {
+
+        if (txId == null) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_INPUT.name(),
+                    "Transaction ID không hợp lệ!"
+            );
+        }
+
+        boolean success = transDAO.rejectTransaction(txId);
+
+        if (!success) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    "Từ chối giao dịch thất bại!"
+            );
+        }
+    }
+    public void handleWithdrawRequest(User user, double amount, String bankInfo) {
+        if (user == null) {
+            throw new AuctionException(
+                    ErrorCode.UNAUTHORIZED.name(),
+                    "Người dùng không hợp lệ!");
+        }
+        if (amount <= 0) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_INPUT.name(),
+                    "Số tiền rút phải lớn hơn 0!");
+        }
+        if (bankInfo == null || bankInfo.isBlank()) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_INPUT.name(),
+                    "Thông tin ngân hàng không được để trống!");
+        }
+        if (user.getBalance() < amount) {
+            throw new AuctionException(
+                    ErrorCode.INSUFFICIENT_BALANCE.name(),
+                    "Số dư không đủ để rút!");
+        }
+
+        try {
+            boolean success = transDAO.createTransaction(
+                    user.getId(),
+                    amount,
+                    "WITHDRAW",
+                    "PENDING");
+            if (!success) {
+                throw new AuctionException(
+                        ErrorCode.TRANSACTION_FAILED.name(),
+                        "Không thể tạo yêu cầu rút tiền!");
+            }
+        } catch (Exception e) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    e.getMessage());
+        }
+    }
+
 }

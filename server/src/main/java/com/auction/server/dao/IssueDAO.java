@@ -1,5 +1,5 @@
-package server.dao;
-import com.auction.server.dao.DatabaseConnection; // Thay bằng class kết nối DB của nhóm bạn
+package com.auction.server.dao;
+import com.auction.server.dao.DatabaseConnection ; // Thay bằng class kết nối DB của nhóm bạn
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

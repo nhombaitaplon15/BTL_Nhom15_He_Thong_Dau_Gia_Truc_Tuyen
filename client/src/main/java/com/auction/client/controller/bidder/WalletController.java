@@ -1,4 +1,4 @@
-package client.controller.bidder;
+package com.auction.client.controller.bidder;
 
 import com.auction.common.model.User;
 import com.auction.server.service.TransactionService;
@@ -110,16 +110,27 @@ public class WalletController {
                 if (txtNote != null) txtNote.clear();
             }
             else if (actionTypeText.contains("Rút")) {
-                // Kiểm tra số dư hệ thống thực tế trước khi cho rút
+                // Kiểm tra số dư
                 if (currentUser.getBalance() < amount) {
-                    showAlert(Alert.AlertType.ERROR, "Giao dịch thất bại", "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!");
+
+                    showAlert(
+                            Alert.AlertType.ERROR,
+                            "Giao dịch thất bại",
+                            "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!"
+                    );
+
                     return;
                 }
-
-                transactionService.handleWithdrawRequest(currentUser, amount);
+                // Lấy thông tin ngân hàng từ ô ghi chú
+                String bankInfo = txtNote.getText().trim();
+                if (bankInfo.isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập thông tin ngân hàng để rút tiền!");
+                    return;
+                }
+                transactionService.handleWithdrawRequest(currentUser, amount, bankInfo);
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu RÚT TIỀN đã được gửi, chờ Admin duyệt!");
                 txtAmount.clear();
-                if (txtNote != null) txtNote.clear();
+                if (txtNote != null) {txtNote.clear();}
             }
 
         } catch (NumberFormatException e) {

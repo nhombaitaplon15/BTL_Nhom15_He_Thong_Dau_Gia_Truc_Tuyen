@@ -1,5 +1,5 @@
 
-package client.controller.auth;
+package com.auction.client.controller.auth;
 
 import com.auction.server.service.UserService;
 import javafx.event.ActionEvent;

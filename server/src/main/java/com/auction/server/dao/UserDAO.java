@@ -1,9 +1,10 @@
-package server.dao;
+package com.auction.server.dao;
 
 import com.auction.common.model.User;
-import com.auction.factory.UserFactory;
+import com.auction.common.factory.UserFactory;
 
 import java.sql.*;
+import java.util.*;
 
 public class UserDAO {
 
@@ -95,7 +96,7 @@ public class UserDAO {
 
     // 5. Cập nhật vai trò (Giữ nguyên ID, chỉ đổi nhãn role trong SQL)
     public boolean updateRole(int userId, String newRole) {
-        String sql = "UPDATE users SET user_role = ? WHERE id = ?";
+        String sql = "UPDATE users SET role = ? WHERE user_id = ?";
         try (Connection conn =DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newRole);
@@ -165,5 +166,63 @@ public class UserDAO {
             e.printStackTrace();
         }
         return 0.0; // Trả về 0 nếu lỗi kết nối
+    }
+    public boolean updateProfile(User user) {
+
+        String sql = """
+        UPDATE users
+        SET email = ?, phone = ?
+        WHERE user_id = ?
+    """;
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getEmail());
+            ps.setString(2, user.getPhone());
+            ps.setInt(3, user.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Lỗi update profile: " + e.getMessage());
+        }
+        return false;
+    }
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users";
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                User user = UserFactory.createUser(
+                        rs.getInt("user_id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("phone"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getDouble("balance")
+                );
+                users.add(user);
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi getAllUsers: " + e.getMessage());
+        }
+        return users;
+    }
+    public boolean updateStatus(int userId, String status) {
+        String sql = """
+        UPDATE users
+        SET status = ?
+        WHERE user_id = ?
+    """;
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Lỗi update status: " + e.getMessage());
+        }
+        return false;
     }
 }

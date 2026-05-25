@@ -1,9 +1,9 @@
-package server.service;
+package com.auction.server.service;
 
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.factory.UserFactory;
+import com.auction.common.exception.AuctionException;
+import com.auction.common.exception.ErrorCode;
+import com.auction.common.factory.UserFactory;
 import com.auction.server.dao.UserDAO;
 
 public class UserService {
@@ -141,5 +141,58 @@ public class UserService {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Email đã được sử dụng!");
         if (userDAO.isFieldExists("phone", phone))
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại đã đăng ký!");
+    }
+
+    // Update profile
+    public void updateProfile(User updatedUser) {
+
+        if (updatedUser == null) {
+            throw new AuctionException(
+                    ErrorCode.INVALID_INPUT.name(),
+                    "User không hợp lệ"
+            );
+        }
+        User current = userDAO.getUserById(updatedUser.getId());
+        if (current == null) {
+            throw new AuctionException(
+                    ErrorCode.USER_NOT_FOUND.name(),
+                    "Không tìm thấy user"
+            );
+        }
+        current.setEmail(updatedUser.getEmail());
+        current.setPhone(updatedUser.getPhone());
+        boolean success = userDAO.updateProfile(current);
+        if (!success) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    "Không thể cập nhật profile"
+            );
+        }
+    }
+    // Get all users
+    public java.util.List<User> getAllUsers() {
+        return userDAO.getAllUsers();
+    }
+
+    // Ban user
+    public void banUser(Integer userId) {
+        boolean success = userDAO.updateStatus(userId, "LOCKED");
+        if (!success) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    "Không thể khóa user"
+            );
+        }
+    }
+
+    // Unban user
+    public void unbanUser(Integer userId) {
+        boolean success = userDAO.updateStatus(userId, "ACTIVE");
+        if (!success) {
+            throw new AuctionException(
+                    ErrorCode.INTERNAL_ERROR.name(),
+                    "Không thể mở khóa user"
+            );
+        }
     }
 }

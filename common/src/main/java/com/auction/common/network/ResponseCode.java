@@ -2,18 +2,75 @@ package com.auction.common.network;
 
 /**
  * Enum định nghĩa các loại Response từ Server -> Client.
- * Giúp Client biết cần cập nhật UI nào (JavaFX Platform.runLater)
+ *
+ * PHIÊN BẢN ĐẦY ĐỦ (Bidder + Seller + Admin).
+ * Mỗi ResponseCode là một sự kiện mà MessageRouter sẽ định tuyến
+ * đến đúng Controller đang lắng nghe.
+ *
+ * ĐẶT TẠI: common/src/main/java/com/auction/common/network/ResponseCode.java
  */
 public enum ResponseCode {
-    LOGIN_SUCCESS,
-    LOGIN_FAILED,
-    ROOM_LIST_RESULT,   // Trả về danh sách phòng
-    ROOM_JOIN_SUCCESS,
-    ROOM_JOIN_FAILED,
-    NEW_BID_UPDATE,     // (Broadcast) Có người vừa Bid giá mới thành công
-    BID_SUCCESS,        // (Cá nhân) Chúc mừng bạn đã dẫn đầu
-    BID_FAILED,         // (Cá nhân) Bid hụt (do người khác nhanh tay hơn hoặc lỗi mạng)
-    AUCTION_ENDED,      // (Broadcast) Phiên đấu giá kết thúc
-    CHAT_BROADCAST,     // (Broadcast) Tin nhắn chat từ người khác
-    ERROR_MESSAGE       // Lỗi hệ thống chung
+    // ===================== AUTH =====================
+    LOGIN_SUCCESS,          // payload: User object (đã gán role)
+    LOGIN_FAILED,           // payload: null
+    REGISTER_SUCCESS,       // payload: null
+    REGISTER_FAILED,        // payload: null
+
+    // ===================== BIDDER =====================
+    ROOM_LIST_RESULT,           // payload: List<Auction>
+    ROOM_JOIN_SUCCESS,          // payload: Integer auctionId
+    ROOM_JOIN_FAILED,           // payload: null
+    FETCH_ITEMS_RESULT,         // payload: List<Item>
+    BID_HISTORY_RESULT,         // payload: List<BidHistoryRow>
+    NEW_BID_UPDATE,             // (Broadcast) payload: Object[] {auctionId, newPrice, winnerUsername}
+    BID_SUCCESS,                // (Cá nhân) payload: Double newPrice
+    BID_FAILED,                 // (Cá nhân) payload: String reason
+    AUCTION_ENDED,              // (Broadcast) payload: Object[] {auctionId, winnerUsername, finalPrice}
+    AUCTION_TIME_EXTENDED,      // (Broadcast) Anti-sniping: payload: Object[] {auctionId, newEndTime}
+    CHAT_BROADCAST,             // (Broadcast) payload: String "username: message"
+    DEPOSIT_SUCCESS,            // payload: Double newBalance
+    DEPOSIT_FAILED,             // payload: null
+    WITHDRAW_SUCCESS,           // payload: Double newBalance
+    WITHDRAW_FAILED,            // payload: null
+    PROFILE_RESULT,             // payload: User
+    PROFILE_UPDATED,            // payload: null
+    PASSWORD_CHANGED,           // payload: null
+    PASSWORD_CHANGE_FAILED,     // payload: null
+    REPORT_SENT,                // payload: null
+
+    // ===================== SELLER =====================
+    SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)
+    SELLER_AUCTION_CREATED,     // payload: Integer auctionId vừa tạo
+    SELLER_AUCTION_CREATE_FAILED,// payload: String reason
+    SELLER_AUCTIONS_RESULT,     // payload: List<Auction> (phiên của seller)
+    SELLER_CANCEL_SUCCESS,      // payload: null
+    SELLER_CANCEL_FAILED,       // payload: String reason
+    SELLER_CONFIRM_SALE_SUCCESS,// payload: null
+    SELLER_CONFIRM_SALE_FAILED, // payload: String reason
+    // Realtime broadcast cho Seller khi phiên của họ được duyệt/từ chối
+    SELLER_AUCTION_APPROVED,    // (Push) payload: Integer auctionId
+    SELLER_AUCTION_REJECTED,    // (Push) payload: Object[] {auctionId, reason}
+    SELLER_AUCTION_SOLD,        // (Push) payload: Object[] {auctionId, finalPrice, buyerName}
+
+    // ===================== ADMIN =====================
+    ADMIN_ALL_AUCTIONS_RESULT,  // payload: List<Auction>
+    ADMIN_APPROVE_SUCCESS,      // payload: Integer auctionId
+    ADMIN_APPROVE_FAILED,       // payload: String reason
+    ADMIN_REJECT_SUCCESS,       // payload: Integer auctionId
+    ADMIN_REJECT_FAILED,        // payload: String reason
+    ADMIN_BLOCK_SUCCESS,        // payload: Integer auctionId
+    ADMIN_BLOCK_FAILED,         // payload: String reason
+    ADMIN_ALL_TRANSACTIONS_RESULT,  // payload: List<TransactionRequest>
+    ADMIN_TRANSACTION_APPROVED,     // payload: Integer transactionId
+    ADMIN_TRANSACTION_REJECTED,     // payload: Integer transactionId
+    ADMIN_TRANSACTION_CREATED,      // payload: null
+    ADMIN_TRANSACTION_FAILED,       // payload: String reason
+    ADMIN_USERS_RESULT,             // payload: List<User>
+    ADMIN_BAN_SUCCESS,              // payload: Integer userId
+    ADMIN_UNBAN_SUCCESS,            // payload: Integer userId
+    // Broadcast tới tất cả Admin đang online khi có phiên mới cần duyệt
+    ADMIN_NEW_PENDING_AUCTION,      // (Broadcast to Admin) payload: Auction
+
+    // ===================== ERROR =====================
+    ERROR_MESSAGE               // payload: String errorDetail
 }

@@ -1,4 +1,4 @@
-package com.auction.factory;
+package com.auction.common.factory;
 
 import com.auction.common.model.Art;
 import com.auction.common.model.Electronics;

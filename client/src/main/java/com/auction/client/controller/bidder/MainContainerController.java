@@ -1,4 +1,4 @@
-package client.controller.bidder;
+package com.auction.client.controller.bidder;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

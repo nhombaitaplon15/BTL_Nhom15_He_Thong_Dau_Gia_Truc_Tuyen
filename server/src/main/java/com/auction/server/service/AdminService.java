@@ -1,9 +1,9 @@
-package server.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Auction;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.server.dao.AuctionDAO;
+import com.auction.common.exception.AuctionException ;
+import com.auction.common.exception.ErrorCode ;
+import com.auction.server.dao.AuctionDAO ;
 
 import java.util.List;
 import java.util.Map;
@@ -114,7 +114,7 @@ public class AdminService {
                 return true;
             }
         } catch (Exception e) {
-            throw new com.auction.exception.AuctionException(com.auction.exception.ErrorCode.INTERNAL_ERROR.name(),
+            throw new com.auction.common.exception.AuctionException(com.auction.common.exception.ErrorCode.INTERNAL_ERROR.name(),
                     "Lỗi hệ thống khi chặn phiên: " + e.getMessage());
         }
         return false;

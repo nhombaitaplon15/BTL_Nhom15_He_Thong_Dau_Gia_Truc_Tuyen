@@ -1,0 +1,115 @@
+.button-welcome {
+    -fx-background-color: #70e0bb;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px; /* Bo góc nút */
+}
+
+/* Hiệu ứng khi di chuột vào */
+.button-welcome:hover {
+    -fx-background-color: #34dbae;
+}
+/* Thiết lập ảnh nền cho màn hình mở đầu */
+.nen-anh-full {
+    -fx-background-image: url("../images/anen1.jpg"); /* Tên file ảnh nền của bạn */
+    -fx-background-size: 100% 100%; /* Ép ảnh giãn ra lấp đầy 100% chiều ngang và dọc */
+    -fx-background-repeat: no-repeat;
+}
+/* =========================================================
+   BẢNG ĐẤU GIÁ (GỘP BẢN CŨ VÀ MỚI)
+   ========================================================= */
+
+.my-table {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: #dbe2ea;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 4);
+    -fx-padding: 10;
+    -fx-table-cell-border-color: transparent; /* Xóa dòng kẻ dọc */
+}
+
+/* --- QUAN TRỌNG: ẨN SẠCH CÁC HÀNG TRỐNG (EMPTY ROWS) --- */
+.my-table .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.my-table .table-row-cell:empty .table-cell {
+    -fx-border-width: 0px;
+}
+
+/* --- HEADER --- */
+.my-table .column-header-background {
+    -fx-background-color: white;
+    -fx-background-radius: 16 16 0 0;
+    -fx-padding: 6 0 6 0;
+    -fx-border-color: transparent transparent #eef2f7 transparent;
+}
+.my-table .column-header {
+    -fx-background-color: transparent;
+    -fx-pref-height: 48;
+    -fx-border-color: transparent;
+}
+.my-table .column-header .label {
+    -fx-font-family: "Times New Roman";
+    -fx-text-fill: #334155;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+/* --- NỀN BÊN TRONG BẢNG THÀNH TRONG SUỐT --- */
+.my-table .virtual-flow,
+.my-table .virtual-flow .corner,
+.my-table .virtual-flow .clipped-container,
+.my-table .virtual-flow .clipped-container .sheet {
+    -fx-background-color: transparent;
+}
+
+/* --- HÀNG DỮ LIỆU CÓ THẬT --- */
+.my-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-cell-size: 60px; /* Chiều cao để chứa 2 dòng text */
+    -fx-border-color: transparent transparent #f1f5f9 transparent; /* Chỉ kẻ viền dưới mỏng */
+}
+
+/* --- HIỆU ỨNG HOVER CHỈ CHO HÀNG CÓ DỮ LIỆU --- */
+.my-table .table-row-cell:filled:hover {
+    -fx-background-color: #F4F7FE !important;
+    -fx-transition: 0.2s;
+}
+
+/* --- CÁC Ô BÊN TRONG --- */
+.my-table .table-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* =========================================================
+   PREMIUM COMPONENTS (BADGE & BUTTONS)
+   ========================================================= */
+
+.status-badge {
+    -fx-background-radius: 12px;
+    -fx-padding: 4px 12px 4px 12px;
+    -fx-font-family: "Segoe UI", "Arial";
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+}
+.badge-waiting { -fx-background-color: #FFF9E6; -fx-text-fill: #D48806; }
+.badge-open { -fx-background-color: #E6FFFA; -fx-text-fill: #00A67E; }
+.badge-closed { -fx-background-color: #F5F5F5; -fx-text-fill: #8C8C8C; }
+.badge-rejected { -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; }
+
+.btn-action {
+    -fx-background-radius: 6px;
+    -fx-padding: 6px 14px 6px 14px;
+    -fx-font-family: "Segoe UI", "Arial";
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}

@@ -1,16 +1,29 @@
-package server.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.server.dao.UserDAO;
+import com.auction.common.exception.AuctionException ;
+import com.auction.common.exception.ErrorCode ;
+import com.auction.server.core.AuctionRoom;
+import com.auction.server.core.AuctionRoomManager;
+import com.auction.server.dao.AuctionDAO ;
+import com.auction.server.dao.UserDAO ;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * ManagerService - Điều phối toàn bộ vòng đời phiên đấu giá.
+ *
+ * ĐÃ SỬA:
+ * 1. Package: server.service -> com.auction.server.service
+ * 2. Import: com.auction.exception -> com.auction.common.exception
+ * 3. autoCloseAuction() gọi AuctionRoom.closeRoom() để broadcast AUCTION_ENDED realtime
+ * 4. Thêm getAuctionsByStatus() dùng trong RequestDispatcher.handleFetchRooms()
+ *
+ * Đặt tại: server/src/main/java/com/auction/server/service/ManagerService.java
+ */
 public class ManagerService {
 
     private final ItemService itemService;
@@ -36,6 +49,11 @@ public class ManagerService {
         return auctionDAO.getAll();
     }
 
+    /** [ĐÃ THÊM] Lấy danh sách phiên theo trạng thái - dùng cho handleFetchRooms */
+    public List<Auction> getAuctionsByStatus(String status) {
+        return auctionDAO.getAuctionsByStatus(status);
+    }
+
     public Auction getAuctionOrThrow(int auctionId) {
         Auction auction = auctionDAO.getAuctionById(auctionId);
         if (auction == null) {
@@ -44,7 +62,7 @@ public class ManagerService {
         return auction;
     }
 
-    // --- 2. THIẾT LẬP PHIÊN YÊU CẦU ---
+    // --- 2. THIẾT LẬP PHIÊN ĐẤU GIÁ ---
 
     public void scheduleAuction(int itemId, LocalDateTime startTime, LocalDateTime endTime) {
         Item item = itemService.getItemById(itemId);
@@ -52,7 +70,6 @@ public class ManagerService {
             throw new AuctionException(ErrorCode.ITEM_NOT_FOUND.name(), "Sản phẩm không tồn tại");
         }
 
-        // Tạo Auction mặc định đẩy trạng thái vào WAITING_FOR_ADMIN để chờ duyệt
         Auction auction = new Auction(
                 0, item.getItemId(), item.getSellerId(), "WAITING_FOR_ADMIN",
                 item.getStartingPrice(), item.getStartingPrice(),
@@ -62,13 +79,12 @@ public class ManagerService {
         if (!auctionDAO.insertAuction(auction)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi khi lưu phiên đấu giá vào Database");
         }
-        System.out.println("[MANAGER] Đã lên lịch chờ duyệt (Scheduled) cho Item: " + itemId);
+        System.out.println("[MANAGER] Đã lên lịch chờ duyệt cho Item: " + itemId);
     }
 
-    // --- 3. ĐIỀU KHIỂN TRẠNG THÁI (STATUS) ---
+    // --- 3. ĐIỀU KHIỂN TRẠNG THÁI ---
 
     public void openAuction(int auctionId) {
-        // 🛠️ SỬA LỖI: Trạng thái gốc phải là WAITING_FOR_ADMIN khớp với lúc schedule
         transitStatus(auctionId, "WAITING_FOR_ADMIN", "OPEN");
         System.out.println("[MANAGER] Đã DUYỆT (OPEN) phiên đấu giá " + auctionId);
     }
@@ -82,66 +98,84 @@ public class ManagerService {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chưa đến giờ bắt đầu");
         }
         transitStatus(auctionId, "OPEN", "RUNNING");
-        System.out.println("[MANAGER] Phiên " + auctionId + " đang CHẠY (RUNNING)");
+
+        // Tạo phòng realtime trong AuctionRoomManager
+        AuctionRoomManager.getInstance().createRoom(auctionId, auction.getCurrentPrice());
+        System.out.println("[MANAGER] Phiên " + auctionId + " -> RUNNING. Phòng realtime đã tạo.");
     }
 
     private void transitStatus(int id, String from, String to) {
         Auction a = getAuctionOrThrow(id);
         if (!from.equals(a.getAuctionStatus())) {
-            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Trạng thái hiện tại không hợp lệ. Cần: " + from);
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
+                    "Trạng thái hiện tại không hợp lệ. Cần: " + from);
         }
         auctionDAO.updateStatus(id, to);
     }
 
-    // --- 4. TỰ ĐỘNG HÓA QUÉT SQL (BOT BACKGROUND) ---
+    // --- 4. BOT TỰ ĐỘNG HÓA ---
 
+    /**
+     * [ĐÃ SỬA] Khi phiên kết thúc: gọi AuctionRoom.closeRoom() để broadcast
+     * AUCTION_ENDED realtime đến tất cả Client đang trong phòng.
+     * Trước đây: chỉ update DB, không thông báo gì cho Client.
+     */
     public void autoCloseAuction() {
         Thread t = new Thread(() -> {
             while (running) {
                 try {
-                    Thread.sleep(1000); // Quét mỗi giây 1 lần
+                    Thread.sleep(1000);
                     LocalDateTime now = LocalDateTime.now();
 
-                    // NHIỆM VỤ 1: Kiểm tra xem đã ĐẾN GIỜ MỞ CHẠY chưa (OPEN -> RUNNING)
+                    // NHIỆM VỤ 1: OPEN -> RUNNING (khi đến giờ mở)
                     List<Auction> openAuctions = auctionDAO.getAuctionsByStatus("OPEN");
                     for (Auction auction : openAuctions) {
                         if (!now.isBefore(auction.getStartTime())) {
                             auctionDAO.updateStatus(auction.getAuctionId(), "RUNNING");
-                            System.out.println("[AUTO-BOT] Đã đến giờ! Phiên " + auction.getAuctionId() + " -> RUNNING");
+                            // Tạo phòng realtime
+                            AuctionRoomManager.getInstance().createRoom(
+                                    auction.getAuctionId(), auction.getCurrentPrice());
+                            System.out.println("[AUTO-BOT] Phiên " + auction.getAuctionId() + " -> RUNNING");
                         }
                     }
 
-                    // NHIỆM VỤ 2: Kiểm tra xem đã HẾT GIỜ KẾT THÚC chưa (RUNNING -> SOLD/ENDED)
+                    // NHIỆM VỤ 2: RUNNING -> SOLD/ENDED (khi hết giờ)
                     List<Auction> activeAuctions = auctionDAO.getAuctionsByStatus("RUNNING");
                     for (Auction auction : activeAuctions) {
                         if (now.isAfter(auction.getEndTime())) {
-                            // Cẩn thận lỗi Integer Null
-                            String finalStatus = (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
+                            String finalStatus = (auction.getCurrentWinnerId() != null
+                                    && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
                             auctionDAO.updateStatus(auction.getAuctionId(), finalStatus);
-                            System.out.println("[AUTO-BOT] Hết giờ! Phiên " + auction.getAuctionId() + " -> " + finalStatus);
+                            System.out.println("[AUTO-BOT] Phiên " + auction.getAuctionId() + " -> " + finalStatus);
+
+                            // [ĐÃ SỬA] Broadcast AUCTION_ENDED đến tất cả client trong phòng
+                            AuctionRoom room = AuctionRoomManager.getInstance().getRoom(auction.getAuctionId());
+                            if (room != null) {
+                                room.closeRoom(auction.getCurrentWinnerId(), auction.getCurrentPrice());
+                            }
+
+                            // Dọn phòng sau broadcast
+                            AuctionRoomManager.getInstance().removeRoom(auction.getAuctionId());
                         }
                     }
+
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    // Bắt Exception tổng để nếu có 1 phiên bị lỗi thì Bot không bị chết hẳn
                     System.err.println("[AUTO-BOT LỖI] " + e.getMessage());
                 }
             }
-        });
-        t.setDaemon(true); // Thread tự chết khi tắt Server chính
+        }, "AuctionBot-Thread");
+        t.setDaemon(true);
         t.start();
     }
-
-    // --- 5. DỌN DẸP HỆ THỐNG ---
 
     public void stopAutoClose() {
         this.running = false;
         System.out.println("[MANAGER] Đã tắt Bot quét phiên đấu giá.");
     }
-
-    public void clearData() {
-        System.out.println("[MANAGER] Dữ liệu lưu an toàn dưới SQL, hệ thống hoạt động ổn định.");
+    public List<Auction> getAuctionsBySeller(int sellerId) {
+        return auctionDAO.getAuctionsBySeller(sellerId);
     }
 }

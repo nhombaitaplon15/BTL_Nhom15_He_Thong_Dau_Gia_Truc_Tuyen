@@ -1,10 +1,10 @@
-package server.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Item;
-import com.auction.exception.AuctionException;
-import com.auction.exception.ErrorCode;
-import com.auction.server.dao.ItemDAO;
-import com.auction.server.dao.DatabaseConnection; // Bổ sung để mở Connection
+import com.auction.common.exception.AuctionException;
+import com.auction.common.exception.ErrorCode;
+import com.auction.server.dao.ItemDAO ;
+import com.auction.server.dao.DatabaseConnection ; // Bổ sung để mở Connection
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -86,4 +86,5 @@ public class ItemService {
     public List<Item> getItemsByType(String itemType) {
         return itemDAO.getItemsByType(itemType);
     }
+    public List<Item> getItemsBySeller(int sellerId) {return itemDAO.getItemsBySeller(sellerId);}
 }

@@ -1,4 +1,4 @@
-package client.controller.auth;
+package com.auction.client.controller.auth;
 
 import com.auction.client.controller.bidder.The_Home_Page_Bidder_View_Controller;
 import com.auction.common.model.User;

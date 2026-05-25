@@ -1,7 +1,13 @@
-package server.dao;
+package com.auction.server.dao;
 
-import com.auction.server.dao.DatabaseConnection;
 import java.sql.*;
+
+import com.auction.common.factory.UserFactory;
+import com.auction.common.model.TransactionRequest;
+import com.auction.common.model.User;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionDAO {
     public boolean updateTransactionStatus(Connection conn, int transId, String status) throws SQLException {
@@ -93,5 +99,42 @@ public class TransactionDAO {
         } catch (SQLException e) {
             return false;
         }
+    }
+    public List<TransactionRequest> getAllTransactions() {
+
+        List<TransactionRequest> list =
+                new ArrayList<>();
+
+        String sql = """
+        SELECT *
+        FROM transactions
+        ORDER BY created_at DESC
+    """;
+
+        try (
+                Connection conn = DatabaseConnection.connect();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()
+        ) {
+            while (rs.next()) {
+                User user = UserFactory.createUser(
+                        rs.getInt("user_id"),
+                        "", // username
+                        "", // email
+                        "", // password
+                        "", // phone
+                        "", // status
+                        "USER", // role tạm
+                        0.0 // balance
+                );
+                TransactionRequest tx = new TransactionRequest(user, rs.getString("transaction_type"), rs.getDouble("amount"), "", rs.getString("status"));
+                tx.setRequestId(rs.getInt("transaction_id"));
+                tx.setRequestDate(rs.getTimestamp("created_at").toLocalDateTime());
+                list.add(tx);
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi getAllTransactions: " + e.getMessage());
+        }
+        return list;
     }
 }
