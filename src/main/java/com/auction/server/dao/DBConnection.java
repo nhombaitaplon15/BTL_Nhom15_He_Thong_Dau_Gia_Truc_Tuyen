@@ -1,3 +1,4 @@
+
 package com.auction.server.dao;
 
 import com.auction.common.model.Admin;
@@ -9,10 +10,9 @@ import java.sql.*;
 
 public class DBConnection {  // cầu nối với database
     // thông tin kêt nối
-    private static final String URL = "jdbc:postgresql://shinkansen.proxy.rlwy.net:36856/railway?options=-c%20timezone=UTC";
+    private static final String URL = "jdbc:postgresql://kodama.proxy.rlwy.net:46536/railway";
     private static final String USERNAME = "postgres";
-    private static final String PASSWORD = "VvQwsVyCLGuitsfXKuTpbLpRemIBxsIa";
-
+    private static final String PASSWORD = "eNJOOrTZxDClFPrAggDhzicWhwDNlhUI";
 
     // gọi đến cơ sở dữ liệu
     public static Connection getConnection() throws SQLException {
@@ -23,8 +23,7 @@ public class DBConnection {  // cầu nối với database
             // thiết lập kết nối
             return DriverManager.getConnection(URL, USERNAME, PASSWORD);
 
-        } catch (ClassNotFoundException e) {
-            System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
+        } catch (ClassNotFoundException e) {System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
             e.printStackTrace();
             return null;
         }

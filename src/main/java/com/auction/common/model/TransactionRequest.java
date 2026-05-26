@@ -1,8 +1,7 @@
 package com.auction.common.model;
-
 import java.time.LocalDateTime;
 
-public class TransactionRequest { // Yêu cầu nạp/rút tiền trong ví
+public class TransactionRequest implements java.io.Serializable{ // Yêu cầu nạp/rút tiền trong ví
     private int requestId;
     private User user;
     private String type; // DEPOSIT / WITHDRAW

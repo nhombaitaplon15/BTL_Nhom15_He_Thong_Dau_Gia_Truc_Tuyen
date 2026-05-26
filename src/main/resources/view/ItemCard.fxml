@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="260.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ItemCardController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="300.0" spacing="8.0" style="-fx-padding: 10; -fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-background-radius: 8;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ItemCardController">
    <children>
-      <ImageView fx:id="imgItem" fitHeight="200.0" fitWidth="300" pickOnBounds="true" preserveRatio="true" />
-      <Label fx:id="name" prefHeight="40.0" prefWidth="300.0" text="Tên sản phẩm: " />
-      <Label fx:id="startPrice" text="Giá khởi điểm: " />
+      <ImageView fx:id="imgItem" fitHeight="180.0" fitWidth="280.0" pickOnBounds="true" preserveRatio="false" />
+
+      <Label fx:id="name" prefHeight="25.0" prefWidth="280.0" style="-fx-font-weight: bold; -fx-font-size: 14px;" text="Tên sản phẩm: " />
+
+      <Label fx:id="startPrice" prefWidth="280.0" style="-fx-text-fill: #757575; -fx-font-size: 12px;" text="Giá khởi điểm: " />
+
+      <Label fx:id="currentPrice" prefWidth="280.0" style="-fx-text-fill: #ff0000; -fx-font-weight: bold; -fx-font-size: 14px;" text="Giá hiện tại: " />
+
+      <Label fx:id="timeRemaining" prefWidth="280.0" style="-fx-text-fill: #4CAF50; -fx-font-size: 12px;" text="Thời gian còn lại: --:--:--" />
+
+      <Button fx:id="btnBid" maxWidth="Infinity" onAction="#handleBidAction" prefHeight="35.0" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;" text="Đặt Giá Ngay" />
    </children>
 </VBox>
