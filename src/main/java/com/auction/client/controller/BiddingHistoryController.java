@@ -12,9 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import java.net.URL;
@@ -33,12 +31,10 @@ public class BiddingHistoryController implements Initializable {
     @FXML private TableColumn<BidHistoryRow, String> colBidTime;
     @FXML private TableColumn<BidHistoryRow, String> colStatus;
 
-    private ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
-    private BiddingHistoryDAO historyDAO = new BiddingHistoryDAO();
-    private UserDAO userDAO = new UserDAO();
+    private final ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
+    private final BiddingHistoryDAO historyDAO = new BiddingHistoryDAO();
+    private final UserDAO userDAO = new UserDAO();
     private User currentUser;
-
-    // 🔥 Biến lưu trữ Scene trang chủ cũ để quay lại không bị load lại DB
     private Scene homeScene;
 
     @Override
@@ -47,28 +43,32 @@ public class BiddingHistoryController implements Initializable {
         setupSearch();
     }
 
-    // Hàm nhận Scene cũ từ trang chủ dội sang
     public void setMainHomeController(Scene homeScene) {
         this.homeScene = homeScene;
     }
 
+    /**
+     * Nhận dữ liệu User online và tự động cào dữ liệu lịch sử từ Database lên bảng
+     */
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
+
+        // ⚡ KẾT NỐI DATABASE: Tải dữ liệu lịch sử đấu giá thật của User này
         loadHistory();
     }
 
     private void setupTable() {
+        // Ánh xạ các cột trên TableView chuẩn xác theo thuộc tính của Model BidHistoryRow
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
         colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
         colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-        colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
 
-        // 🌟 THÊM ĐOẠN NÀY: Biến số 1500000.0 thô thành chuỗi "1.500.000 UETệ" hiển thị cực đẹp mắt
-        colBidAmount.setCellFactory(column -> new javafx.scene.control.TableCell<BidHistoryRow, Double>() {
+        // Định dạng hiển thị tiền tệ UETệ động từ DB mượt mà, chuyên nghiệp
+        colBidAmount.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Double amount, boolean empty) {
                 super.updateItem(amount, empty);
@@ -81,16 +81,25 @@ public class BiddingHistoryController implements Initializable {
         });
     }
 
+    /**
+     * ⚡ TRUY VẤN DATABASE: Gọi hàm lấy lịch sử chuẩn SQL từ BiddingHistoryDAO
+     */
     private void loadHistory() {
         if (currentUser == null) return;
+
         new Thread(() -> {
             try {
+                // Đọc trực tiếp từ bảng public.bidding_history theo user_id thật
                 List<BidHistoryRow> list = historyDAO.getHistoryByUser(currentUser.getId());
+
                 Platform.runLater(() -> {
                     historyList.setAll(list);
                     historyTable.setItems(historyList);
                 });
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) {
+                System.err.println("❌ Lỗi kết nối Database khi tải bảng lịch sử đặt giá!");
+                e.printStackTrace();
+            }
         }).start();
     }
 
@@ -107,28 +116,32 @@ public class BiddingHistoryController implements Initializable {
         });
     }
 
+    /**
+     * ⚡ LÀM MỚI DATABASE: Đồng bộ số dư ví tiền và lịch sử mới nhất từ DB
+     */
     @FXML
     private void handleRefresh() {
         if (currentUser != null) {
-            currentUser.setBalance(userDAO.getBalance(currentUser.getId()));
+            new Thread(() -> {
+                try {
+                    // Lấy số tiền thực tế trong bảng public.users để cập nhật
+                    double actualBalance = userDAO.getBalance(currentUser.getId());
+                    Platform.runLater(() -> currentUser.setBalance(actualBalance));
+                } catch (Exception e) { e.printStackTrace(); }
+            }).start();
         }
         loadHistory();
     }
 
-    /**
-     * 🔥 HÀM QUAY LẠI THÔNG MINH GIỮ NGUYÊN PHÒNG
-     */
     @FXML
     private void onLiveMenuClick() {
         try {
             if (homeScene != null) {
-                System.out.println("🏛 Phục hồi nguyên vẹn Sàn Đấu Giá Live cũ...");
                 Stage stage = (Stage) txtSearch.getScene().getWindow();
-                stage.setScene(homeScene); // Đặt lại Scene cũ là xong, giữ nguyên phòng đang chọn!
+                stage.setScene(homeScene);
                 stage.setTitle("Elite Auction - Sàn Đấu Giá");
                 stage.show();
             } else {
-                // Phương án dự phòng nếu không tìm thấy scene cũ
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
                 Parent root = loader.load();
                 The_Home_Page_Bidder_View_Controller homeController = loader.getController();
@@ -144,7 +157,10 @@ public class BiddingHistoryController implements Initializable {
     @FXML
     private void handleReportIssue() {
         BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+        if (selected == null) {
+            showWarning("Vui lòng chọn một lượt đặt giá từ bảng để báo cáo sự cố!");
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ReportIssueView.fxml"));
             Parent root = loader.load();
@@ -153,23 +169,99 @@ public class BiddingHistoryController implements Initializable {
 
             Stage dialogStage = new Stage();
             dialogStage.setScene(new Scene(root));
+            dialogStage.setTitle("Báo Cáo Sự Cố Phiên Đấu Giá");
             dialogStage.showAndWait();
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    /**
+     * 🎯 XEM CHI TIẾT TĨNH: Khi click vào dòng lịch sử đấu giá thực tế $\rightarrow$ Hiện Pop-up tĩnh chuẩn chỉnh
+     */
     @FXML
     private void handleViewDetail() {
         BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+        if (selected == null) {
+            showWarning("Vui lòng chọn một dòng phiên đấu giá trong bảng lịch sử để xem!");
+            return;
+        }
+
         try {
+            // ✅ ĐỒNG BỘ 100%: Gọi chính xác file giao diện Pop-up chi tiết tĩnh (700x500) của bạn
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
             Parent root = loader.load();
-            AuctionDetailController detailController = loader.getController();
-            if (detailController != null) detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
 
+            // Ánh xạ sang đúng AuctionDetailController tĩnh xử lý dữ liệu
+            AuctionDetailController detailController = loader.getController();
+            if (detailController != null) {
+                // Nạp mã phiên thực tế và tên từ Database sang cho cửa sổ nhỏ hiển thị
+                detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
+            }
+
+            // Tạo Stage cửa sổ Popup nhỏ nằm đè lên trước
             Stage dialogStage = new Stage();
-            dialogStage.setScene(new Scene(root));
+            dialogStage.setScene(new Scene(root, 700, 500)); // Ép chặt kích thước chuẩn khung AnchorPane của bạn
+            dialogStage.setTitle("Thông Tin Chi Tiết Phiên Đấu Giá - #" + selected.getAuctionId());
+            dialogStage.setResizable(false); // Cố định khung hình tĩnh sạch sẽ, không méo vỡ giao diện
             dialogStage.show();
-        } catch (Exception e) { e.printStackTrace(); }
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi: Không thể khởi tạo màn hình xem chi tiết phiên đấu giá tĩnh từ Database!");
+            e.printStackTrace();
+        }
+    }
+
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Thông báo hệ thống");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    // 1. Thêm khai báo nút bấm đã bổ sung ID ở Scene Builder vào đầu Controller
+    @FXML private Button btnViewDetail;
+
+    /**
+     * 🎯 XEM CHI TIẾT TĨNH: Khi click vào dòng lịch sử đấu giá thực tế -> Hiện Pop-up tĩnh chuẩn chỉnh
+     */
+    @FXML
+    private void handleViewDetail(javafx.event.ActionEvent event) { // 🎯 Nên thêm tham số ActionEvent để lấy Stage an toàn
+        // 1. Kiểm tra xem người dùng đã chọn dòng nào trên TableView chưa
+        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showWarning("Vui lòng chọn một dòng phiên đấu giá trong bảng lịch sử để xem!");
+            return;
+        }
+
+        try {
+            // 2. Gọi chính xác file giao diện Pop-up chi tiết (700x500)
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
+            Parent root = loader.load();
+
+            // Ánh xạ sang đúng AuctionDetailController xử lý dữ liệu
+            AuctionDetailController detailController = loader.getController();
+            if (detailController != null) {
+                // Nạp mã phiên thực tế và tên từ Database sang cho cửa sổ nhỏ hiển thị
+                detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
+            }
+
+            // 3. Tạo Stage cửa sổ Popup nhỏ nằm đè lên trước độc lập
+            Stage dialogStage = new Stage();
+            dialogStage.setScene(new Scene(root, 700, 500)); // Ép chặt kích thước chuẩn khung AnchorPane của bạn
+            dialogStage.setTitle("Thông Tin Chi Tiết Phiên Đấu Giá - #" + selected.getAuctionId());
+
+            // Đóng băng màn hình chính phía sau, bắt buộc người dùng tương tác xong popup mới quay lại được
+            dialogStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+
+            // Lấy Stage gốc từ chính nút bấm vừa được click để làm chủ thể sở hữu (Owner)
+            Stage ownerStage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            dialogStage.initOwner(ownerStage);
+
+            dialogStage.setResizable(false); // Cố định khung hình tĩnh sạch sẽ, không méo vỡ giao diện
+            dialogStage.show();
+
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi: Không thể khởi tạo màn hình xem chi tiết phiên đấu giá tĩnh từ Database!");
+            e.printStackTrace();
+        }
     }
 }
