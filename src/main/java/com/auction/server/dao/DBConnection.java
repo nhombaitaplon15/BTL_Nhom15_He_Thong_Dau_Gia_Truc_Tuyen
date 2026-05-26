@@ -13,7 +13,6 @@ public class DBConnection {  // cầu nối với database
     private static final String USERNAME = "postgres";
     private static final String PASSWORD = "eNJOOrTZxDClFPrAggDhzicWhwDNlhUI";
 
-
     // gọi đến cơ sở dữ liệu
     public static Connection getConnection() throws SQLException {
         try {

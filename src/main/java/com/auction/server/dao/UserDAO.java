@@ -10,7 +10,7 @@ public class UserDAO {
     // 1. Kiểm tra người dùng đã tồn tại
     public boolean isFieldExists(String fieldName, String value) {
         String sql = "SELECT 1 FROM users WHERE " + fieldName + " = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, value);
             try (ResultSet rs = ps.executeQuery()) {
@@ -21,7 +21,7 @@ public class UserDAO {
     // 2. Đăng nhập - dùng UserFactory
     public User checkLogin(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, password);
@@ -53,7 +53,7 @@ public class UserDAO {
         String sql = "INSERT INTO users (username, password, email, phone, role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         // CẢI TIẾN QUAN TRỌNG: Thêm Statement.RETURN_GENERATED_KEYS vào đây
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, user.getUsername());
@@ -85,7 +85,7 @@ public class UserDAO {
     // 4. Cập nhật mật khẩu (Dùng cho cả đổi và quên mật khẩu)
     public boolean updatePassword(String username, String newPass) {
         String sql = "UPDATE users SET password = ? WHERE username = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newPass);
             ps.setString(2, username);
@@ -96,7 +96,7 @@ public class UserDAO {
     // 5. Cập nhật vai trò (Giữ nguyên ID, chỉ đổi nhãn role trong SQL)
     public boolean updateRole(int userId, String newRole) {
         String sql = "UPDATE users SET user_role = ? WHERE id = ?";
-        try (Connection conn =DatabaseConnection.connect();
+        try (Connection conn =DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newRole);
             ps.setInt(2, userId);
@@ -106,7 +106,7 @@ public class UserDAO {
     // 6. Lấy người dùng theo id
     public User getUserById(int userId) {
         String sql = "SELECT * FROM users WHERE user_id = ?"; // Nhớ đúng tên cột user_id nhé shop
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, userId);
@@ -132,7 +132,7 @@ public class UserDAO {
     }
     public String getUserName(int userId) {
         String sql = "SELECT username FROM users WHERE user_id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, userId);
@@ -151,7 +151,7 @@ public class UserDAO {
     // 2. Kết nối DB để lấy Số dư tài khoản (Balance) theo ID
     public double getBalance(int userId) {
         String sql = "SELECT balance FROM users WHERE user_id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, userId);

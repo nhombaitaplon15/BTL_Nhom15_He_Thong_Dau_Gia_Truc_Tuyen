@@ -5,7 +5,6 @@ import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
 import com.auction.server.dao.AuctionDAO;
-import com.auction.server.dao.DatabaseConnection;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import org.junit.jupiter.api.*;

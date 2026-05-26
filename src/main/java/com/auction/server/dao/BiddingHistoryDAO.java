@@ -20,7 +20,7 @@ public class BiddingHistoryDAO {
                 """;
 
         try (
-                Connection conn = DatabaseConnection.connect();
+                Connection conn = DBConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)
         ) {
             // bidder_id nhận giá trị từ userId truyền vào từ phiên đăng nhập
