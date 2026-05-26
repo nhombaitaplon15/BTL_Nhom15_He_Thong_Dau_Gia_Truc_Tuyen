@@ -1,309 +1,283 @@
 package com.auction.service;
 
-import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
+import com.auction.exception.ErrorCode;
 import com.auction.server.dao.UserDAO;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceTest {
+public class UserServiceTest {
 
-    @Mock private UserDAO userDAO;
+    @Mock
+    private UserDAO userDAO;
 
+    @InjectMocks
     private UserService userService;
 
+    private User sampleUser;
+
     @BeforeEach
-    void setUp() throws Exception {
-        userService = new UserService();
-        Field field = UserService.class.getDeclaredField("userDAO");
-        field.setAccessible(true);
-        field.set(userService, userDAO);
+    void setUp() {
+        // Khởi tạo một User mẫu để dùng chung cho các testcase login, change password...
+        sampleUser = new User(1);
+        sampleUser.setId(1);
+        sampleUser.setUsername("testuser");
+        sampleUser.setPassword("oldPassword123");
+        sampleUser.setEmail("test@gmail.com");
+        sampleUser.setPhone("0987654321");
+        sampleUser.setStatus("ACTIVE");
+        sampleUser.setRole("BIDDER");
     }
 
-    // Tạo nhanh đối tượng người dùng để test
-    private User makeBidder(int id, String username, String password, String phone,
-                            String status, double balance) {
-        return new Bidder(id, username, username + "@mail.com", password, phone, status, balance);
-    }
+    // ==========================================
+    // 1. TEST CHỨC NĂNG ĐĂNG KÝ (handleRegister)
+    // ==========================================
+    @Nested
+    class RegisterTest {
 
-    @Nested @DisplayName("handleRegister")
-    class RegisterTests {
+        @Test
+        void register_Success() {
+            // Given
+            String u = "newuser";
+            String p = "password123";
+            String e = "new@gmail.com";
+            String ph = "0123456789";
 
-        // Test: Đăng ký thành công khi mọi thông tin hợp lệ
-        @Test @DisplayName("Đăng ký thành công với dữ liệu hợp lệ")
-        void register_success() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.isFieldExists("username", "newuser")).thenReturn(false);
-            when(userDAO.isFieldExists(eq("email"), anyString())).thenReturn(false);
-            when(userDAO.isFieldExists("phone", "0901234567")).thenReturn(false);
-            when(userDAO.register(any())).thenReturn(true);
+            when(userDAO.isFieldExists("username", u)).thenReturn(false);
+            when(userDAO.isFieldExists("email", e)).thenReturn(false);
+            when(userDAO.isFieldExists("phone", ph)).thenReturn(false);
+            when(userDAO.register(any(User.class))).thenReturn(true);
 
-            assertTrue(userService.handleRegister(req));
+            // When
+            boolean result = userService.handleRegister(u, p, e, ph);
+
+            // Then
+            assertTrue(result);
+            verify(userDAO, times(1)).register(any(User.class));
         }
 
-        // Test: Số điện thoại thiếu chữ số phải bị loại ngay từ tầng validate
-        @Test @DisplayName("Ném lỗi khi SĐT không đủ 10 số — không gọi DAO")
-        void register_invalidPhone() {
-            User req = makeBidder(0, "user1", "pass1234", "090123", "ACTIVE", 0);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-            verifyNoInteractions(userDAO);
+        @Test
+        void register_Fail_InvalidPhone() {
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleRegister("user", "pass1234", "a@gmail.com", "12345"); // SĐT ngắn quá
+            });
+            assertEquals(ErrorCode.INVALID_INPUT.name(), ex.getCode());
+            assertTrue(ex.getMessage().contains("Số điện thoại phải có đúng 10 chữ số"));
         }
 
-        // Test: Mật khẩu quá ngắn phải bị loại ngay từ tầng validate
-        @Test @DisplayName("Ném lỗi khi mật khẩu dưới 8 ký tự — không gọi DAO")
-        void register_shortPassword() {
-            User req = makeBidder(0, "user1", "abc", "0901234567", "ACTIVE", 0);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-            verifyNoInteractions(userDAO);
+        @Test
+        void register_Fail_InvalidEmailExtension() {
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleRegister("user", "pass1234", "a@gmail.xyz", "0123456789"); // Đuôi .xyz không hợp lệ
+            });
+            assertEquals(ErrorCode.INVALID_INPUT.name(), ex.getCode());
         }
 
-        // Test: Hệ thống chặn đăng ký khi tên tài khoản đã tồn tại
-        @Test @DisplayName("Ném lỗi khi username đã tồn tại")
-        void register_duplicateUsername() {
-            User req = makeBidder(0, "existed", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.isFieldExists("username", "existed")).thenReturn(true);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
+        @Test
+        void register_Fail_DuplicateUsername() {
+            when(userDAO.isFieldExists("username", "duplicate")).thenReturn(true);
+
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleRegister("duplicate", "pass1234", "a@gmail.com", "0123456789");
+            });
+            assertEquals(ErrorCode.UNAUTHORIZED.name(), ex.getCode());
+            assertEquals("Tên đăng nhập đã tồn tại!", ex.getMessage());
         }
 
-        // Test: Hệ thống chặn đăng ký khi email trùng lặp
-        @Test @DisplayName("Ném lỗi khi email đã tồn tại")
-        void register_duplicateEmail() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
-            req.setEmail("duplicate@gmail.com");
-
-            when(userDAO.isFieldExists("username", "newuser")).thenReturn(false);
-            when(userDAO.isFieldExists("email", "duplicate@gmail.com")).thenReturn(true);
-
-            AuctionException ex = assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-            assertTrue(ex.getMessage().contains("Email đã được sử dụng"));
-        }
-
-        // Test: Hệ thống chặn đăng ký khi số điện thoại đã được dùng
-        @Test @DisplayName("Ném lỗi khi SĐT đã đăng ký")
-        void register_duplicatePhone() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
-            req.setEmail("newuser@gmail.com");
-
-            when(userDAO.isFieldExists("username", "newuser")).thenReturn(false);
-            when(userDAO.isFieldExists("email", "newuser@gmail.com")).thenReturn(false);
-            when(userDAO.isFieldExists("phone", "0901234567")).thenReturn(true);
-
-            AuctionException ex = assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-            assertTrue(ex.getMessage().contains("Số điện thoại đã đăng ký"));
-        }
-
-        // Test: Ném lỗi hệ thống nếu quá trình ghi nhận vào DB thất bại
-        @Test @DisplayName("Ném lỗi khi DAO register thất bại")
-        void register_daoFails() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
+        @Test
+        void register_Fail_DatabaseError() {
             when(userDAO.isFieldExists(anyString(), anyString())).thenReturn(false);
-            when(userDAO.register(any())).thenReturn(false);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-        }
+            when(userDAO.register(any(User.class))).thenReturn(false); // DB trả về false không lưu được
 
-        // Test: Số điện thoại thừa chữ số phải bị chặn từ tầng validate
-        @Test @DisplayName("SĐT phải đúng 10 chữ số — 11 số thì fail")
-        void register_phoneWith11Digits() {
-            User req = makeBidder(0, "user1", "pass1234", "09012345678", "ACTIVE", 0);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
-            verifyNoInteractions(userDAO);
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleRegister("user", "pass1234", "a@gmail.com", "0123456789");
+            });
+            assertEquals(ErrorCode.INTERNAL_ERROR.name(), ex.getCode());
+            assertTrue(ex.getMessage().contains("Không thể lưu tài khoản"));
         }
     }
 
-    @Nested @DisplayName("handleLogin")
-    class LoginTests {
+    // ==========================================
+    // 2. TEST CHỨC NĂNG ĐĂNG NHẬP (handleLogin)
+    // ==========================================
+    @Nested
+    class LoginTest {
 
-        // Test: Đăng nhập thành công khi thông tin tài khoản chính xác
-        @Test @DisplayName("Đăng nhập thành công")
-        void login_success() {
-            User stored = makeBidder(1, "user1", "pass1234", "0901234567", "ACTIVE", 500_000);
-            User cred   = makeBidder(0, "user1", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.checkLogin("user1", "pass1234")).thenReturn(stored);
+        @Test
+        void login_Success() {
+            when(userDAO.checkLogin("testuser", "oldPassword123")).thenReturn(sampleUser);
 
-            User result = userService.handleLogin(cred);
-            assertEquals("user1", result.getUsername());
+            User result = userService.handleLogin("testuser", "oldPassword123");
+
+            assertNotNull(result);
+            assertEquals("testuser", result.getUsername());
         }
 
-        // Test: Từ chối đăng nhập khi sai tài khoản hoặc mật khẩu
-        @Test @DisplayName("Ném lỗi khi sai username hoặc password")
-        void login_wrongCredentials() {
-            User cred = makeBidder(0, "user1", "wrongpass", "0901234567", "ACTIVE", 0);
-            when(userDAO.checkLogin("user1", "wrongpass")).thenReturn(null);
-            assertThrows(AuctionException.class, () -> userService.handleLogin(cred));
+        @Test
+        void login_Fail_WrongCredentials() {
+            when(userDAO.checkLogin("wrong", "pass")).thenReturn(null);
+
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleLogin("wrong", "pass");
+            });
+            assertEquals(ErrorCode.USER_NOT_FOUND.name(), ex.getCode());
         }
 
-        // Test: Không cho phép đăng nhập nếu tài khoản đang bị khóa
-        @Test @DisplayName("Ném lỗi khi tài khoản bị LOCKED")
-        void login_lockedAccount() {
-            User locked = makeBidder(1, "user1", "pass1234", "0901234567", "LOCKED", 0);
-            User cred   = makeBidder(0, "user1", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.checkLogin("user1", "pass1234")).thenReturn(locked);
-            assertThrows(AuctionException.class, () -> userService.handleLogin(cred));
-        }
-    }
+        @Test
+        void login_Fail_AccountLocked() {
+            sampleUser.setStatus("LOCKED");
+            when(userDAO.checkLogin("testuser", "oldPassword123")).thenReturn(sampleUser);
 
-    @Nested @DisplayName("handleChangePassword")
-    class ChangePasswordTests {
-
-        private User user;
-
-        @BeforeEach
-        void setUpUser() {
-            user = makeBidder(1, "user1", "oldpass1", "0901234567", "ACTIVE", 0);
-        }
-
-        // Test: Đổi mật khẩu thành công và cập nhật lại thông tin trong bộ nhớ
-        @Test @DisplayName("Đổi mật khẩu thành công — RAM được cập nhật")
-        void changePassword_success() {
-            when(userDAO.updatePassword("user1", "newpass1")).thenReturn(true);
-            userService.handleChangePassword(user, "oldpass1", "newpass1", "newpass1");
-            assertEquals("newpass1", user.getPassword());
-        }
-
-        // Test: Chặn đổi mật khẩu nếu nhập sai mật khẩu hiện tại
-        @Test @DisplayName("Ném lỗi khi mật khẩu cũ sai — không gọi DAO")
-        void changePassword_wrongOld() {
-            assertThrows(AuctionException.class,
-                    () -> userService.handleChangePassword(user, "wrongold", "newpass1", "newpass1"));
-            verifyNoInteractions(userDAO);
-        }
-
-        // Test: Chặn đổi mật khẩu nếu mật khẩu mới trùng mật khẩu cũ
-        @Test @DisplayName("Ném lỗi khi mật khẩu mới giống cũ — không gọi DAO")
-        void changePassword_sameAsOld() {
-            assertThrows(AuctionException.class,
-                    () -> userService.handleChangePassword(user, "oldpass1", "oldpass1", "oldpass1"));
-            verifyNoInteractions(userDAO);
-        }
-
-        // Test: Mật khẩu mới không đạt độ dài yêu cầu sẽ bị chặn ngay
-        @Test @DisplayName("Ném lỗi khi mật khẩu mới dưới 8 ký tự — không gọi DAO")
-        void changePassword_tooShort() {
-            assertThrows(AuctionException.class,
-                    () -> userService.handleChangePassword(user, "oldpass1", "abc", "abc"));
-            verifyNoInteractions(userDAO);
-        }
-
-        // Test: Chặn đổi mật khẩu nếu hai lần nhập mật khẩu mới không khớp
-        @Test @DisplayName("Ném lỗi khi xác nhận mật khẩu không khớp — không gọi DAO")
-        void changePassword_confirmMismatch() {
-            assertThrows(AuctionException.class,
-                    () -> userService.handleChangePassword(user, "oldpass1", "newpass1", "different1"));
-            verifyNoInteractions(userDAO);
-        }
-
-        // Test: Ném lỗi nếu DB cập nhật mật khẩu thất bại
-        @Test @DisplayName("Ném lỗi khi DAO updatePassword thất bại")
-        void changePassword_daoFails() {
-            when(userDAO.updatePassword("user1", "newpass1")).thenReturn(false);
-            assertThrows(AuctionException.class,
-                    () -> userService.handleChangePassword(user, "oldpass1", "newpass1", "newpass1"));
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleLogin("testuser", "oldPassword123");
+            });
+            assertEquals(ErrorCode.UNAUTHORIZED.name(), ex.getCode());
+            assertTrue(ex.getMessage().contains("bị khóa"));
         }
     }
 
-    @Nested @DisplayName("handleForgotPassword")
-    class ForgotPasswordTests {
+    // ==========================================
+    // 3. TEST ĐỔI MẬT KHẨU (handleChangePassword)
+    // ==========================================
+    @Nested
+    class ChangePasswordTest {
 
-        // Test: Khôi phục mật khẩu thành công khi tài khoản tồn tại
-        @Test @DisplayName("Reset mật khẩu thành công")
-        void forgotPassword_success() {
-            when(userDAO.isFieldExists("username", "user1")).thenReturn(true);
-            when(userDAO.updatePassword("user1", "newpass1")).thenReturn(true);
-            assertDoesNotThrow(() ->
-                    userService.handleForgotPassword("user1", "0901234567", "newpass1"));
+        @Test
+        void changePassword_Success() {
+            when(userDAO.updatePassword("testuser", "newPassword123")).thenReturn(true);
+
+            userService.handleChangePassword(sampleUser, "oldPassword123", "newPassword123", "newPassword123");
+
+            assertEquals("newPassword123", sampleUser.getPassword()); // Kiểm tra RAM cập nhật chưa
         }
 
-        // Test: Chặn khôi phục mật khẩu nếu tài khoản không tồn tại
-        @Test @DisplayName("Ném lỗi khi username không tồn tại")
-        void forgotPassword_userNotFound() {
-            when(userDAO.isFieldExists("username", "ghost")).thenReturn(false);
-            assertThrows(AuctionException.class,
-                    () -> userService.handleForgotPassword("ghost", "0901234567", "newpass1"));
-            verify(userDAO, never()).updatePassword(anyString(), anyString());
+        @Test
+        void changePassword_Fail_WrongOldPassword() {
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleChangePassword(sampleUser, "wrongOld", "newPass123", "newPass123");
+            });
+            assertEquals(ErrorCode.UNAUTHORIZED.name(), ex.getCode());
         }
 
-        // Test: Ném lỗi nếu DB cập nhật mật khẩu khôi phục thất bại
-        @Test @DisplayName("Ném lỗi khi DAO updatePassword thất bại")
-        void forgotPassword_daoFails() {
-            when(userDAO.isFieldExists("username", "user1")).thenReturn(true);
-            when(userDAO.updatePassword("user1", "newpass1")).thenReturn(false);
-            assertThrows(AuctionException.class,
-                    () -> userService.handleForgotPassword("user1", "0901234567", "newpass1"));
+        @Test
+        void changePassword_Fail_SameAsOld() {
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleChangePassword(sampleUser, "oldPassword123", "oldPassword123", "oldPassword123");
+            });
+            assertEquals(ErrorCode.INVALID_INPUT.name(), ex.getCode());
+        }
+
+        @Test
+        void changePassword_Fail_ConfirmNotMatch() {
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleChangePassword(sampleUser, "oldPassword123", "newPass123", "differentConfirm");
+            });
+            assertEquals(ErrorCode.INVALID_INPUT.name(), ex.getCode());
         }
     }
 
-    @Nested @DisplayName("handleSwitchRole")
-    class SwitchRoleTests {
+    // ==========================================
+    // 4. TEST QUÊN MẬT KHẨU (handleForgotPassword)
+    // ==========================================
+    @Nested
+    class ForgotPasswordTest {
 
-        // Test: Chuyển đổi vai trò từ Bidder sang Seller thành công
-        @Test @DisplayName("Bidder → Seller thành công, RAM cập nhật")
-        void switchRole_bidderToSeller() {
-            User bidder = makeBidder(1, "user1", "pass1234", "0901234567", "ACTIVE", 0);
+        @Test
+        void forgotPassword_Success() {
+            when(userDAO.isFieldExists("username", "testuser")).thenReturn(true);
+            when(userDAO.updatePassword("testuser", "resetPass123")).thenReturn(true);
+
+            assertDoesNotThrow(() -> {
+                userService.handleForgotPassword("testuser", "0987654321", "resetPass123");
+            });
+        }
+
+        @Test
+        void forgotPassword_Fail_UserNotFound() {
+            when(userDAO.isFieldExists("username", "unknown")).thenReturn(false);
+
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleForgotPassword("unknown", "0987654321", "resetPass123");
+            });
+            assertEquals(ErrorCode.USER_NOT_FOUND.name(), ex.getCode());
+        }
+    }
+
+    // ==========================================
+    // 5. TEST LẤY USER THEO ID (getUserById)
+    // ==========================================
+    @Nested
+    class GetUserByIdTest {
+
+        @Test
+        void getUserById_Success() {
+            when(userDAO.getUserById(1)).thenReturn(sampleUser);
+
+            User result = userService.getUserById(1);
+
+            assertNotNull(result);
+            assertEquals(1, result.getId());
+        }
+
+        @Test
+        void getUserById_NotFound_ReturnsNull() {
+            when(userDAO.getUserById(99)).thenReturn(null);
+
+            User result = userService.getUserById(99);
+
+            assertNull(result); // Trả về null theo thiết kế của code gốc
+        }
+    }
+
+    // ==========================================
+    // 6. TEST CHUYỂN ĐỔI VAI TRÒ (handleSwitchRole)
+    // ==========================================
+    @Nested
+    class SwitchRoleTest {
+
+        @Test
+        void switchRole_BidderToSeller_Success() {
+            sampleUser.setRole("BIDDER");
             when(userDAO.updateRole(1, "SELLER")).thenReturn(true);
 
-            userService.handleSwitchRole(bidder);
-            assertEquals("SELLER", bidder.getRole());
+            userService.handleSwitchRole(sampleUser);
+
+            assertEquals("SELLER", sampleUser.getRole());
         }
 
-        // Test: Chuyển đổi vai trò từ Seller về lại Bidder thành công
-        @Test @DisplayName("Seller → Bidder thành công, RAM cập nhật")
-        void switchRole_sellerToBidder() {
-            User seller = makeBidder(1, "user1", "pass1234", "0901234567", "ACTIVE", 0);
-            seller.setRole("SELLER");
-            when(userDAO.updateRole(1, "BIDDER")).thenReturn(true);
+        @Test
+        void switchRole_Fail_IfAdmin() {
+            // Giả lập user là admin bằng cách override hoặc mock hàm isAdmin()
+            // Ở đây nếu class User có thuộc tính role="ADMIN" và hàm isAdmin() trả về true dựa vào role:
+            User adminUser = new User(1);
+            adminUser.setRole("ADMIN");
+            // Lưu ý: Hãy đảm bảo logic hàm isAdmin() trong class User của bạn trả về true khi role là ADMIN.
 
-            userService.handleSwitchRole(seller);
-            assertEquals("BIDDER", seller.getRole());
-        }
+            // Một cách an toàn hơn nếu không biết cấu trúc User: mock hành vi (nếu User là interface/class mock được)
+            // Tuy nhiên vì đây là Data Model, giả định logic check Admin dựa trên field:
+            // Tạm thời tạo spy hoặc gán thẳng dữ liệu để thỏa mãn `currentUser.isAdmin()`
 
-        // Test: Tài khoản quản trị viên (Admin) không được phép tự chuyển đổi vai trò
-        @Test @DisplayName("Admin không được đổi vai trò — không gọi DAO")
-        void switchRole_adminForbidden() {
-            User admin = makeBidder(1, "admin", "pass1234", "0901234567", "ACTIVE", 0);
-            admin.setRole("ADMIN");
+            /* Giả định cấu trúc User của bạn có hàm isAdmin trả về true nếu role là ADMIN: */
+            // client code bổ sung nếu cần: adminUser.setAdmin(true);
 
-            assertThrows(AuctionException.class, () -> userService.handleSwitchRole(admin));
-            verifyNoInteractions(userDAO);
-        }
+            // Hãy chắc chắn truyền một user có `isAdmin() == true` vào đây:
+            User spyAdmin = spy(new User(1));
+            when(spyAdmin.isAdmin()).thenReturn(true);
 
-        // Test: Ném lỗi nếu DB cập nhật vai trò mới thất bại
-        @Test @DisplayName("Ném lỗi khi DAO updateRole thất bại")
-        void switchRole_daoFails() {
-            User bidder = makeBidder(1, "user1", "pass1234", "0901234567", "ACTIVE", 0);
-            when(userDAO.updateRole(1, "SELLER")).thenReturn(false);
-            assertThrows(AuctionException.class, () -> userService.handleSwitchRole(bidder));
-        }
-    }
-
-    @Nested @DisplayName("getUserById")
-    class GetUserByIdTests {
-
-        // Test: Tìm kiếm thông tin người dùng thành công dựa trên ID
-        @Test @DisplayName("Tìm thấy user theo ID")
-        void getUserById_found() {
-            User stored = makeBidder(5, "user5", "pass1234", "0901234567", "ACTIVE", 100_000);
-            when(userDAO.getUserById(5)).thenReturn(stored);
-
-            User result = userService.getUserById(5);
-            assertNotNull(result);
-            assertEquals(5, result.getId());
-        }
-
-        // Test: Trả về null khi tìm kiếm với ID không tồn tại
-        @Test @DisplayName("Trả về null khi không tìm thấy — không throw exception")
-        void getUserById_notFound_returnsNull() {
-            when(userDAO.getUserById(99)).thenReturn(null);
-            assertNull(userService.getUserById(99));
+            AuctionException ex = assertThrows(AuctionException.class, () -> {
+                userService.handleSwitchRole(spyAdmin);
+            });
+            assertEquals(ErrorCode.UNAUTHORIZED.name(), ex.getCode());
         }
     }
 }

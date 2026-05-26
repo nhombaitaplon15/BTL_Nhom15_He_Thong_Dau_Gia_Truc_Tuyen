@@ -135,10 +135,10 @@ class AuctionServiceTest {
             Auction auction = activeAuction(1, 99, 500_000);
             auction.setEndTime(java.time.LocalDateTime.now().plusDays(1));
 
-            try (org.mockito.MockedStatic<com.auction.server.dao.DatabaseConnection> mockedConnection =
-                         org.mockito.Mockito.mockStatic(com.auction.server.dao.DatabaseConnection.class)) {
+            try (org.mockito.MockedStatic<com.auction.server.dao.DBConnection> mockedConnection =
+                         org.mockito.Mockito.mockStatic(com.auction.server.dao.DBConnection.class)) {
 
-                mockedConnection.when(com.auction.server.dao.DatabaseConnection::connect)
+                mockedConnection.when(com.auction.server.dao.DBConnection::getConnection)
                         .thenThrow(new java.sql.SQLException("Cố tình làm lỗi kết nối database để test"));
 
                 AuctionException ex = assertThrows(AuctionException.class,

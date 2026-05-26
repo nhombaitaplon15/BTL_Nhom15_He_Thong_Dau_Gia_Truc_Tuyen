@@ -15,7 +15,7 @@ public class Auction implements Serializable {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createdAt;
-
+    public Auction(){}
     // Constructor đầy đủ để nhận dữ liệu từ DAO (ResultSet)
     public Auction(int auctionId, int itemId, int sellerId, String auctionStatus,
                    double startingPrice, double currentPrice, int totalBids,
@@ -65,11 +65,5 @@ public class Auction implements Serializable {
         return "WAITING_FOR_ADMIN".equalsIgnoreCase(this.auctionStatus);
     }
 
-    public void setItem(Item itemData) {
-    }
 
-    private Item item;
-    public Item getItem() {
-        return this.item;
-    }
 }

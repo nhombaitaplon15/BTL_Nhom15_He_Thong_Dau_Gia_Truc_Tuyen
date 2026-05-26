@@ -1,6 +1,6 @@
 package com.auction.common.model;
 
-public abstract class User extends Entity implements java.io.Serializable {
+public class User extends Entity implements java.io.Serializable {
     private String username;
     private String email;
     private String password;
@@ -17,6 +17,9 @@ public abstract class User extends Entity implements java.io.Serializable {
         this.status = status;
         this.role = role;
         this.balance = balance;
+    }
+    public User(int id){
+        super(id);;
     }
     // kiem tra nhanh nguoi dung co phai Admin khong
     public boolean isAdmin(){
