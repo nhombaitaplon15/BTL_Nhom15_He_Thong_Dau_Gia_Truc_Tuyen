@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="680" prefWidth="1100" style="-fx-background-color: #F5F0E8;" stylesheets="@css/product_management.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionManagementController">
+
+    <center>
+         <StackPane style="-fx-background-color:#F5F0E8;">
+
+             <ScrollPane fx:id="paneCreate" fitToWidth="true" managed="true" prefHeight="680.0" prefWidth="900.0" style="-fx-background-color:transparent;-fx-background:transparent;">
+                 <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                     <VBox spacing="2">
+                         <Label style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Tạo phiên đấu giá mới" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="Chọn sản phẩm đã được admin duyệt để mở phiên đấu giá" />
+                     </VBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <TextField fx:id="searchCreate" promptText="🔍  Tìm sản phẩm đã được duyệt..." style="-fx-background-color:#FDFAF4;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-padding:7 12 7 12;-fx-font-size:12;" HBox.hgrow="ALWAYS" />
+                         <Button style="-fx-background-color:#233A66;-fx-text-fill:#FFD691;-fx-font-size:12;-fx-font-weight:bold;-fx-padding:7 16 7 16;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:transparent;" text="Lọc" />
+                     </HBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <Label style="-fx-min-width:4;-fx-pref-width:4;-fx-min-height:18;-fx-pref-height:18;-fx-background-color:#D7A859;-fx-background-radius:2;" />
+                         <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Sản phẩm sẵn sàng mở phiên" />
+                         <Label fx:id="lblCreate" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="· 0 sản phẩm" />
+                     </HBox>
+
+                     <ListView fx:id="listCreate" fixedCellSize="82" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" VBox.vgrow="ALWAYS" />
+
+                     <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color:#FFF8E1;-fx-border-color:#FFE082;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;">
+                         <Label style="-fx-text-fill:#F57F17;-fx-font-size:14;-fx-font-weight:bold;" text="ℹ" />
+                         <Label style="-fx-font-size:11;-fx-text-fill:#7B5800;" text="Chỉ sản phẩm đã được admin duyệt mới có thể tạo phiên đấu giá." wrapText="true" />
+                     </HBox>
+
+                     <VBox fx:id="emptyCreate" alignment="CENTER" managed="false" spacing="8" style="-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-padding:36;" visible="false">
+                         <Label style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="Không có sản phẩm nào sẵn sàng tạo phiên" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#B0A090;" text="Hãy đăng sản phẩm và chờ admin duyệt trước." />
+                     </VBox>
+
+                 </VBox>
+             </ScrollPane>
+
+             <ScrollPane fx:id="panePending" fitToWidth="true" managed="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="680.0" prefWidth="900.0" style="-fx-background-color:transparent;-fx-background:transparent;" visible="false">
+                 <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                     <VBox spacing="2">
+                         <Label style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Phiên chờ duyệt" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="Phiên đã tạo, đang chờ admin kích hoạt (chuyển sang OPEN)" />
+                     </VBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <TextField fx:id="searchPending" promptText="🔍  Tìm phiên..." style="-fx-background-color:#FDFAF4;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-padding:7 12 7 12;-fx-font-size:12;" HBox.hgrow="ALWAYS" />
+                         <Button style="-fx-background-color:#233A66;-fx-text-fill:#FFD691;-fx-font-size:12;-fx-font-weight:bold;-fx-padding:7 16 7 16;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:transparent;" text="Lọc" />
+                     </HBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <Label style="-fx-min-width:4;-fx-pref-width:4;-fx-min-height:18;-fx-pref-height:18;-fx-background-color:#9C27B0;-fx-background-radius:2;" />
+                         <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Chờ admin kích hoạt" />
+                         <Label fx:id="lblPending" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="· 0 phiên" />
+                     </HBox>
+
+                     <ListView fx:id="listPending" fixedCellSize="82" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" VBox.vgrow="ALWAYS" />
+
+                     <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color:#FFF8E1;-fx-border-color:#FFE082;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;">
+                         <Label style="-fx-text-fill:#F57F17;-fx-font-size:14;-fx-font-weight:bold;" text="ℹ" />
+                         <Label style="-fx-font-size:11;-fx-text-fill:#7B5800;" text="Phiên đang chờ duyệt có thể sửa thông tin hoặc huỷ trước khi admin kích hoạt." wrapText="true" />
+                     </HBox>
+
+                     <VBox fx:id="emptyPending" alignment="CENTER" managed="false" style="-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-padding:36;" visible="false">
+                         <Label style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="Không có phiên nào đang chờ duyệt" />
+                     </VBox>
+
+                 </VBox>
+             </ScrollPane>
+
+             <ScrollPane fx:id="paneOpen" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" style="-fx-background-color:transparent;-fx-background:transparent;" visible="false">
+                 <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                     <VBox spacing="2">
+                         <Label style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Phiên đang mở (OPEN)" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="Phiên đã được duyệt, chưa có bid — đang chờ bidder tham gia" />
+                     </VBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <TextField fx:id="searchOpen" promptText="🔍  Tìm phiên..." style="-fx-background-color:#FDFAF4;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-padding:7 12 7 12;-fx-font-size:12;" HBox.hgrow="ALWAYS" />
+                         <Button style="-fx-background-color:#233A66;-fx-text-fill:#FFD691;-fx-font-size:12;-fx-font-weight:bold;-fx-padding:7 16 7 16;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:transparent;" text="Lọc" />
+                     </HBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <Label style="-fx-min-width:4;-fx-pref-width:4;-fx-min-height:18;-fx-pref-height:18;-fx-background-color:#1565C0;-fx-background-radius:2;" />
+                         <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Đang chờ bidder tham gia" />
+                         <Label fx:id="lblOpen" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="· 0 phiên" />
+                     </HBox>
+
+                     <ListView fx:id="listOpen" fixedCellSize="82" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" VBox.vgrow="ALWAYS" />
+
+                     <VBox fx:id="emptyOpen" alignment="CENTER" managed="false" style="-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-padding:36;" visible="false">
+                         <Label style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="Không có phiên nào đang ở trạng thái OPEN" />
+                     </VBox>
+
+                 </VBox>
+             </ScrollPane>
+
+             <ScrollPane fx:id="paneRunning" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" style="-fx-background-color:transparent;-fx-background:transparent;" visible="false">
+                 <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                     <VBox spacing="2">
+                         <Label style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Phiên đang diễn ra (RUNNING)" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="Phiên đã có ít nhất 1 bid — đang trong giai đoạn cạnh tranh" />
+                     </VBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <TextField fx:id="searchRunning" promptText="🔍  Tìm phiên..." style="-fx-background-color:#FDFAF4;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-padding:7 12 7 12;-fx-font-size:12;" HBox.hgrow="ALWAYS" />
+                         <Button style="-fx-background-color:#233A66;-fx-text-fill:#FFD691;-fx-font-size:12;-fx-font-weight:bold;-fx-padding:7 16 7 16;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:transparent;" text="Lọc" />
+                     </HBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <Label style="-fx-min-width:4;-fx-pref-width:4;-fx-min-height:18;-fx-pref-height:18;-fx-background-color:#2E7D32;-fx-background-radius:2;" />
+                         <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Đang cạnh tranh — live" />
+                         <Label fx:id="lblRunning" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="· 0 phiên" />
+                     </HBox>
+
+                     <ListView fx:id="listRunning" fixedCellSize="82" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" VBox.vgrow="ALWAYS" />
+
+                     <VBox fx:id="emptyRunning" alignment="CENTER" managed="false" style="-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-padding:36;" visible="false">
+                         <Label style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="Không có phiên nào đang chạy" />
+                     </VBox>
+
+                 </VBox>
+             </ScrollPane>
+
+             <ScrollPane fx:id="paneFinished" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" style="-fx-background-color:transparent;-fx-background:transparent;" visible="false">
+                 <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                     <VBox spacing="2">
+                         <Label style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Phiên đã kết thúc" />
+                         <Label style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="Lịch sử phiên — FINISHED · PAID · CANCELED" />
+                     </VBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <TextField fx:id="searchFinished" promptText="🔍  Tìm phiên..." style="-fx-background-color:#FDFAF4;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-padding:7 12 7 12;-fx-font-size:12;" HBox.hgrow="ALWAYS" />
+                         <Button style="-fx-background-color:#233A66;-fx-text-fill:#FFD691;-fx-font-size:12;-fx-font-weight:bold;-fx-padding:7 16 7 16;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:transparent;" text="Lọc" />
+                     </HBox>
+
+                     <HBox alignment="CENTER_LEFT" spacing="8">
+                         <Label style="-fx-min-width:4;-fx-pref-width:4;-fx-min-height:18;-fx-pref-height:18;-fx-background-color:#E65100;-fx-background-radius:2;" />
+                         <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Tất cả kết quả" />
+                         <Label fx:id="lblFinished" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="· 0 phiên" />
+                     </HBox>
+
+                     <ListView fx:id="listFinished" fixedCellSize="82" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" VBox.vgrow="ALWAYS" />
+
+                     <VBox fx:id="emptyFinished" alignment="CENTER" managed="false" style="-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-padding:36;" visible="false">
+                         <Label style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="Chưa có phiên nào kết thúc" />
+                     </VBox>
+
+                 </VBox>
+             </ScrollPane>
+
+         </StackPane>
+    </center>
+
+   <left>
+
+         <VBox style="-fx-background-color:#1A2B4A;-fx-min-width:200;-fx-pref-width:200;-fx-padding:18 0 20 0;-fx-spacing:2;" BorderPane.alignment="CENTER">
+
+             <Label style="-fx-text-fill:#8BA8D4;-fx-font-size:9;-fx-font-weight:bold;-fx-padding:0 16 12 16;" text="QUẢN LÝ PHIÊN ĐẤU GIÁ" />
+
+             <HBox fx:id="btnCreate" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" style="-fx-background-color:rgba(215,168,89,0.14);-fx-border-color:transparent transparent transparent #D7A859;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                 <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#D7A859;-fx-background-radius:99;" />
+                 <Label style="-fx-text-fill:#FFD691;-fx-font-size:12;" text="Tạo phiên mới" HBox.hgrow="ALWAYS" />
+             </HBox>
+
+             <Separator style="-fx-padding:4 16 4 16;-fx-opacity:0.2;" />
+
+             <HBox fx:id="btnPending" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                 <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#9C27B0;-fx-background-radius:99;" />
+                 <Label style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" text="Chờ duyệt" HBox.hgrow="ALWAYS" />
+                 <Label fx:id="badgePending" style="-fx-background-color:#D7A859;-fx-text-fill:#3A2408;-fx-font-size:9;-fx-font-weight:bold;-fx-padding:1 6 1 6;-fx-background-radius:99;" text="0" />
+             </HBox>
+
+             <HBox fx:id="btnOpen" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                 <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#1565C0;-fx-background-radius:99;" />
+                 <Label style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" text="Đang mở (OPEN)" HBox.hgrow="ALWAYS" />
+                 <Label fx:id="badgeOpen" style="-fx-background-color:#D7A859;-fx-text-fill:#3A2408;-fx-font-size:9;-fx-font-weight:bold;-fx-padding:1 6 1 6;-fx-background-radius:99;" text="0" />
+             </HBox>
+
+             <HBox fx:id="btnRunning" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                 <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#2E7D32;-fx-background-radius:99;" />
+                 <Label style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" text="Đang diễn ra" HBox.hgrow="ALWAYS" />
+                 <Label fx:id="badgeRunning" style="-fx-background-color:#2E7D32;-fx-text-fill:#fff;-fx-font-size:9;-fx-font-weight:bold;-fx-padding:1 6 1 6;-fx-background-radius:99;" text="0" />
+             </HBox>
+
+             <HBox fx:id="btnFinished" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                 <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#E65100;-fx-background-radius:99;" />
+                 <Label style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" text="Đã kết thúc" HBox.hgrow="ALWAYS" />
+             </HBox>
+
+         </VBox>
+   </left>
+
+</BorderPane>

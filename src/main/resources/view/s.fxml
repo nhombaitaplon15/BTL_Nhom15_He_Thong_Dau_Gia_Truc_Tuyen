@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+
+<!--
+╔══════════════════════════════════════════════════════════╗
+║  AccountView.fxml                                        ║
+║  Controller : controller.AccountController              ║
+║  CSS        : product_management.css                    ║
+║                                                          ║
+║  Sidebar HBox (fx:id) — highlight active:               ║
+║    btnProfile  btnSecurity  btnWallet                   ║
+║    btnNotif    btnLogout                                 ║
+║                                                          ║
+║  Content panes (fx:id):                                  ║
+║    paneProfile   paneSecurity  paneWallet               ║
+║    paneNotif     paneLogout                              ║
+║                                                          ║
+║  Profile:                                                ║
+║    lblAvatarInitial  lblFullName  lblRolePill            ║
+║    lblEmail  lblMemberId  lblMemberSince                 ║
+║    lblStatProducts  lblStatSold  lblStatRating           ║
+║    txtFullName  txtEmail  txtPhone  txtAddress           ║
+║    dpBirthDate  txtUsername(readonly)  txtRole(readonly) ║
+║                                                          ║
+║  Security:                                               ║
+║    txtCurrentPass  txtNewPass  txtConfirmPass            ║
+║    lbl2FAStatus  lblEmailStatus                          ║
+║                                                          ║
+║  Wallet:                                                 ║
+║    lblBalance  lblBalanceUpdated                         ║
+║    listTransactions  (TransactionCell)                   ║
+║                                                          ║
+║  Notifications:                                          ║
+║    toggle* — CheckBox hoặc ToggleButton từng loại       ║
+║                                                          ║
+║  Logout:                                                 ║
+║    btnConfirmLogout  btnStay                             ║
+╚══════════════════════════════════════════════════════════╝
+-->
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.auction.client.controller.AccountController"
+            prefWidth="1100" prefHeight="680"
+            stylesheets="@css/product_management.css"
+            style="-fx-background-color: #F5F0E8;">
+
+    <center>
+        <HBox>
+
+            <!-- ══ SIDEBAR ══ -->
+            <VBox style="-fx-background-color:#1A2B4A;-fx-min-width:200;-fx-pref-width:200;-fx-padding:18 0 20 0;-fx-spacing:2;">
+                <Label text="TÀI KHOẢN" style="-fx-text-fill:#8BA8D4;-fx-font-size:9;-fx-font-weight:bold;-fx-padding:0 16 12 16;"/>
+
+                <!-- Thông tin cá nhân (active mặc định) -->
+                <HBox fx:id="btnProfile" alignment="CENTER_LEFT" spacing="9" maxWidth="Infinity"
+                      onMouseClicked="#onShowProfile"
+                      style="-fx-background-color:rgba(215,168,89,0.14);-fx-border-color:transparent transparent transparent #D7A859;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                    <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#D7A859;-fx-background-radius:99;"/>
+                    <Label text="Thông tin cá nhân" style="-fx-text-fill:#FFD691;-fx-font-size:12;" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <!-- Bảo mật -->
+                <HBox fx:id="btnSecurity" alignment="CENTER_LEFT" spacing="9" maxWidth="Infinity"
+                      onMouseClicked="#onShowSecurity"
+                      style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                    <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#4A90D9;-fx-background-radius:99;"/>
+                    <Label text="Bảo mật" style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <Separator style="-fx-padding:4 16 4 16;-fx-opacity:0.2;"/>
+
+                <!-- Ví UETệ -->
+                <HBox fx:id="btnWallet" alignment="CENTER_LEFT" spacing="9" maxWidth="Infinity"
+                      onMouseClicked="#onShowWallet"
+                      style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                    <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#43A047;-fx-background-radius:99;"/>
+                    <Label text="Ví UETệ" style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <Separator style="-fx-padding:4 16 4 16;-fx-opacity:0.2;"/>
+
+                <!-- Thông báo -->
+                <HBox fx:id="btnNotif" alignment="CENTER_LEFT" spacing="9" maxWidth="Infinity"
+                      onMouseClicked="#onShowNotif"
+                      style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                    <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#9C27B0;-fx-background-radius:99;"/>
+                    <Label text="Thông báo" style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <Separator style="-fx-padding:4 16 4 16;-fx-opacity:0.2;"/>
+
+                <!-- Đăng xuất -->
+                <HBox fx:id="btnLogout" alignment="CENTER_LEFT" spacing="9" maxWidth="Infinity"
+                      onMouseClicked="#onShowLogout"
+                      style="-fx-background-color:transparent;-fx-border-color:transparent transparent transparent transparent;-fx-border-width:0 0 0 3;-fx-padding:10 16 10 16;-fx-cursor:hand;">
+                    <Label style="-fx-min-width:7;-fx-pref-width:7;-fx-min-height:7;-fx-pref-height:7;-fx-background-color:#E53935;-fx-background-radius:99;"/>
+                    <Label text="Đăng xuất" style="-fx-text-fill:#8BA8D4;-fx-font-size:12;" HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+
+            <!-- ══ CONTENT STACKPANE ══ -->
+            <StackPane HBox.hgrow="ALWAYS" style="-fx-background-color:#F5F0E8;">
+
+                <!-- ════════════════════════════════
+                     PANE 1: THÔNG TIN CÁ NHÂN
+                ═══════════════════════════════════ -->
+                <ScrollPane fx:id="paneProfile" fitToWidth="true"
+                            style="-fx-background-color:transparent;-fx-background:transparent;"
+                            visible="true" managed="true">
+                    <VBox spacing="16" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                        <VBox spacing="2">
+                            <Label text="Thông tin cá nhân" style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            <Label text="Quản lý thông tin hồ sơ của bạn" style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;"/>
+                        </VBox>
+
+                        <!-- Profile Banner -->
+                        <HBox styleClass="profile-banner" spacing="20" alignment="CENTER_LEFT">
+                            <!-- Avatar chữ cái -->
+                            <StackPane style="-fx-min-width:72;-fx-pref-width:72;-fx-min-height:72;-fx-pref-height:72;-fx-background-color:#D7A859;-fx-background-radius:99;-fx-border-color:rgba(255,214,145,0.4);-fx-border-width:3;-fx-border-radius:99;">
+                                <Label fx:id="lblAvatarInitial" text="N"
+                                       style="-fx-font-size:28;-fx-font-weight:bold;-fx-text-fill:#3A2408;"/>
+                            </StackPane>
+
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label fx:id="lblFullName" text="—" styleClass="profile-banner-name"/>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <Label fx:id="lblRolePill" text="SELLER" styleClass="role-pill"/>
+                                    <Label fx:id="lblEmail" text="—" style="-fx-font-size:11;-fx-text-fill:#8BA8D4;"/>
+                                </HBox>
+                                <Label fx:id="lblMemberInfo" text="—" style="-fx-font-size:10.5;-fx-text-fill:#8BA8D4;"/>
+                            </VBox>
+
+                            <!-- Stats -->
+                            <HBox spacing="24">
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatProducts" text="0" styleClass="profile-banner-stat-value"/>
+                                    <Label text="Sản phẩm" styleClass="profile-banner-stat-label"/>
+                                </VBox>
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatSold" text="0" styleClass="profile-banner-stat-value"/>
+                                    <Label text="Đã bán" styleClass="profile-banner-stat-label"/>
+                                </VBox>
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatRating" text="—" styleClass="profile-banner-stat-value"/>
+                                    <Label text="Đánh giá" styleClass="profile-banner-stat-label"/>
+                                </VBox>
+                            </HBox>
+
+                            <Button text="✏  Sửa ảnh" onAction="#onChangeAvatar"
+                                    style="-fx-background-color:rgba(255,214,145,0.15);-fx-text-fill:#FFD691;-fx-font-size:11.5;-fx-font-weight:bold;-fx-padding:7 14 7 14;-fx-background-radius:7;-fx-cursor:hand;-fx-border-color:rgba(255,214,145,0.3);-fx-border-width:0.5;-fx-border-radius:7;"/>
+                        </HBox>
+
+                        <!-- Form thông tin -->
+                        <VBox styleClass="white-card" spacing="14">
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label styleClass="sec-bar-gold"/>
+                                <Label text="Thông tin cơ bản" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                </columnConstraints>
+
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label text="Họ và tên" styleClass="form-label"/>
+                                    <TextField fx:id="txtFullName" promptText="Nhập họ và tên..." styleClass="form-input"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <Label text="Tên đăng nhập" styleClass="form-label"/>
+                                    <TextField fx:id="txtUsername" styleClass="form-input-readonly" editable="false"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <Label text="Email" styleClass="form-label"/>
+                                    <TextField fx:id="txtEmail" promptText="example@email.com" styleClass="form-input"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <Label text="Số điện thoại" styleClass="form-label"/>
+                                    <TextField fx:id="txtPhone" promptText="09xx xxx xxx" styleClass="form-input"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2">
+                                    <Label text="Địa chỉ" styleClass="form-label"/>
+                                    <TextField fx:id="txtAddress" promptText="Số nhà, đường, quận, thành phố..." styleClass="form-input"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                                    <Label text="Ngày sinh" styleClass="form-label"/>
+                                    <DatePicker fx:id="dpBirthDate" maxWidth="Infinity" styleClass="form-datepicker"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                    <Label text="Vai trò" styleClass="form-label"/>
+                                    <TextField fx:id="txtRole" styleClass="form-input-readonly" editable="false"/>
+                                </VBox>
+                            </GridPane>
+
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button text="Lưu thay đổi" onAction="#onSaveProfile" styleClass="btn-primary"/>
+                            </HBox>
+                        </VBox>
+
+                    </VBox>
+                </ScrollPane>
+
+                <!-- ════════════════════════════════
+                     PANE 2: BẢO MẬT
+                ═══════════════════════════════════ -->
+                <ScrollPane fx:id="paneSecurity" fitToWidth="true"
+                            style="-fx-background-color:transparent;-fx-background:transparent;"
+                            visible="false" managed="false">
+                    <VBox spacing="16" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                        <VBox spacing="2">
+                            <Label text="Bảo mật tài khoản" style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            <Label text="Quản lý mật khẩu và xác thực" style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;"/>
+                        </VBox>
+
+                        <!-- Đổi mật khẩu -->
+                        <VBox styleClass="white-card" spacing="14">
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <Label styleClass="sec-bar-blue"/>
+                                <Label text="Đổi mật khẩu" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="100"/>
+                                </columnConstraints>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label text="Mật khẩu hiện tại" styleClass="form-label"/>
+                                    <PasswordField fx:id="txtCurrentPass" promptText="••••••••" styleClass="form-input"/>
+                                </VBox>
+                            </GridPane>
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50"/>
+                                </columnConstraints>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label text="Mật khẩu mới" styleClass="form-label"/>
+                                    <PasswordField fx:id="txtNewPass" promptText="••••••••" styleClass="form-input"/>
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <Label text="Xác nhận mật khẩu mới" styleClass="form-label"/>
+                                    <PasswordField fx:id="txtConfirmPass" promptText="••••••••" styleClass="form-input"/>
+                                </VBox>
+                            </GridPane>
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button text="Cập nhật mật khẩu" onAction="#onChangePassword" styleClass="btn-primary"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Xác thực & Bảo mật -->
+                        <VBox styleClass="white-card" spacing="0">
+                            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 14 0;">
+                                <Label styleClass="sec-bar-blue"/>
+                                <Label text="Xác thực &amp; Bảo mật" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+
+                            <!-- 2FA -->
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:10 0 10 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Xác thực 2 bước (2FA)" styleClass="sec-row-label"/>
+                                    <Label text="Bảo vệ tài khoản bằng mã OTP khi đăng nhập" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Label fx:id="lbl2FAStatus" text="Đã bật" styleClass="sec-status-on"/>
+                                    <Button fx:id="btn2FAToggle" text="Tắt" onAction="#onToggle2FA" styleClass="btn-small"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- Email -->
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:10 0 10 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Email xác nhận" styleClass="sec-row-label"/>
+                                    <Label fx:id="lblVerifiedEmail" text="—" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <HBox spacing="10" alignment="CENTER_RIGHT">
+                                    <Label fx:id="lblEmailStatus" text="Đã xác minh" styleClass="sec-status-on"/>
+                                    <Button text="Đổi" onAction="#onChangeEmail" styleClass="btn-small"/>
+                                </HBox>
+                            </HBox>
+
+                            <!-- Sessions -->
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:10 0 0 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Phiên đăng nhập" styleClass="sec-row-label"/>
+                                    <Label fx:id="lblSessionInfo" text="Đang hoạt động trên 1 thiết bị" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <Button text="Đăng xuất tất cả" onAction="#onLogoutAllSessions"
+                                        style="-fx-background-color:#FFEBEE;-fx-text-fill:#C62828;-fx-font-size:11;-fx-font-weight:bold;-fx-padding:5 12 5 12;-fx-background-radius:6;-fx-cursor:hand;-fx-border-color:#FFCDD2;-fx-border-width:0.5;-fx-border-radius:6;"/>
+                            </HBox>
+                        </VBox>
+
+                    </VBox>
+                </ScrollPane>
+
+                <!-- ════════════════════════════════
+                     PANE 3: VÍ UETệ
+                ═══════════════════════════════════ -->
+                <ScrollPane fx:id="paneWallet" fitToWidth="true"
+                            style="-fx-background-color:transparent;-fx-background:transparent;"
+                            visible="false" managed="false">
+                    <VBox spacing="16" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                        <VBox spacing="2">
+                            <Label text="Ví UETệ" style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            <Label text="Quản lý số dư và lịch sử giao dịch" style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;"/>
+                        </VBox>
+
+                        <!-- Balance banner -->
+                        <HBox styleClass="balance-banner" spacing="16" alignment="CENTER_LEFT">
+                            <Label text="💰" style="-fx-font-size:28;"/>
+                            <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                <Label text="SỐ DƯ HIỆN TẠI" styleClass="balance-label"/>
+                                <Label fx:id="lblBalance" text="0 UETệ" styleClass="balance-value"/>
+                                <Label fx:id="lblBalanceUpdated" text="—" styleClass="balance-sub"/>
+                            </VBox>
+                            <Button text="＋  Nạp tiền" onAction="#onTopUp" styleClass="btn-gold"/>
+                        </HBox>
+
+                        <!-- Transaction list -->
+                        <VBox styleClass="white-card" spacing="0">
+                            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 12 0;">
+                                <Label styleClass="sec-bar-green"/>
+                                <Label text="Lịch sử giao dịch" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+                            <!--
+                                ListView — setCellFactory với TransactionCell.
+                                Mỗi cell = HBox:
+                                  [Icon box 32x32][Mô tả + thời gian][Số tiền +/-]
+                                Màu amount: #2E7D32 nếu nạp/nhận, #E65100 nếu phí/rút
+                            -->
+                            <ListView fx:id="listTransactions"
+                                      fixedCellSize="54"
+                                      prefHeight="270"
+                                      style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;"/>
+
+                            <VBox fx:id="emptyTransactions" alignment="CENTER"
+                                  managed="false" visible="false"
+                                  style="-fx-padding:28;">
+                                <Label text="Chưa có giao dịch nào" styleClass="empty-text"/>
+                            </VBox>
+                        </VBox>
+
+                    </VBox>
+                </ScrollPane>
+
+                <!-- ════════════════════════════════
+                     PANE 4: THÔNG BÁO
+                ═══════════════════════════════════ -->
+                <ScrollPane fx:id="paneNotif" fitToWidth="true"
+                            style="-fx-background-color:transparent;-fx-background:transparent;"
+                            visible="false" managed="false">
+                    <VBox spacing="16" style="-fx-background-color:#F5F0E8;-fx-padding:22 26 28 26;">
+
+                        <VBox spacing="2">
+                            <Label text="Cài đặt thông báo" style="-fx-font-size:17;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            <Label text="Tuỳ chỉnh các loại thông báo bạn muốn nhận" style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;"/>
+                        </VBox>
+
+                        <!-- Thông báo đấu giá -->
+                        <VBox styleClass="white-card" spacing="0">
+                            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 12 0;">
+                                <Label styleClass="sec-bar-purple"/>
+                                <Label text="Thông báo phiên đấu giá" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+
+                            <!-- Dùng CheckBox thay vì Toggle vì JavaFX không có ToggleSwitch built-in -->
+                            <!-- Bạn có thể custom toggle bằng CSS hoặc dùng ControlsFX -->
+
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 8 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Có bid mới trên sản phẩm của tôi" styleClass="sec-row-label"/>
+                                    <Label text="Thông báo mỗi khi có người đặt giá" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifNewBid" selected="true"
+                                          style="-fx-cursor:hand;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 8 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Phiên sắp kết thúc (còn 30 phút)" styleClass="sec-row-label"/>
+                                    <Label text="Nhắc nhở trước khi phiên đóng" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifEnding" selected="true" style="-fx-cursor:hand;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 8 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Phiên đấu giá bị outbid" styleClass="sec-row-label"/>
+                                    <Label text="Khi người khác vượt qua giá của tôi" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifOutbid" selected="false" style="-fx-cursor:hand;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 0 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Kết quả phiên đấu giá" styleClass="sec-row-label"/>
+                                    <Label text="Thông báo khi phiên kết thúc" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifResult" selected="true" style="-fx-cursor:hand;"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Thông báo hệ thống -->
+                        <VBox styleClass="white-card" spacing="0">
+                            <HBox spacing="8" alignment="CENTER_LEFT" style="-fx-padding:0 0 12 0;">
+                                <Label styleClass="sec-bar-purple"/>
+                                <Label text="Thông báo hệ thống" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 8 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Admin duyệt sản phẩm / phiên" styleClass="sec-row-label"/>
+                                    <Label text="Khi admin phê duyệt hoặc từ chối" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifAdmin" selected="true" style="-fx-cursor:hand;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 8 0;-fx-border-color:transparent transparent #F5F0E8 transparent;-fx-border-width:0 0 0.5 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Thanh toán thành công" styleClass="sec-row-label"/>
+                                    <Label text="Xác nhận giao dịch ví UETệ" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifPayment" selected="true" style="-fx-cursor:hand;"/>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding:8 0 0 0;">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Tin tức &amp; cập nhật hệ thống" styleClass="sec-row-label"/>
+                                    <Label text="Thông báo tính năng mới" styleClass="sec-row-sub"/>
+                                </VBox>
+                                <CheckBox fx:id="cbNotifNews" selected="false" style="-fx-cursor:hand;"/>
+                            </HBox>
+                        </VBox>
+
+                        <HBox alignment="CENTER_RIGHT">
+                            <Button text="Lưu cài đặt" onAction="#onSaveNotifSettings" styleClass="btn-primary"/>
+                        </HBox>
+
+                    </VBox>
+                </ScrollPane>
+
+                <!-- ════════════════════════════════
+                     PANE 5: ĐĂNG XUẤT
+                ═══════════════════════════════════ -->
+                <VBox fx:id="paneLogout" alignment="CENTER"
+                      style="-fx-background-color:#F5F0E8;-fx-padding:40;"
+                      visible="false" managed="false">
+
+                    <VBox styleClass="white-card" alignment="CENTER" spacing="14"
+                          style="-fx-padding:40 60 40 60;-fx-max-width:460;">
+                        <Label text="👋" style="-fx-font-size:44;"/>
+                        <Label text="Bạn muốn đăng xuất?"
+                               style="-fx-font-size:16;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+                        <Label text="Phiên làm việc sẽ kết thúc. Các thay đổi chưa lưu sẽ bị mất."
+                               wrapText="true" textAlignment="CENTER"
+                               style="-fx-font-size:12;-fx-text-fill:#6B5E4A;-fx-alignment:CENTER;"/>
+                        <HBox spacing="12" alignment="CENTER" style="-fx-padding:8 0 0 0;">
+                            <Button fx:id="btnStay" text="Ở lại" onAction="#onStay" styleClass="btn-primary"/>
+                            <Button fx:id="btnConfirmLogout" text="🚪  Xác nhận đăng xuất"
+                                    onAction="#onConfirmLogout" styleClass="btn-logout"/>
+                        </HBox>
+                    </VBox>
+
+                </VBox>
+
+            </StackPane>
+        </HBox>
+    </center>
+
+</BorderPane>

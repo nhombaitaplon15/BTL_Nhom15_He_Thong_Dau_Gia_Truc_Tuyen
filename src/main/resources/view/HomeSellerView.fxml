@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefWidth="1052.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+        <children>
+            <StackPane layoutX="-16.0" prefHeight="618.0" prefWidth="1083.0">
+                <children>
+                    <AnchorPane fx:id="homePane" prefHeight="560.0" prefWidth="900.0" style="-fx-background-color:  #F5F0E8;-fx-font-family: Times New Roman;" stylesheets="@css/HomeSeller.css">
+                        <children>
+                            <VBox layoutX="14.0" prefHeight="680.0" prefWidth="988.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="-1.2000000000000455" AnchorPane.topAnchor="0.0">
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" prefHeight="99.0" prefWidth="1056.0" spacing="20.0">
+                                        <children>
+                                            <VBox fillWidth="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="54.0" prefWidth="713.0" spacing="10.0" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Label prefHeight="50.0" prefWidth="714.0" text="                           Tổng quan bán hàng" textFill="#1A2B4A">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="30.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label prefHeight="39.0" prefWidth="646.0" text="                Chào mừng bạn quay trở lại. Đây là tình hình các phiên đấu giá của bạn." textFill="#1A2B4A">
+                                                        <font>
+                                                            <Font name="Times New Roman" size="18.0" />
+                                                        </font>
+                                                        <padding>
+                                                            <Insets left="18.0" />
+                                                        </padding>
+                                                    </Label>
+                                                </children>
+                                                <HBox.margin>
+                                                    <Insets />
+                                                </HBox.margin>
+                                                <opaqueInsets>
+                                                    <Insets />
+                                                </opaqueInsets>
+                                                <padding>
+                                                    <Insets top="10.0" />
+                                                </padding>
+                                            </VBox>
+                                            <Button fx:id="btnAddProduct" mnemonicParsing="false" prefHeight="46.0" prefWidth="230.0" style="-fx-background-color: transparent;-fx-border-color: #233A66 ; -fx-border-radius: 8; -fx-text-fill: #233A66; -fx-background-radius: 5px;" text="+  Thêm sản phẩm mới" textFill="#1a2b4a">
+                                                <font>
+                                                    <Font name="Times New Roman Bold" size="20.0" />
+                                                </font>
+                                            </Button>
+                                        </children>
+                                        <padding>
+                                            <Insets top="10.0" />
+                                        </padding>
+                                    </HBox>
+
+                                    <HBox prefHeight="119.0" prefWidth="988.0" spacing="20.0">
+                                        <children>
+                                            <VBox prefHeight="132.0" prefWidth="175.0" style="-fx-background-color: #233A66; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 2);" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Label text="Đang đấu giá" textFill="#9cb8c4">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="17.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="lblActiveAuctions" text="0" textFill="#FFD691">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="36.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label text="Phiên đang mở" textFill="#9cb8c4">
+                                                        <font>
+                                                            <Font name="Times New Roman" size="15.0" />
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+
+                                            <VBox prefHeight="132.0" prefWidth="178.0" style="-fx-background-color: #233A66; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 2);" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Label text="Đã bán / Chờ thanh toán" textFill="#9cb8c4">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="17.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="lblPendingPayments" text="0" textFill="#FFD691">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="36.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label text="Cần đối soát" textFill="#9cb8c4">
+                                                        <font>
+                                                            <Font name="Times New Roman" size="15.0" />
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+
+                                            <VBox prefHeight="106.0" prefWidth="156.0" style="-fx-background-color: #EEE5CC; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 2);" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Label prefHeight="18.0" prefWidth="190.0" text="Doanh thu dự kiến" textFill="#7c673e">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="17.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label fx:id="lblExpectedRevenue" prefHeight="40.0" prefWidth="133.0" text="0 UETệ" textFill="#5b818c">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="36.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label prefHeight="26.0" prefWidth="186.0" text="Dựa trên giá bid hiện tại" textFill="#7c673e">
+                                                        <font>
+                                                            <Font name="Times New Roman" size="15.0" />
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+                                            <VBox prefHeight="106.0" prefWidth="217.0" style="-fx-background-color: #EEE5CC; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 2);">
+                                                <children>
+                                                    <Label prefHeight="18.0" prefWidth="190.0" text="Lượt Bid hôm nay" textFill="#7c673e">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="17.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label prefHeight="41.0" prefWidth="91.0" text="0" textFill="#5b818c">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="36.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <Label prefHeight="26.0" prefWidth="186.0" text="Trên tất cả các sản phẩm" textFill="#7c673e">
+                                                        <font>
+                                                            <Font name="Times New Roman" size="15.0" />
+                                                        </font>
+                                                    </Label>
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+
+                                        </children>
+                                        <padding>
+                                            <Insets left="10.0" right="10.0" top="10.0" />
+                                        </padding>
+                                    </HBox>
+
+                                    <HBox spacing="20.0" VBox.vgrow="ALWAYS">
+                                        <children>
+                                            <VBox prefHeight="335.0" prefWidth="709.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #FEF3C7; -fx-border-radius: 8;" styleClass="card" HBox.hgrow="ALWAYS">
+                                                <children>
+                                                    <Label prefHeight="40.0" prefWidth="600.0" text="Sản phẩm sắp kết thúc" textFill="#333333">
+                                                        <font>
+                                                            <Font name="Times New Roman Bold" size="18.0" />
+                                                        </font>
+                                                    </Label>
+                                                    <TableView fx:id="tblEndingSoon" style="-fx-background-color: white" VBox.vgrow="ALWAYS">
+                                                        <columns>
+                                                            <TableColumn fx:id="colItemName" prefWidth="134.1999912261963" style="-fx-background-color:  #FEF3C7; -fx-font-family: Times New Roman;" text="Tên sản phẩm" />
+                                                            <TableColumn fx:id="colStartPrice" prefWidth="149.1999969482422" style="-fx-background-color:  #FEF3C7; -fx-font-family: Times New Roman;" text="Giá khởi điểm" />
+                                                            <TableColumn fx:id="colCurrentPrice" prefWidth="114.39996337890625" style="-fx-background-color:  #FEF3C7; -fx-font-family: Times New Roman;" text="Giá hiện tại" />
+                                                            <TableColumn fx:id="colEndTime" prefWidth="152.80001831054688" style="-fx-background-color:  #FEF3C7; -fx-font-family: Times New Roman;" text="Thời gian kết thúc" />
+                                                            <TableColumn prefWidth="135.20001220703125" style="-fx-background-color:  #FEF3C7; -fx-font-family: Times New Roman;" text="Trạng thái" />
+                                                        </columns>
+                                                        <columnResizePolicy>
+                                                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                                        </columnResizePolicy>
+                                                        <styleClass>
+                                                            <String fx:value="header-title" />
+                                                            <String fx:value="table-view" />
+                                                            <String fx:value="table-row-cell" />
+                                                        </styleClass>
+                                                    </TableView>
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+
+                                            <VBox prefHeight="339.0" prefWidth="297.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #E5E7EB; -fx-border-radius: 8;" styleClass="card">
+                                                <children>
+                                                    <HBox alignment="CENTER_LEFT">
+                                                        <children>
+                                                            <Label prefHeight="20.0" prefWidth="152.0" text="Hoạt động đặt giá" textFill="#333333">
+                                                                <font>
+                                                                    <Font name="Times New Roman Bold" size="18.0" />
+                                                                </font>
+                                                            </Label>
+                                                            <Label alignment="CENTER_RIGHT" prefHeight="27.0" prefWidth="98.0" styleClass="live-badge" text="🟢 Trực tiếp" textFill="#10B981" HBox.hgrow="ALWAYS">
+                                                                <font>
+                                                                    <Font size="13.0" />
+                                                                </font>
+                                                                <padding>
+                                                                    <Insets left="10.0" />
+                                                                </padding>
+                                                            </Label>
+                                                        </children>
+                                                    </HBox>
+                                                    <ListView fx:id="listRealtimeFeed" prefHeight="317.0" prefWidth="282.0" styleClass="activity-list" VBox.vgrow="ALWAYS" />
+                                                </children>
+                                                <padding>
+                                                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                                                </padding>
+                                            </VBox>
+                                        </children>
+                                        <padding>
+                                            <Insets left="15.0" right="15.0" />
+                                        </padding>
+                                    </HBox>
+                                </children>
+                            </VBox>
+                        </children>
+                    </AnchorPane>
+                </children>
+            </StackPane>
+        </children>
+</AnchorPane>

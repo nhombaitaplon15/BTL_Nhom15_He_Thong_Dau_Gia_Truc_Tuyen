@@ -74,13 +74,17 @@ public class UserService {
         // do người dùng thao tác trực tiếp trên ứng dụng nên nếu k lưu thì gây lag hoặc sai lệch giao diện
     }
     // xử lí logic quên mật khẩu
-    public void handleForgotPassword(String username, String phone, String newPass) {
-        // Guard: Kiểm tra username và phone có khớp trong DB không
-        // Lưu ý: Bạn cần dùng isFieldExists hoặc viết thêm hàm checkPhoneMatch trong DAO
+    public void handleForgotPassword(String username, String phone, String email,String newPass) {
+        // Kiểm tra username,phone và email có khớp trong DB không
         if (!userDAO.isFieldExists("username", username)) {
             throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tên đăng nhập không tồn tại!");
         }
-
+        if (!userDAO.isFieldExists("phone", phone)) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Số điện thoại không khớp với tài khoản");
+        }
+        if (!userDAO.isFieldExists("email", email)) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Email không khớp với tài khoản");
+        }
         // Thực thi reset
         if (!userDAO.updatePassword(username, newPass)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể reset mật khẩu!");
@@ -130,6 +134,21 @@ public class UserService {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Email đã được sử dụng!");
         if (userDAO.isFieldExists("phone", phone))
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại đã đăng ký!");
+    }
+
+    // Hàm 1: Chỉ làm nhiệm vụ kiểm tra xem có đúng người không
+    public void verifyIdentityForReset(String username, String phone, String email) {
+        if (!userDAO.checkUserIdentity(username, phone, email)) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Thông tin không khớp. Vui lòng kiểm tra lại!");
+        }
+    }
+
+    // Hàm 2: Gọi hàm này khi người dùng đã nhập mật khẩu mới (ở giao diện sau)
+    public boolean executeResetPassword(String username, String newPass) {
+        if (!userDAO.updatePassword(username, newPass)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể đặt lại mật khẩu!");
+        }
+        return true;
     }
 
 }

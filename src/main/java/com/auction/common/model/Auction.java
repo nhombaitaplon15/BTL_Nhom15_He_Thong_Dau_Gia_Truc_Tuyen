@@ -7,7 +7,7 @@ public class Auction implements Serializable {
     private int auctionId;
     private int itemId;
     private int sellerId;
-    private String auctionStatus; // OPEN, WAITING_FOR_ADMIN, RUNNING, REJECTED, SOLD...
+    private String auctionStatus; // WAITING_FOR_ADMIN,OPEN, RUNNING, FISHEID/SOLD, REJECTED, ENDED
     private double startingPrice;
     private double currentPrice;
     private int totalBids;
@@ -16,6 +16,8 @@ public class Auction implements Serializable {
     private LocalDateTime endTime;
     private LocalDateTime createdAt;
 
+
+    public Auction() {}
     // Constructor đầy đủ để nhận dữ liệu từ DAO (ResultSet)
     public Auction(int auctionId, int itemId, int sellerId, String auctionStatus,
                    double startingPrice, double currentPrice, int totalBids,
@@ -37,7 +39,10 @@ public class Auction implements Serializable {
     public void setAuctionId(int auctionId) { this.auctionId = auctionId; }
 
     public int getItemId() { return itemId; }
+    public void setItemId(int itemId ) {this.itemId = itemId;}
+
     public int getSellerId() { return sellerId; }
+    public void setSellerId(int sellerId) {this.sellerId = sellerId;}
 
     public String getAuctionStatus() { return auctionStatus; }
     public void setAuctionStatus(String auctionStatus) { this.auctionStatus = auctionStatus; }

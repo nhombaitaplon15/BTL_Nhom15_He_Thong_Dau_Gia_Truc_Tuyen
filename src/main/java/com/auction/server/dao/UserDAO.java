@@ -50,7 +50,7 @@ public class UserDAO {
     // 3. Đăng ký tài khoản mới
     public boolean register(User user) {
         // Thêm cột balance vào SQL để đồng bộ
-        String sql = "INSERT INTO users (username, password, email, phone, user_role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (username, password, email, phone, role, status, balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getUsername());
@@ -125,5 +125,22 @@ public class UserDAO {
             e.printStackTrace();
         }
         return null;
+    }
+    public boolean checkUserIdentity(String username, String phone, String email) {
+        String sql = "SELECT * FROM users WHERE username = ? AND phone = ? AND email = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+            ps.setString(2, phone);
+            ps.setString(3, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next(); // Trả về true nếu tìm thấy bản ghi khớp cả 3 thông tin
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi xác minh: " + e.getMessage());
+            return false;
+        }
     }
 }

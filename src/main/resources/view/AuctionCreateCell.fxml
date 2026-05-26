@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+
+<HBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.AuctionCreateCardController"
+      alignment="CENTER_LEFT"
+      spacing="14"
+      style="-fx-background-color: white;
+             -fx-background-radius: 10;
+             -fx-border-color: #E0D5C0;
+             -fx-border-width: 0.5;
+             -fx-border-radius: 10;
+             -fx-padding: 12 16 12 16;"
+      prefHeight="76"
+      maxWidth="Infinity">
+
+    <StackPane style="-fx-min-width:52;-fx-pref-width:52;-fx-min-height:52;-fx-pref-height:52;
+                      -fx-background-color:#EEF2F8;-fx-background-radius:8;">
+        <ImageView fx:id="imgProduct"
+                   fitWidth="52" fitHeight="52"
+                   preserveRatio="true"/>
+    </StackPane>
+
+    <VBox spacing="3" HBox.hgrow="ALWAYS">
+        <Label fx:id="lblName"
+               text=""
+               style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+        <Label fx:id="lblMeta"
+               text=""
+               style="-fx-font-size:11;-fx-text-fill:#8B7355;"/>
+    </VBox>
+
+    <VBox alignment="CENTER_RIGHT" spacing="2" style="-fx-min-width:160;">
+        <Label text="Giá khởi điểm:"
+               style="-fx-font-size:10.5;-fx-text-fill:#A08C6E;"/>
+        <Label fx:id="lblPrice"
+               text=""
+               style="-fx-font-size:15;-fx-font-weight:bold;-fx-text-fill:#D7A859;"/>
+    </VBox>
+
+    <Label text="Sẵn sàng"
+           style="-fx-background-color:#EDE7F6;-fx-text-fill:#4527A0;
+                  -fx-font-size:10;-fx-font-weight:bold;
+                  -fx-padding:3 10 3 10;-fx-background-radius:99;
+                  -fx-min-width:70;-fx-alignment:CENTER;"/>
+
+    <Button fx:id="btnCreate"
+            text="Tạo phiên"
+            onAction="#onCreateAuction"
+            style="-fx-background-color:#1B5E20;-fx-text-fill:white;
+                   -fx-font-size:12;-fx-font-weight:bold;
+                   -fx-padding:7 16 7 16;-fx-background-radius:7;
+                   -fx-cursor:hand;-fx-border-color:transparent;"/>
+</HBox>

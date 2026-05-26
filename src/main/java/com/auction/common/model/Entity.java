@@ -5,7 +5,12 @@ public abstract class Entity {
     public Entity(int id) {
         this.id = id;
     }
-    public int getId() {
+
+  public Entity() {
+
+  }
+
+  public int getId() {
         return id;
     }
     public void setId(int id) {

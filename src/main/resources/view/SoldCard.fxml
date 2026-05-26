@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<HBox alignment="CENTER_LEFT" prefHeight="90.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 3);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SoldCardController">
+    <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+    <children>
+        <AnchorPane prefHeight="60.0" prefWidth="60.0" style="-fx-background-color: #e8ecef; -fx-background-radius: 5;">
+         <children>
+            <ImageView fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" />
+         </children></AnchorPane>
+        <VBox alignment="CENTER_LEFT" spacing="5.0">
+            <HBox.margin><Insets left="20.0" /></HBox.margin>
+            <children>
+                <Label fx:id="itemNameLabel" text="Tên sản phẩm" textFill="#2f3640">
+                    <font><Font name="System Bold" size="16.0" /></font>
+                </Label>
+                <Label fx:id="endTimeLabel" text="Danh mục · Kết thúc ..." textFill="#7f8fa6" />
+            </children>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS" />
+        <VBox alignment="CENTER_RIGHT" spacing="2.0">
+            <HBox.margin><Insets right="30.0" /></HBox.margin>
+            <children>
+                <Label fx:id="startPriceLabel" text="Khởi điểm: 0đ" textFill="#7f8fa6" />
+                <Label fx:id="finalPriceLabel" text="0đ" textFill="#27ae60">
+                    <font><Font name="System Bold" size="18.0" /></font>
+                </Label>
+                <Label text="✓ Đã chốt" textFill="#27ae60"><font><Font size="11.0" /></font></Label>
+            </children>
+        </VBox>
+        <VBox alignment="CENTER_RIGHT" spacing="8.0">
+            <HBox.margin><Insets right="20.0" /></HBox.margin>
+            <children>
+                <Label style="-fx-background-color: #eafaf1; -fx-text-fill: #2ecc71; -fx-padding: 3 10 3 10; -fx-background-radius: 15;" text="Hoàn tất"><font><Font size="11.0" /></font></Label>
+                <Label fx:id="winnerLabel" text="Người thắng: ID ..." textFill="#7f8fa6"><font><Font size="11.0" /></font></Label>
+            </children>
+        </VBox>
+        <Button fx:id="viewButton" prefHeight="35.0" prefWidth="70.0" style="-fx-background-color: transparent; -fx-border-color: #dcdde1; -fx-border-radius: 5;" text="Xem lại" />
+    </children>
+</HBox>

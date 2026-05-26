@@ -1,15 +1,13 @@
 package com.auction.client.controller;
 
-import com.auction.common.model.Items;
+import com.auction.common.model.Item;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -17,40 +15,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class The_Home_Page_Seller_View_Controller {
+    @FXML private AnchorPane homePane;
+    @FXML private VBox insertItemSection;
+
     @FXML
-    private AnchorPane mainAnchorPane;
+    private StackPane mainContent;
+
     @FXML
-    private BorderPane mainBorderPane;
-    private void loadView(String fxmlFileName) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/" + fxmlFileName + ".fxml"));
-            Parent view = loader.load();
-            mainBorderPane.setCenter(view);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Không tìm thấy file giao diện: " + fxmlFileName);
-        }
+    public void initialize() {
+        // 2. BÀN GIAO "sân khấu" mainContent này cho ViewSwitcher giữ
+        ViewSwitcher.setMainContentArea(mainContent);
+
+        // 3. (Tùy chọn) Load luôn trang chủ lên làm mặc định khi vừa mở app
+        ViewSwitcher.switchTo("HomeSellerView");
     }
 
+    // Các hàm bắt sự kiện bấm nút ở menu để chuyển trang
     @FXML
-    public void showSearchItem(ActionEvent event){
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/SearchItem.fxml"));
-            Parent searchView = loader.load();
-
-            // Chỉnh tọa độ (X, Y) để form tìm kiếm nằm ở giữa hoặc vị trí bạn muốn
-            searchView.setLayoutX(79);
-            searchView.setLayoutY(23);
-
-            // Thêm vào AnchorPane ngoài cùng và đẩy nó lên lớp trên cùng
-            mainAnchorPane.getChildren().add(searchView);
-            searchView.toFront();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+    private void clickSanPhamCuaBan() {
+        ViewSwitcher.switchTo("MPV");
     }
+    @FXML
+    private void clickHome() {
+        ViewSwitcher.switchTo("HomeSellerView");
+    }
+    @FXML
+    private void clickAuction() {
+        ViewSwitcher.switchTo("AuctionManagementView");
+    }
+    @FXML
+    private void clickAccount() {
+        ViewSwitcher.switchTo("AccountView");
+    }
+
 
     @FXML
     public void Welcome_back(ActionEvent event) {

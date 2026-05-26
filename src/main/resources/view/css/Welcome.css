@@ -1,19 +1,58 @@
-.button-welcome {
+.button-login {
+    -fx-background-color: #70e0bb;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 15px; /* Bo góc nút */
+    -fx-font-size: 18px;
+    -fx-padding: 8px 20px;
+    -fx-border-width: 0px;
+    -fx-background-radius: 15px;
+    -fx-font-family: "Times New Roman";
+}
+.button-login:hover {
+    -fx-background-color: #5abf9d;
+}
+.button-forgotPassword {
+    -fx-background-color: transparent;
+    -fx-background-radius: 15px;
+    -fx-border-radius: 15px;
+}
+.button-register {
+    -fx-background-radius: 15px;
+    -fx-border-color:#70e0bb;
+    -fx-border-radius: 15px;
+    -fx-background-color: transparent;
+    -fx-text-fill:#70e0bb ;
+
+}
+.button-register:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.1);
+}
+/* Hiệu ứng khi di chuột vào */
+.button-forgotPassword:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.1);
+}
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #70e0bb;
+    -fx-background-radius: 7px;
+    -fx-border-radius: 7px;
+    -fx-padding: 5px 10px;
+}
+.text-field:focused {
+    -fx-border-width: 2px;
+}
+.button-ok {
     -fx-background-color: #70e0bb;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 5px; /* Bo góc nút */
-}
+    -fx-font-size: 18px;
+    -fx-padding: 8px 20px;
+    -fx-border-width: 0px;
+    -fx-background-radius: 15px;
+    -fx-font-family: "Times New Roman";
 
-/* Hiệu ứng khi di chuột vào */
-.button-welcome:hover {
-    -fx-background-color: #34dbae;
-}
-/* Thiết lập ảnh nền cho màn hình mở đầu */
-.nen-anh-full {
-    -fx-background-image: url("../images/anen1.jpg"); /* Tên file ảnh nền của bạn */
-    -fx-background-size: 100% 100%; /* Ép ảnh giãn ra lấp đầy 100% chiều ngang và dọc */
-    -fx-background-repeat: no-repeat;
 }
 .root {
     -fx-font-family: "Times New Roman";

@@ -1,6 +1,9 @@
 package com.auction.server.dao;
 
 import com.auction.common.model.Auction;
+import com.auction.common.model.Item;
+import com.auction.factory.ItemFactory;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -110,17 +113,74 @@ public class AuctionDAO {
 
     private Auction map(ResultSet rs) throws SQLException {
         int winnerId = rs.getInt("current_winner_id");
+
+        // Lấy an toàn để tránh NullPointerException khi ngày tháng bị rỗng (NULL)
+        Timestamp start = rs.getTimestamp("start_time");
+        Timestamp end = rs.getTimestamp("end_time");
+        Timestamp created = rs.getTimestamp("created_at");
+
         return new Auction(
-                rs.getInt("auction_id"), rs.getInt("item_id"), rs.getInt("seller_id"),
-                rs.getString("auction_status"), rs.getDouble("starting_price"),
-                rs.getDouble("current_price"), rs.getInt("total_bids"),
-                rs.wasNull() ? null : winnerId,
-                rs.getTimestamp("start_time").toLocalDateTime(),
-                rs.getTimestamp("end_time").toLocalDateTime(),
-                rs.getTimestamp("created_at").toLocalDateTime()
+            rs.getInt("auction_id"), rs.getInt("item_id"), rs.getInt("seller_id"),
+            rs.getString("auction_status"), rs.getDouble("starting_price"),
+            rs.getDouble("current_price"), rs.getInt("total_bids"),
+            rs.wasNull() ? null : winnerId,
+            start != null ? start.toLocalDateTime() : null,
+            end != null ? end.toLocalDateTime() : null,
+            created != null ? created.toLocalDateTime() : null
         );
     }
     public boolean deleteAll() {
         return executeUpdate("DELETE FROM auctions");
     }
+
+  public List<AuctionItemDAO> getAuctionsBySellerStatusAndKeyword(int sellerId, String status, String keyword) {
+    List<AuctionItemDAO> list = new ArrayList<>();
+
+    // Thêm điều kiện a.seller_id = ? vào câu truy vấn
+    String sql = "SELECT i.*, a.* " +
+        "FROM items i " +
+        "INNER JOIN auctions a ON i.item_id = a.item_id " +
+        "WHERE a.seller_id = ? AND a.auction_status = ? AND i.name ILIKE ?";
+
+    // Truyền thêm sellerId vào hàm prepare
+    try (Connection conn = DBConnection.getConnection();
+         PreparedStatement ps = prepare(conn, sql, sellerId, status, "%" + keyword + "%");
+         ResultSet rs = ps.executeQuery()) {
+
+      while (rs.next()) {
+        Item item = ItemFactory.createFromResultSet(rs);
+        Auction auction = map(rs);
+        list.add(new AuctionItemDAO(item, auction));
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return list;
+  }
+    public List<AuctionItemDAO> getFinishedAuctionsBySeller(int sellerId, String keyword) {
+        List<AuctionItemDAO> list = new ArrayList<>();
+
+        String sql = "SELECT i.*, a.* " +
+            "FROM items i " +
+            "INNER JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE a.seller_id = ? " +
+            "  AND a.auction_status IN ('FINISHED', 'PAID', 'CANCELED') " +
+            "  AND i.name ILIKE ? " +
+            "ORDER BY a.end_time DESC";  // Mới kết thúc hiện trên đầu
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = prepare(conn, sql, sellerId, "%" + keyword + "%");
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Item item    = ItemFactory.createFromResultSet(rs);
+                Auction auction = map(rs);
+                list.add(new AuctionItemDAO(item, auction));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
 }

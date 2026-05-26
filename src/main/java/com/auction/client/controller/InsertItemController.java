@@ -5,6 +5,7 @@ import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
 import com.auction.common.model.Vehicle;
 import com.auction.server.dao.ItemDAO;
+import com.auction.service.ItemService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -25,15 +26,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 
-public class InsertItemController implements Initializable {
+import static com.auction.server.dao.DBConnection.getConnection;
+
+public class InsertItemController  implements Initializable {
 
   @FXML
   private ImageView imgPreview;
   private String savedImagePath = null;
-  private ItemDAO itemDAO = new ItemDAO();
+  private ItemService itemService = new ItemService();
 
   // thuộc tính chung
   @FXML private TextField txtName;
@@ -61,7 +65,7 @@ public class InsertItemController implements Initializable {
   @FXML private TextField txtGiayChungNhan;
 
   @FXML
-  private ComboBox<String> cbItemType;
+  private ComboBox<String> cmbCategory;
   @FXML
   private VBox vboxVehicle;
   @FXML
@@ -69,59 +73,29 @@ public class InsertItemController implements Initializable {
   @FXML
   private VBox vboxArt;
 
-  // mặc định các vbox là ẩn
-  private void hideAllSpecificFields() {
-    vboxVehicle.setVisible(false);
-    vboxVehicle.setManaged(false);
-
-    vboxElectronics.setVisible(false);
-    vboxElectronics.setManaged(false);
-
-    vboxArt.setVisible(false);
-    vboxArt.setManaged(false);
-  }
-  // chọn vbox để hiện
-  private void hideAllDynamicBoxes() {
-    if (vboxVehicle != null) {
-      vboxVehicle.setVisible(false);
-      vboxVehicle.setManaged(false);
-    }
-    if (vboxElectronics != null) {
-      vboxElectronics.setVisible(false);
-      vboxElectronics.setManaged(false);
-    }
-    if (vboxArt != null) {
-      vboxArt.setVisible(false);
-      vboxArt.setManaged(false);
-    }
-  }
-
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    // thêm lựa chọn cho loại sản phẩm
-    cbItemType.getItems().addAll("Phương tiện ", "Đồ điện tử ", "Nghệ thuật ");
-    hideAllDynamicBoxes();
-    cbItemType.setOnAction(this::handleItemTypeChange);
-  }
+    cmbCategory.setOnAction(e -> {
+      String selected = cmbCategory.getValue();
+      vboxVehicle.setVisible(false);
+      vboxVehicle.setManaged(false);
 
-  // 4.  hàm ân hiện vbox
-  private void handleItemTypeChange(ActionEvent event) {
-    String selectedType = cbItemType.getValue();
-    hideAllSpecificFields();
+      vboxElectronics.setVisible(false);
+      vboxElectronics.setManaged(false);
 
-    if (selectedType == null) return;
-
-    // bật vbox tương ứng với lựa chọn
-    if (selectedType.equals("Phương tiện ")) {
-      vboxVehicle.setVisible(true);
-      vboxVehicle.setManaged(true);
-    } else if (selectedType.equals("Đồ điện tử ")) {
-      vboxElectronics.setVisible(true);
-      vboxElectronics.setManaged(true);
-    } else if (selectedType.equals("Nghệ thuật ")) {
-      vboxArt.setVisible(true);
-      vboxArt.setManaged(true);
-    }
+      vboxArt.setVisible(false);
+      vboxArt.setManaged(false);
+      if ("Phương tiện".equals(selected)) {
+        vboxVehicle.setVisible(true);
+        vboxVehicle.setManaged(true);
+      } else if ("Đồ điện tử".equals(selected)) {
+        vboxElectronics.setVisible(true);
+        vboxElectronics.setManaged(true);
+      } else if ("Nghệ thuật".equals(selected)) {
+        vboxArt.setVisible(true);
+        vboxArt.setManaged(true);
+      }
+    });
   }
 
   // người dùng chọn ảnh
@@ -166,8 +140,8 @@ public class InsertItemController implements Initializable {
     }
   }
   @FXML
-  public void handleSubmit(ActionEvent event) {
-    String selectedType = cbItemType.getValue();
+  public void handleSubmit(ActionEvent event) throws SQLException {
+    String selectedType = cmbCategory.getValue();
     Item newItem = null;
 
     String name = txtName.getText();
@@ -175,7 +149,7 @@ public class InsertItemController implements Initializable {
     String condition = txtCondition.getText();
     double startprice = Double.parseDouble(txtStartingPrice.getText());
 
-    if (selectedType.equals("Phương tiện ")) {
+    if (selectedType.equals("Phương tiện")) {
       String hang = txtHangXe.getText();
       String dong = txtDongXe.getText();
       int nam = Integer.parseInt(txtNamSanXuat.getText());
@@ -183,14 +157,14 @@ public class InsertItemController implements Initializable {
       String nhienlieu = txtNhienLieu.getText();
       String bien = txtBienSo.getText();
 
-      newItem = new Vehicle(0,name, description , startprice, condition, 2, savedImagePath,LocalDateTime.now() , hang ,dong ,nam , sokmdi, nhienlieu , bien );
+      newItem = new Vehicle(0,name, description , startprice, condition, 11, savedImagePath,LocalDateTime.now() , hang ,dong ,nam , sokmdi, nhienlieu , bien );
 
-    }else if (selectedType.equals("Đồ điện tử ")) {
+    }else if (selectedType.equals("Đồ điện tử")) {
       String hang = txtHang.getText();
       String dongmay =  txtDongMay.getText();
       int baohanh = Integer.parseInt(txtBaoHanh.getText());
 
-      newItem = new Electronics(1,name, description, startprice, condition, 2, savedImagePath,LocalDateTime.now() , hang, dongmay, baohanh);
+      newItem = new Electronics(1,name, description, startprice, condition, 11, savedImagePath,LocalDateTime.now() , hang, dongmay, baohanh);
 
     }else{
       String tacgia = txtTacGia.getText();
@@ -198,11 +172,9 @@ public class InsertItemController implements Initializable {
       String chatlieu =  txtChatLieu.getText();
       String giaychungnhan = txtGiayChungNhan.getText();
 
-      newItem = new Art(2,name, description, startprice, condition, 2, savedImagePath,LocalDateTime.now(),tacgia ,namsangtac ,chatlieu ,giaychungnhan) ;
+      newItem = new Art(2,name, description, startprice, condition, 11, savedImagePath,LocalDateTime.now(),tacgia ,namsangtac ,chatlieu ,giaychungnhan) ;
 
     }
-
-
-    itemDAO.insertItem(newItem);
+    itemService.addItem(newItem);
   }
 }

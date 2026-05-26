@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane fx:id="mainAnchorPane" prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.The_Home_Page_Seller_View_Controller"  >
+    <children>
+        <BorderPane fx:id="mainBorderPane" prefHeight="402.0" prefWidth="615.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <bottom>
+                <Button mnemonicParsing="false" onAction="#Welcome_back" text="Quay lại" BorderPane.alignment="CENTER" />
+            </bottom>
+         <center>
+            <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+               <children>
+                  <Label layoutX="377.0" layoutY="14.0" text="Các phiên đấu giá của bạn ">
+                     <font>
+                        <Font size="18.0" />
+                     </font></Label>
+                  <TableView layoutX="17.0" layoutY="53.0" prefHeight="486.0" prefWidth="959.0">
+                    <columns>
+                        <TableColumn prefWidth="83.40000915527344" text="Auction ID" />
+                        <TableColumn prefWidth="167.79998779296875" text="Item" />
+                        <TableColumn minWidth="0.0" prefWidth="128.39999389648438" text="Start Time" />
+                        <TableColumn prefWidth="130.800048828125" text="End Time" />
+                        <TableColumn prefWidth="183.4000244140625" text="Current Price" />
+                        <TableColumn prefWidth="128.79998779296875" text="Highest Bidder" />
+                        <TableColumn prefWidth="133.60002441406255" text="Auction Status" />
+                    </columns>
+                  </TableView>
+               </children></AnchorPane>
+         </center>
+         <top>
+            <HBox prefHeight="41.0" prefWidth="1000.0" BorderPane.alignment="CENTER" style="-fx-background-color: transparent;">
+               <children>
+                  <Button mnemonicParsing="false" prefHeight="42.0" prefWidth="200.0" text="Trang chủ" style="-fx-background-color: transparent;">
+                     <font>
+                        <Font name="Times New Roman" size="17.0" />
+                     </font></Button>
+                  <Button mnemonicParsing="false" prefHeight="42.0" prefWidth="200.0" text="Sản phẩm" style="-fx-background-color: transparent;" >
+                      <font>
+                          <Font name="Times New Roman" size="17.0" />
+                      </font></Button>
+                  <Button mnemonicParsing="false" prefHeight="42.0" prefWidth="200.0" text="Phiên đấu giá " style="-fx-background-color: transparent;" >
+                      <font>
+                          <Font name="Times New Roman" size="17.0" />
+                      </font></Button>
+                  <Button mnemonicParsing="false" prefHeight="42.0" prefWidth="200.0" text="Thông tin tài khoản" style="-fx-background-color: transparent;">
+                      <font>
+                          <Font name="Times New Roman" size="17.0" />
+                      </font></Button>
+               </children>
+            </HBox>
+         </top>
+        </BorderPane>
+    </children>
+</AnchorPane>

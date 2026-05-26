@@ -1,30 +1,272 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="1000.0" stylesheets="@css/Welcome.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.WelcomeController">
-    <children>
-      <ImageView fitHeight="1000.0" fitWidth="1014.0" pickOnBounds="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-         <image>
-            <Image url="@images/anenWelcome1.png" />
-         </image></ImageView>
-      <Label layoutX="14.0" layoutY="85.0" prefHeight="70.0" prefWidth="1000.0" text="Chào mừng đến với hệ thống đấu giá trực tuyến">
-         <font>
-            <Font size="37.0" />
-         </font>
-      </Label>
-      <Button layoutX="138.0" layoutY="333.0" mnemonicParsing="false" onAction="#Open_the_registration_screen" prefHeight="62.0" prefWidth="183.0" styleClass="button-welcome" text="Đăng kí">
-         <font>
-            <Font size="14.0" />
-         </font>
-      </Button>
-      <Button layoutX="138.0" layoutY="235.0" mnemonicParsing="false" onAction="#Open_login_screen" prefHeight="62.0" prefWidth="183.0" styleClass="button-welcome" text="Đăng nhập">
-         <font>
-            <Font size="14.0" />
-         </font>
-      </Button>
+<StackPane styleClass="root" stylesheets="@css/Welcome.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.WelcomeController">
+   <children>
+      <AnchorPane fx:id="loginPane" prefHeight="600.0" prefWidth="1000.0" style="-fx-background-color: white;" stylesheets="@css/Welcome.css">
+          <children>
+            <ImageView fitHeight="608.0" fitWidth="547.0" layoutY="-3.0" pickOnBounds="true" preserveRatio="true" />
+            <Label layoutX="581.0" layoutY="97.0" prefHeight="66.0" prefWidth="390.0" text="Đăng nhập và hệ thống đấu giá nhóm 15">
+               <font>
+                  <Font name="Times New Roman" size="24.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txtUsernameLogin" layoutX="587.0" layoutY="157.0" prefHeight="37.0" prefWidth="370.0" promptText="Tên tài khoản" styleClass="text-field">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </TextField>
+            <PasswordField fx:id="txtPasswordLogin" layoutX="587.0" layoutY="203.0" prefHeight="38.0" prefWidth="370.0" promptText="Mật khẩu của bạn" styleClass="text-field">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </PasswordField>
+            <Button layoutX="587.0" layoutY="267.0" mnemonicParsing="false" onAction="#handleLogin" prefHeight="33.0" prefWidth="370.0" styleClass="button-login" text="Đăng nhập">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </Button>
+            <Button layoutX="587.0" layoutY="318.0" mnemonicParsing="false" onAction="#buttonforgotPassword" prefHeight="33.0" prefWidth="370.0" text="Quên mật khẩu ?">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+               <styleClass>
+                  <String fx:value="button-forgotPassword" />
+                  <String fx:value="button-forgotPassword" />
+               </styleClass>
+            </Button>
+            <Button layoutX="587.0" layoutY="431.0" mnemonicParsing="false" onAction="#buttonTTK" prefHeight="36.0" prefWidth="370.0" styleClass="button-register" text="Tạo tài khoản mới">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </Button>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="forgotPasswordStep1Pane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f0faf6;" visible="false">
+         <children>
+            <TextField fx:id="txtUsernameForgot" layoutX="327.0" layoutY="150.0" prefHeight="38.0" prefWidth="345.0" promptText="Tên tài khoản" styleClass="text-field">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </TextField>
+            <Button layoutX="267.0" layoutY="39.0" mnemonicParsing="false" onAction="#buttonExit" prefHeight="66.0" prefWidth="55.0" style="-fx-background-color: transparent;" text="⟨">
+               <font>
+                  <Font name="Times New Roman Bold" size="36.0" />
+               </font>
+            </Button>
+            <Label layoutX="338.0" layoutY="56.0" style=" -fx-text-fill:#35826b" text="Tìm tài khoản của bạn">
+               <font>
+                  <Font name="Times New Roman" size="36.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txtPhoneForgot" layoutX="326.0" layoutY="210.0" prefHeight="40.0" prefWidth="346.0" promptText="Số điện thoại đăng kí tài khoản" styleClass="text-field">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </TextField>
+            <TextField fx:id="txtEmailForgot" layoutX="327.0" layoutY="273.0" prefHeight="40.0" prefWidth="346.0" promptText="Email đăng kí tài khoản" styleClass="text-field">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </TextField>
+            <Label layoutX="171.0" layoutY="105.0" text="Hãy nhập đầy đủ thông tin dưới đây để chúng tôi kiểm tra xem bạn có phải chính chủ không.">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Label>
+            <Button layoutX="327.0" layoutY="363.0" mnemonicParsing="false" onAction="#handleForgotPassword" prefHeight="38.0" prefWidth="346.0" styleClass="button-login" text="Tiếp tục">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children></AnchorPane>
+      <AnchorPane fx:id="forgotPasswordStep2Pane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f0faf6;" visible="false">
+         <children>
+            <PasswordField fx:id="txtPasswordForgot2" layoutX="338.0" layoutY="277.0" prefHeight="47.0" prefWidth="346.0" promptText="********">
+               <font>
+                  <Font size="24.0" />
+               </font></PasswordField>
+            <PasswordField fx:id="txtPasswordForgot1" layoutX="338.0" layoutY="161.0" prefHeight="47.0" prefWidth="346.0" promptText="Ít nhất 8 kí tự">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font></PasswordField>
+            <Label layoutX="326.0" layoutY="34.0" prefHeight="46.0" prefWidth="370.0" style=" -fx-text-fill:#35826b" text="Thay đổi mật khẩu">
+               <font>
+                  <Font name="Times New Roman" size="40.0" />
+               </font>
+            </Label>
+            <Button layoutX="267.0" layoutY="24.0" mnemonicParsing="false" onAction="#buttonExit1" prefHeight="66.0" prefWidth="55.0" style="-fx-background-color: transparent;" text="⟨">
+               <font>
+                  <Font name="Times New Roman Bold" size="36.0" />
+               </font>
+            </Button>
+            <Label layoutX="285.0" layoutY="118.0" style=" -fx-text-fill:#35826b" text="- Mật khẩu mới của bạn :">
+               <font>
+                  <Font name="Times New Roman" size="21.0" />
+               </font>
+            </Label>
+            <Label layoutX="283.0" layoutY="233.0" style=" -fx-text-fill:#35826b" text="- Nhập lại mật khẩu mới :">
+               <font>
+                  <Font name="Times New Roman" size="21.0" />
+               </font>
+            </Label>
+            <Button layoutX="400.0" layoutY="362.0" mnemonicParsing="false" onAction="#executeResetPassword" prefHeight="36.0" prefWidth="193.0" styleClass="button-ok" text="Thay đổi mật khẩu">
+               <font>
+                  <Font name="Times New Roman" size="18.0" />
+               </font>
+            </Button>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="registerPane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #f0faf6;" visible="false">
+         <Label layoutX="419.0" layoutY="61.0" style=" -fx-text-fill:#35826b" text="Tạo tài khoản">
+            <font>
+               <Font name="Times New Roman" size="36.0" />
+            </font>
+         </Label>
+         <TextField fx:id="txtUsername" layoutX="437.0" layoutY="137.0" prefHeight="40.0" prefWidth="314.0" promptText="Tạo tên tài khoản">
+            <font>
+               <Font size="18.0" />
+            </font></TextField>
+         <TextField fx:id="txtPhone" layoutX="435.0" layoutY="280.0" prefHeight="40.0" prefWidth="313.0" promptText="Số điện thoại của bạn">
+            <font>
+               <Font size="18.0" />
+            </font></TextField>
+         <PasswordField fx:id="txtPassword" layoutX="435.0" layoutY="353.0" prefHeight="40.0" prefWidth="314.0" promptText="Ít nhất 8 kí tự">
+            <font>
+               <Font size="18.0" />
+            </font>
+         </PasswordField>
+         <Button layoutX="373.0" layoutY="424.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="266.0" styleClass="button-ok" text="Đăng kí">
+            <font>
+               <Font size="18.0" />
+            </font>
+         </Button>
+         <Label layoutX="297.0" layoutY="145.0" style=" -fx-text-fill:#35826b" text="Tên tài khoản :">
+            <font>
+               <Font name="Times New Roman" size="21.0" />
+            </font>
+         </Label>
+         <Label layoutX="297.0" layoutY="288.0" style=" -fx-text-fill:#35826b" text="Số điện thoại :">
+            <font>
+               <Font name="Times New Roman" size="21.0" />
+            </font>
+         </Label>
+         <Label layoutX="297.0" layoutY="361.0" style=" -fx-text-fill:#35826b" text="Mật khẩu :">
+            <font>
+               <Font name="Times New Roman" size="21.0" />
+            </font>
+         </Label>
+         <Label layoutX="297.0" layoutY="212.0" style=" -fx-text-fill:#35826b" text="Email :">
+            <font>
+               <Font name="Times New Roman" size="21.0" />
+            </font>
+         </Label>
+         <TextField fx:id="txtEmail" layoutX="437.0" layoutY="204.0" prefHeight="40.0" prefWidth="314.0" promptText=" Email của bạn">
+            <font>
+               <Font size="18.0" />
+            </font>
+         </TextField>
+         <Button layoutX="343.0" layoutY="48.0" mnemonicParsing="false" onAction="#buttonExit" prefHeight="66.0" prefWidth="55.0" style="-fx-background-color: transparent;" text="⟨">
+            <font>
+               <Font name="Times New Roman Bold" size="36.0" />
+            </font>
+         </Button>
+      </AnchorPane>
+      <AnchorPane fx:id="loginFailedPane" prefHeight="600.0" prefWidth="1000.0" style="-fx-background-color: rgba(0, 0, 0, 0.5);" visible="false">
+         <children>
+            <AnchorPane layoutX="250.0" layoutY="175.0" prefHeight="250.0" prefWidth="500.0" style="-fx-background-color: #f0faf6; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5);">
+               <children>
+
+                  <Label alignment="CENTER" layoutY="31.0" prefWidth="500.0" text=" ⚠ Đăng nhập không thành công !" textFill="#e74c3c">
+                     <font>
+                        <Font name="Times New Roman Bold" size="32.0" />
+                     </font>
+                  </Label>
+
+                  <Label alignment="CENTER" layoutX="43.0" layoutY="69.0" prefHeight="92.0" prefWidth="429.0" text="Vui lòng kiểm tra và nhập lại đầy đủ thông tin tài khoản và mật khẩu !!!" textAlignment="CENTER" textFill="#34495e" wrapText="true">
+                     <font>
+                        <Font name="Times New Roman" size="22.0" />
+                     </font>
+                  </Label>
+
+                  <Button layoutX="175.0" layoutY="168.0" mnemonicParsing="false" onAction="#buttonOK" prefHeight="45.0" prefWidth="150.0" style="-fx-background-color: #70e0bb; -fx-background-radius: 25; -fx-cursor: hand;" text="OK" textFill="WHITE">
+                     <font>
+                        <Font name="Times New Roman Bold" size="20.0" />
+                     </font>
+                  </Button>
+
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="registeredSuccessfullyPane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: rgba(0, 0, 0, 0.5);" visible="false">
+         <children>
+            <AnchorPane layoutX="303.0" layoutY="166.0" prefHeight="224.0" prefWidth="400.0" style="-fx-background-color: #f0faf6; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5);">
+               <children>
+                  <Label layoutX="14.0" layoutY="34.0" prefHeight="130.0" prefWidth="384.0" text="Bạn đã đăng kí tài khoản thành công !" textAlignment="CENTER" wrapText="true">
+                     <font>
+                        <Font name="Times New Roman Bold" size="30.0" />
+                     </font>
+                  </Label>
+                  <Button layoutX="140.0" layoutY="165.0" mnemonicParsing="false" onAction="#buttonOK" prefHeight="36.0" prefWidth="131.0" styleClass="button-ok" text="OK">
+                     <font>
+                        <Font name="Times New Roman" size="14.0" />
+                     </font>
+                  </Button>
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="forgotPasswordFailedPane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: rgba(0, 0, 0, 0.5);" visible="false">
+         <children>
+            <AnchorPane layoutX="243.0" layoutY="118.0" prefHeight="315.0" prefWidth="540.0" style="-fx-background-color: #f0faf6; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5);">
+               <children>
+                  <Label layoutX="66.0" layoutY="47.0" prefHeight="40.0" prefWidth="464.0" text="Thông tin tài khoản không hợp lệ" textFill="#fa0606">
+                     <font>
+                        <Font name="Times New Roman Bold Italic" size="33.0" />
+                     </font>
+                  </Label>
+                  <Label layoutX="51.0" layoutY="92.0" prefHeight="130.0" prefWidth="438.0" text=" ⚠ Tên tài khoản, số điện thoại, email của bạn không trùng khớp với nhau !!! Vui lòng kiểm tra lại và nhập thông tin chính xác !!!" textAlignment="CENTER" textFill="#230202" wrapText="true">
+                     <font>
+                        <Font name="Times New Roman" size="23.0" />
+                     </font>
+                  </Label>
+                  <Button layoutX="204.0" layoutY="248.0" mnemonicParsing="false" onAction="#buttonOK" prefHeight="36.0" prefWidth="131.0" styleClass="button-ok" text="OK">
+                     <font>
+                        <Font name="Times New Roman " size="14.0" />
+                     </font>
+                  </Button>
+                  <Label layoutX="18.0" layoutY="32.0" text="❌" textFill="#fa0707">
+                     <font>
+                        <Font size="48.0" />
+                     </font>
+                  </Label>
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="registerFailePane" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: rgba(0, 0, 0, 0.5);" visible="false">
+         <children>
+            <AnchorPane layoutX="281.0" layoutY="165.0" prefHeight="244.0" prefWidth="438.0" style="-fx-background-color: #f0faf6; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5);">
+               <children>
+                  <Label layoutX="27.0" layoutY="36.0" prefHeight="130.0" prefWidth="384.0" text="Đăng kí tài khoản không thành công !" textAlignment="CENTER" wrapText="true">
+                     <font>
+                        <Font name="Times New Roman Bold" size="30.0" />
+                     </font>
+                  </Label>
+                  <Button layoutX="145.0" layoutY="166.0" mnemonicParsing="false" onAction="#buttonOK" prefHeight="36.0" prefWidth="131.0" styleClass="button-ok" text="OK">
+                     <font>
+                        <Font name="Times New Roman" size="14.0" />
+                     </font>
+                  </Button>
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
    </children>
-</AnchorPane>
+</StackPane>

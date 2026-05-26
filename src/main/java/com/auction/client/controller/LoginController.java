@@ -2,9 +2,7 @@ package com.auction.client.controller;
 
 
 import com.auction.common.model.User;
-import com.auction.server.dao.DBConnection;
 import com.auction.server.dao.UserDAO;
-import com.auction.service.UserService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -61,7 +59,7 @@ public class LoginController {
       if ("ADMIN".equalsIgnoreCase(role)) {
         fxmlFile = "/view/The_Home_Page_Admin_View.fxml";
       } else if ("SELLER".equalsIgnoreCase(role)) {
-        fxmlFile = "/view/The_Home_Page_Seller_View.fxml";
+        fxmlFile = "/view/The_Home_Page_Seller_View1.fxml";
       } else {
         fxmlFile = "/view/The_Home_Page_Bidder_View.fxml";
       }

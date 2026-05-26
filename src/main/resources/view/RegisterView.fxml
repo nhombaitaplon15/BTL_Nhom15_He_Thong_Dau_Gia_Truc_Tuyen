@@ -6,30 +6,30 @@
 
 <AnchorPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
    <children>
-      <Label layoutX="312.0" layoutY="63.0" text="ĐĂNG KÍ TÀI KHOẢN">
+      <Label layoutX="412.0" layoutY="62.0" text="Tạo tài khoản">
          <font>
             <Font size="36.0" />
          </font>
       </Label>
-      <TextField fx:id="txtUsername" layoutX="437.0" layoutY="137.0" promptText="Tạo tên tài khoản">
+      <TextField fx:id="txtUsername" layoutX="437.0" layoutY="137.0" prefHeight="40.0" prefWidth="314.0" promptText="Tạo tên tài khoản">
             <font>
                 <Font size="18.0" />
             </font></TextField>
-      <TextField fx:id="txtPhone" layoutX="437.0" layoutY="235.0" promptText="Số điện thoại của bạn">
+      <TextField fx:id="txtPhone" layoutX="435.0" layoutY="280.0" prefHeight="40.0" prefWidth="313.0" promptText="Số điện thoại của bạn">
           <font>
               <Font size="18.0" />
           </font></TextField>
-      <PasswordField fx:id="txtPassword" layoutX="437.0" layoutY="286.0" promptText="Ít nhất 8 kí tự">
+      <PasswordField fx:id="txtPassword" layoutX="435.0" layoutY="353.0" prefHeight="40.0" prefWidth="314.0" promptText="Ít nhất 8 kí tự">
           <font>
               <Font size="18.0" />
           </font>
       </PasswordField>
-       <Button layoutX="334.0" layoutY="387.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="116.0" text="Đăng kí">
+       <Button layoutX="344.0" layoutY="427.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="135.0" text="Đăng kí">
            <font>
                <Font size="18.0" />
            </font>
        </Button>
-       <Button layoutX="520.0" layoutY="387.0" mnemonicParsing="false" onAction="#Welcome_back" prefHeight="40.0" prefWidth="116.0" text="Quay lại">
+       <Button layoutX="553.0" layoutY="427.0" mnemonicParsing="false" onAction="#Welcome_back" prefHeight="40.0" prefWidth="135.0" text="Quay lại">
            <font>
                <Font size="18.0" />
            </font>
@@ -39,40 +39,22 @@
             <Font size="18.0" />
          </font>
       </Label>
-      <Label layoutX="313.0" layoutY="241.0" text="Số điện thoại">
+      <Label layoutX="313.0" layoutY="286.0" text="Số điện thoại">
          <font>
             <Font size="18.0" />
          </font>
       </Label>
-      <Label layoutX="312.0" layoutY="292.0" text="Mật khẩu ">
+      <Label layoutX="312.0" layoutY="359.0" text="Mật khẩu ">
          <font>
             <Font size="18.0" />
          </font>
       </Label>
-      <RadioButton fx:id="sellerRadio" layoutX="440.0" layoutY="341.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="80.0" text="SELLER">
-         <toggleGroup>
-            <ToggleGroup fx:id="roleGroup" />
-         </toggleGroup>
-         <font>
-            <Font size="14.0" />
-         </font>
-      </RadioButton>
-      <RadioButton fx:id="bidderRadio" layoutX="573.0" layoutY="341.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="74.0" text="BIDDER" toggleGroup="$roleGroup">
-         <font>
-            <Font size="14.0" />
-         </font>
-      </RadioButton>
-      <Label layoutX="312.0" layoutY="341.0" prefHeight="18.0" prefWidth="80.0" text="Vai trò">
+      <Label layoutX="313.0" layoutY="210.0" text="Email">
          <font>
             <Font size="18.0" />
          </font>
       </Label>
-      <Label layoutX="312.0" layoutY="190.0" text="Email">
-         <font>
-            <Font size="18.0" />
-         </font>
-      </Label>
-      <TextField fx:id="txtEmail" layoutX="437.0" layoutY="184.0" prefHeight="40.0" prefWidth="223.0" promptText=" Email của bạn">
+      <TextField fx:id="txtEmail" layoutX="437.0" layoutY="204.0" prefHeight="40.0" prefWidth="314.0" promptText=" Email của bạn">
          <font>
             <Font size="18.0" />
          </font>

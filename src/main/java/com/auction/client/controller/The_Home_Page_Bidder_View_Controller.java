@@ -1,5 +1,4 @@
-package com.auction.client.controller;
-
+/*
 import com.auction.common.model.Item;
 import com.auction.service.ItemService;
 import javafx.event.ActionEvent;
@@ -33,10 +32,10 @@ public class The_Home_Page_Bidder_View_Controller implements Initializable {
 
         for (Item item : items) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctioningCard.fxml"));
                 Parent card = loader.load();
-                ItemCardController controller = loader.getController();
-                controller.setData(item);
+                AuctioningCardController controller = loader.getController();
+                controller.setData(auction,item);
 
                 flowPaneItem.getChildren().add(card);
 
@@ -64,4 +63,4 @@ public class The_Home_Page_Bidder_View_Controller implements Initializable {
         }
 
     }
-}
+}*/

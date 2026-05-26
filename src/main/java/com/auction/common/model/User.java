@@ -18,7 +18,12 @@ public abstract class User extends Entity implements java.io.Serializable {
         this.role = role;
         this.balance = balance;
     }
-    // kiem tra nhanh nguoi dung co phai Admin khong
+
+  public User() {
+    super();
+  }
+
+  // kiem tra nhanh nguoi dung co phai Admin khong
     public boolean isAdmin(){
         return "ADMIN".equalsIgnoreCase(this.role);
     }
