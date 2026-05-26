@@ -153,8 +153,16 @@ public class ClientHandler implements Runnable {
 
     // hàm lấy danh sách
     private void handleGetAuctions() {
-        List<Auction> list = managerService.getAllAuctions();
-        sendResponse("SUCCESS", "Lấy danh sách thành công", list);
+        try {
+            // Lấy tất cả phiên từ service
+            List<Auction> list = managerService.getAllAuctions();
+
+            // Gửi thẳng danh sách này về, Client sẽ nhận được list chứa item_id
+            sendResponse("SUCCESS", "Lấy danh sách thành công", list);
+            System.out.println("[+] Đã gửi " + list.size() + " phiên đấu giá về cho Client.");
+        } catch (Exception e) {
+            sendResponse("FAILED", "Lỗi lấy danh sách từ Server", null);
+        }
     }
 
     // Hàm gửi tin nhắn phản hồi về Client cho nhanh

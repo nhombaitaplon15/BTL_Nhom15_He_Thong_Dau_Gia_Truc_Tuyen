@@ -1,3 +1,4 @@
+
 package com.auction.server.dao;
 
 import com.auction.common.model.Admin;

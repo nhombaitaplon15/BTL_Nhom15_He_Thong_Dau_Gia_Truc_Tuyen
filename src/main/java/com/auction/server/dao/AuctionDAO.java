@@ -265,4 +265,26 @@ public class AuctionDAO {
         }
         return list;
     }
+    public List<Auction> getLiveAuctionsByCategory(String category) {
+        List<Auction> list = new ArrayList<>();
+        // SỬA CHỮ 'ACTIVE' THÀNH 'RUNNING' Ở DÒNG DƯỚI ĐÂY:
+        String sql = "SELECT a.* FROM auctions a " +
+                "JOIN items i ON a.item_id = i.item_id " +
+                "WHERE a.auction_status = 'RUNNING' AND i.item_type = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, category);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
 }
