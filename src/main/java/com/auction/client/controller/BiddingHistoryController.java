@@ -30,6 +30,7 @@ public class BiddingHistoryController implements Initializable {
     @FXML private TableColumn<BidHistoryRow, Double> colBidAmount;
     @FXML private TableColumn<BidHistoryRow, String> colBidTime;
     @FXML private TableColumn<BidHistoryRow, String> colStatus;
+    @FXML private Button btnViewDetail;
 
     private final ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
     private final BiddingHistoryDAO historyDAO = new BiddingHistoryDAO();
@@ -53,7 +54,6 @@ public class BiddingHistoryController implements Initializable {
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
-
         // ⚡ KẾT NỐI DATABASE: Tải dữ liệu lịch sử đấu giá thật của User này
         loadHistory();
     }
@@ -67,17 +67,71 @@ public class BiddingHistoryController implements Initializable {
         colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Định dạng hiển thị tiền tệ UETệ động từ DB mượt mà, chuyên nghiệp
+        // 1. Định dạng hiển thị tiền tệ UETệ (Bình thường màu xanh dương, ấn chọn tự động chuyển sang chữ trắng)
         colBidAmount.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Double amount, boolean empty) {
                 super.updateItem(amount, empty);
                 if (empty || amount == null) {
                     setText(null);
+                    setStyle("");
                 } else {
                     setText(String.format("%,.0f UETệ", amount));
+
+                    // Kiểm tra trạng thái được chọn của dòng
+                    TableRow<?> row = getTableRow();
+                    if (row != null && row.isSelected()) {
+                        setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #1d4ed8; -fx-font-weight: bold;");
+                    }
                 }
             }
+        });
+
+        // 2. 🎯 TỰ ĐỊNH NGHĨA CÁC KIỂU TRẠNG THÁI TIẾNG VIỆT & SỬA LỖI MÀU CHỮ KHI ẤN CHỌN
+        colStatus.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(empty || item == null ? null : item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    String s = item.toUpperCase();
+
+                    // Dịch các từ khóa trạng thái sang chữ Tiếng Việt có icon sinh động
+                    if (s.contains("SUCCESS") || s.contains("THẮNG")) setText("THẮNG CUỘC 🏆");
+                    else if (s.contains("DẪN ĐẦU")) setText("ĐANG DẪN ĐẦU");
+                    else if (s.contains("ĐÈ GIÁ")) setText("BỊ ĐÈ GIÁ ⚠️");
+                    else if (s.contains("FAILED") || s.contains("THẤT BẠI")) setText("THẤT BẠI");
+                    else setText(item);
+
+                    // Quản lý màu sắc chữ dựa theo trạng thái dòng (Bình thường vs Khi được ấn chọn)
+                    TableRow<?> row = getTableRow();
+                    if (row != null && row.isSelected()) {
+                        // Khi dòng đang ĐƯỢC ẤN CHỌN: Ép chữ biến thành màu trắng hoàn toàn để nổi bật trên nền xanh đậm
+                        setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
+                    } else {
+                        // Khi dòng Ở TRẠNG THÁI BÌNH THƯỜNG: Đổ màu chữ phân loại rực rỡ trên màu nền bảng gốc
+                        if (s.contains("SUCCESS") || s.contains("THẮNG")) setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;"); // Chữ Xanh lá
+                        else if (s.contains("DẪN ĐẦU")) setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;"); // Chữ Xanh ngọc
+                        else if (s.contains("ĐÈ GIÁ")) setStyle("-fx-text-fill: #ea580c; -fx-font-weight: bold;");  // Chữ Màu cam
+                        else if (s.contains("FAILED") || s.contains("THẤT BẠI")) setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;"); // Chữ Màu đỏ
+                        else setStyle("");
+                    }
+                }
+            }
+        });
+
+        // 3. Giữ nguyên màu nền bảng mặc định, bắt các ô tự động vẽ lại màu chữ khi click chọn
+        historyTable.setRowFactory(tv -> {
+            TableRow<BidHistoryRow> row = new TableRow<>();
+            row.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                // Khi người dùng bấm click chọn dòng, ép các cell chạy lại để ăn màu chữ trắng ngay lập tức
+                row.requestLayout();
+            });
+            return row;
         });
     }
 
@@ -175,56 +229,10 @@ public class BiddingHistoryController implements Initializable {
     }
 
     /**
-     * 🎯 XEM CHI TIẾT TĨNH: Khi click vào dòng lịch sử đấu giá thực tế $\rightarrow$ Hiện Pop-up tĩnh chuẩn chỉnh
-     */
-    @FXML
-    private void handleViewDetail() {
-        BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("Vui lòng chọn một dòng phiên đấu giá trong bảng lịch sử để xem!");
-            return;
-        }
-
-        try {
-            // ✅ ĐỒNG BỘ 100%: Gọi chính xác file giao diện Pop-up chi tiết tĩnh (700x500) của bạn
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
-            Parent root = loader.load();
-
-            // Ánh xạ sang đúng AuctionDetailController tĩnh xử lý dữ liệu
-            AuctionDetailController detailController = loader.getController();
-            if (detailController != null) {
-                // Nạp mã phiên thực tế và tên từ Database sang cho cửa sổ nhỏ hiển thị
-                detailController.loadAuctionDetail(selected.getAuctionId(), selected.getItemName(), this.currentUser);
-            }
-
-            // Tạo Stage cửa sổ Popup nhỏ nằm đè lên trước
-            Stage dialogStage = new Stage();
-            dialogStage.setScene(new Scene(root, 700, 500)); // Ép chặt kích thước chuẩn khung AnchorPane của bạn
-            dialogStage.setTitle("Thông Tin Chi Tiết Phiên Đấu Giá - #" + selected.getAuctionId());
-            dialogStage.setResizable(false); // Cố định khung hình tĩnh sạch sẽ, không méo vỡ giao diện
-            dialogStage.show();
-
-        } catch (Exception e) {
-            System.err.println("❌ Lỗi: Không thể khởi tạo màn hình xem chi tiết phiên đấu giá tĩnh từ Database!");
-            e.printStackTrace();
-        }
-    }
-
-    private void showWarning(String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Thông báo hệ thống");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-    // 1. Thêm khai báo nút bấm đã bổ sung ID ở Scene Builder vào đầu Controller
-    @FXML private Button btnViewDetail;
-
-    /**
      * 🎯 XEM CHI TIẾT TĨNH: Khi click vào dòng lịch sử đấu giá thực tế -> Hiện Pop-up tĩnh chuẩn chỉnh
      */
     @FXML
-    private void handleViewDetail(javafx.event.ActionEvent event) { // 🎯 Nên thêm tham số ActionEvent để lấy Stage an toàn
+    private void handleViewDetail(javafx.event.ActionEvent event) {
         // 1. Kiểm tra xem người dùng đã chọn dòng nào trên TableView chưa
         BidHistoryRow selected = historyTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -263,5 +271,13 @@ public class BiddingHistoryController implements Initializable {
             System.err.println("❌ Lỗi: Không thể khởi tạo màn hình xem chi tiết phiên đấu giá tĩnh từ Database!");
             e.printStackTrace();
         }
+    }
+
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Thông báo hệ thống");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

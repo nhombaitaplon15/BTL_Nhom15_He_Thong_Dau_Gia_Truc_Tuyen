@@ -21,6 +21,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +40,6 @@ public class The_Home_Page_Bidder_View_Controller {
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
 
-    // 🎯 BỔ SUNG: Danh sách quản lý các Card để dọn dẹp bộ đếm ngược chạy ngầm khi chuyển trang
     private final List<ItemCardController> activeCardControllers = new ArrayList<>();
 
     public void setMainContainer(MainContainerController mainContainer) {
@@ -66,25 +66,24 @@ public class The_Home_Page_Bidder_View_Controller {
         loadAuctionsFromDatabase("VEHICLE");
     }
 
-    // 🎯 BỔ SUNG: Hàm dọn dẹp tất cả các bộ đếm ngược đang chạy trên màn hình
     private void clearActiveTimers() {
         for (ItemCardController controller : activeCardControllers) {
             if (controller != null) {
-                controller.stopTimer(); // Dừng luồng đếm ngược của Card
+                controller.stopTimer();
             }
         }
-        activeCardControllers.clear(); // Xóa sạch danh sách cũ
+        activeCardControllers.clear();
     }
 
     @FXML
     void handleNavTransactionHistory(ActionEvent event) {
-        clearActiveTimers(); // Dừng bộ đếm trước khi rời trang
+        clearActiveTimers();
         switchSceneWithUser(event, "/view/bidder/TransactionHistoryView.fxml", "Elite Auction - Lịch Sử Giao Dịch", 1);
     }
 
     @FXML
     void handleNavDepositWithdraw(ActionEvent event) {
-        clearActiveTimers(); // Dừng bộ đếm trước khi rời trang
+        clearActiveTimers();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/bidder/DepositWithdrawView.fxml"));
             Parent root = loader.load();
@@ -100,7 +99,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML
     void handleNavProfile(ActionEvent event) {
-        clearActiveTimers(); // Dừng bộ đếm trước khi rời trang
+        clearActiveTimers();
         switchSceneWithUser(event, "/view/bidder/ProfileView.fxml", "Elite Auction - Hồ Sơ Cá Nhân", 3);
     }
 
@@ -112,7 +111,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML
     void handleNavBidHistory(ActionEvent event) {
-        clearActiveTimers(); // Dừng bộ đếm trước khi rời trang
+        clearActiveTimers();
         switchSceneWithUser(event, "/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5);
     }
 
@@ -121,7 +120,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML
     void handleLogout(ActionEvent event) {
-        clearActiveTimers(); // Khóa tất cả các Thread đếm ngược để tránh treo máy, tràn RAM ngầm
+        clearActiveTimers();
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/view/LoginView.fxml"));
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
@@ -192,13 +191,13 @@ public class The_Home_Page_Bidder_View_Controller {
     private void loadAuctionsFromDatabase(String category) {
         if (gridAuctions == null) return;
 
-        // Dừng và dọn dẹp toàn bộ bộ đếm ngược của các sản phẩm cũ trước khi nạp phòng mới
         clearActiveTimers();
         gridAuctions.getChildren().clear();
 
         new Thread(() -> {
             try {
-                List<Auction> activeAuctions = auctionDAO.getAuctionsByStatus("RUNNING");
+                // 🎯 SỬA ĐỒNG BỘ: Sử dụng hàm getLiveAuctionsByCategory tối ưu theo danh mục
+                List<Auction> activeAuctions = auctionDAO.getLiveAuctionsByCategory(category);
 
                 Platform.runLater(() -> {
                     try {
@@ -207,22 +206,24 @@ public class The_Home_Page_Bidder_View_Controller {
                         boolean hasItems = false;
 
                         if (activeAuctions != null) {
-                            for (Auction auction : activeAuctions) {
-                                Item item = itemDAO.getItemById(auction.getItemId());
+                            LocalDateTime now = LocalDateTime.now();
 
-                                if (item != null && category.equalsIgnoreCase(item.getItemType())) {
+                            for (Auction auction : activeAuctions) {
+                                // Bộ lọc kép an toàn kiểm tra thời gian thực
+                                if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
+                                    continue;
+                                }
+
+                                Item item = itemDAO.getItemById(auction.getItemId());
+                                if (item != null) {
                                     hasItems = true;
 
                                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
                                     Parent itemCard = loader.load();
 
                                     ItemCardController cardController = loader.getController();
-
                                     if (cardController != null) {
-                                        // 🎯 SỬA ĐỔI QUAN TRỌNG: Truyền thêm trường auction.getEndTime() xuống hàm setData mới
                                         cardController.setData(item, auction.getAuctionId(), currentUser, auction.getCurrentPrice(), auction.getEndTime());
-
-                                        // Lưu trữ controller vào danh sách theo dõi
                                         activeCardControllers.add(cardController);
                                     }
 

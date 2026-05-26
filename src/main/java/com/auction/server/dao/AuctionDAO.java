@@ -1,17 +1,20 @@
 package com.auction.server.dao;
 
 import com.auction.common.model.Auction;
+import com.auction.common.model.BiddingHistory;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import static com.auction.server.dao.DBConnection.getConnection;
 
 public class AuctionDAO {
 
     // --- CÁC HÀM TRUY VẤN (QUERIES) ---
 
     public List<Auction> getAuctionsByStatus(String status) {
-        return queryList("SELECT * FROM public.auctions WHERE auction_status = ?", status);
+        // 🎯 SỬA CHUẨN: Đổi từ 'status' thành 'auction_status' theo đúng thiết kế DB của bạn
+        return queryList("SELECT * FROM public.auctions WHERE auction_status = ? AND end_time > NOW();", status);
     }
 
     public List<Auction> getAll() {
@@ -23,7 +26,6 @@ public class AuctionDAO {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    // ⚡ THÊM MỚI: Phục vụ kéo giá Realtime hiển thị trực tiếp lên Card Trang chủ
     public Auction getAuctionByItemId(int itemId) {
         List<Auction> results = queryList("SELECT * FROM public.auctions WHERE item_id = ? AND auction_status = 'RUNNING' LIMIT 1", itemId);
         if (results.isEmpty()) {
@@ -89,9 +91,6 @@ public class AuctionDAO {
         return queryList("SELECT * FROM public.auctions WHERE current_winner_id = ? AND auction_status = 'FINISHED'", winnerId);
     }
 
-    // ========================================================================
-    // ⚡ HÀM TRANSACTION ĐẶT GIÁ REALTIME: Đã đồng bộ chuẩn 100% Postgres
-    // ========================================================================
     public boolean executePlaceBidTransaction(int auctionId, int userId, double bidAmount) {
         String updateWalletSql = "UPDATE public.users SET balance = balance - ? WHERE user_id = ?";
         String updateAuctionSql = "UPDATE public.auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 WHERE auction_id = ? AND current_price < ?";
@@ -100,14 +99,13 @@ public class AuctionDAO {
         String queryItemNameSql = "SELECT name FROM public.items WHERE item_id = (SELECT item_id FROM public.auctions WHERE auction_id = ?)";
         String queryBidderNameSql = "SELECT username FROM public.users WHERE user_id = ?";
 
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = getConnection()) {
             if (conn == null) return false;
             conn.setAutoCommit(false);
 
             String itemName = "Vật phẩm";
             String bidderName = "Người dùng";
 
-            // 1. Lấy tên sản phẩm
             try (PreparedStatement psItem = conn.prepareStatement(queryItemNameSql)) {
                 psItem.setInt(1, auctionId);
                 try (ResultSet rs = psItem.executeQuery()) {
@@ -115,7 +113,6 @@ public class AuctionDAO {
                 }
             }
 
-            // 2. Lấy tên người đấu
             try (PreparedStatement psUser = conn.prepareStatement(queryBidderNameSql)) {
                 psUser.setInt(1, userId);
                 try (ResultSet rs = psUser.executeQuery()) {
@@ -127,25 +124,21 @@ public class AuctionDAO {
                  PreparedStatement psAuction = conn.prepareStatement(updateAuctionSql);
                  PreparedStatement psHistory = conn.prepareStatement(insertHistorySql)) {
 
-                // 3. Khấu trừ tiền ví thành viên
                 psWallet.setDouble(1, bidAmount);
                 psWallet.setInt(2, userId);
                 psWallet.executeUpdate();
 
-                // 4. Nâng giá đỉnh phiên đấu giá
                 psAuction.setDouble(1, bidAmount);
                 psAuction.setInt(2, userId);
                 psAuction.setInt(3, auctionId);
                 psAuction.setDouble(4, bidAmount);
                 int affectedRows = psAuction.executeUpdate();
 
-                // Nếu có người khác đặt giá cao hơn trước, lệnh sẽ tự hủy phòng vệ
                 if (affectedRows == 0) {
                     conn.rollback();
                     return false;
                 }
 
-                // 5. Ghi biên bản vào lịch sử
                 psHistory.setInt(1, auctionId);
                 psHistory.setString(2, itemName);
                 psHistory.setInt(3, userId);
@@ -170,7 +163,7 @@ public class AuctionDAO {
 
     private List<Auction> queryList(String sql, Object... params) {
         List<Auction> list = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = prepare(conn, sql, params);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
@@ -179,7 +172,7 @@ public class AuctionDAO {
     }
 
     private boolean executeUpdate(String sql, Object... params) {
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = getConnection()) {
             return executeUpdate(conn, sql, params);
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }
@@ -213,7 +206,7 @@ public class AuctionDAO {
 
     public String getItemDescription(int itemId) {
         String sql = "SELECT description FROM public.items WHERE item_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, itemId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -225,7 +218,7 @@ public class AuctionDAO {
 
     public String getItemImagePath(int itemId) {
         String sql = "SELECT img_item FROM public.items WHERE item_id = ?";
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, itemId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -238,12 +231,13 @@ public class AuctionDAO {
     public boolean deleteAll() {
         return executeUpdate("DELETE FROM public.auctions");
     }
+
     public List<com.auction.common.model.BidHistoryRow> getBidHistoryByAuction(int auctionId) {
         List<com.auction.common.model.BidHistoryRow> list = new ArrayList<>();
         String sql = "SELECT id, auction_id, bidder_name, bid_amount, bid_time, status " +
                 "FROM public.bidding_history WHERE auction_id = ? ORDER BY bid_time DESC";
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, auctionId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -252,7 +246,7 @@ public class AuctionDAO {
                     com.auction.common.model.BidHistoryRow row = new com.auction.common.model.BidHistoryRow(
                             rs.getInt("id"),
                             rs.getInt("auction_id"),
-                            rs.getString("bidder_name"), // Ánh xạ bidder_name vào biến đặt để hiển thị tên người trả giá
+                            rs.getString("bidder_name"),
                             rs.getDouble("bid_amount"),
                             timeStr,
                             rs.getString("status")
@@ -265,20 +259,158 @@ public class AuctionDAO {
         }
         return list;
     }
+
     public List<Auction> getLiveAuctionsByCategory(String category) {
         List<Auction> list = new ArrayList<>();
-        // SỬA CHỮ 'ACTIVE' THÀNH 'RUNNING' Ở DÒNG DƯỚI ĐÂY:
-        String sql = "SELECT a.* FROM auctions a " +
-                "JOIN items i ON a.item_id = i.item_id " +
-                "WHERE a.auction_status = 'RUNNING' AND i.item_type = ?";
+        // 🎯 SỬA CHUẨN: Đồng bộ SELECT * để hàm map(rs) chạy trọn vẹn không bị văng lỗi thiếu trường!
+        String sql = """
+                 SELECT * FROM public.auctions 
+                 WHERE item_id IN (SELECT item_id FROM public.items WHERE item_type = ?) 
+                   AND auction_status = 'RUNNING' 
+                   AND end_time > NOW()
+                 ORDER BY end_time ASC
+                 """;
 
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, category);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(map(rs));
+                    list.add(map(rs)); // Dùng luôn hàm map chung cực an toàn
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<BiddingHistory> getBiddingHistoryByAuctionId(int auctionId) {
+        List<BiddingHistory> list = new ArrayList<>();
+        String sql = "SELECT id, auction_id, bidder_id, bid_amount, bid_time FROM public.bidding_history " +
+                "WHERE auction_id = ? ORDER BY bid_amount DESC, bid_time DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, auctionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    BiddingHistory bh = new BiddingHistory();
+                    bh.setId(rs.getInt("id"));
+                    bh.setAuctionId(rs.getInt("auction_id"));
+                    bh.setId(rs.getInt("bidder_id"));
+                    bh.setBidAmount(rs.getDouble("bid_amount"));
+
+                    if (rs.getTimestamp("bid_time") != null) {
+                        bh.setBidTime(rs.getTimestamp("bid_time").toLocalDateTime());
+                    }
+                    list.add(bh);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi lấy lịch sử đặt giá của phiên #" + auctionId);
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public void closeAuctionAndDetermineWinner(int auctionId) {
+        String sqlFindWinner = """
+        SELECT bidder_id, bid_amount FROM public.bidding_history 
+        WHERE auction_id = ? 
+        ORDER BY bid_amount DESC, bid_time DESC LIMIT 1
+        """;
+
+        // 🎯 SỬA CHUẨN: Thay đổi đúng tên cột 'auction_status' và 'auction_id'
+        String sqlUpdateAuction = """
+        UPDATE public.auctions 
+        SET auction_status = 'FINISHED', current_winner_id = ? 
+        WHERE auction_id = ? AND auction_status != 'FINISHED'
+        """;
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            int winnerId = 0;
+            try (PreparedStatement ps1 = conn.prepareStatement(sqlFindWinner)) {
+                ps1.setInt(1, auctionId);
+                try (ResultSet rs = ps1.executeQuery()) {
+                    if (rs.next()) {
+                        winnerId = rs.getInt("bidder_id");
+                    }
+                }
+            }
+
+            try (PreparedStatement ps2 = conn.prepareStatement(sqlUpdateAuction)) {
+                if (winnerId > 0) {
+                    ps2.setInt(1, winnerId);
+                } else {
+                    ps2.setNull(1, java.sql.Types.INTEGER);
+                }
+                ps2.setInt(2, auctionId);
+                ps2.executeUpdate();
+            }
+            conn.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public List<com.auction.common.model.BidHistoryRow> getBidHistoryByBidder(int bidderId) {
+        List<com.auction.common.model.BidHistoryRow> list = new ArrayList<>();
+
+        // SQL kết hợp (JOIN) bảng lịch sử đặt giá và bảng phiên đấu giá để lấy cả thời gian kết thúc và người thắng hiện tại
+        String sql = """
+        SELECT bh.id, bh.auction_id, bh.item_name, bh.bid_amount, bh.bid_time, 
+               a.end_time, a.current_winner_id, a.auction_status
+        FROM public.bidding_history bh
+        JOIN public.auctions a ON bh.auction_id = a.auction_id
+        WHERE bh.bidder_id = ?
+        ORDER BY bh.bid_time DESC
+        """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bidderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // Đọc dữ liệu từ DB
+                    int id = rs.getInt("id");
+                    int auctionId = rs.getInt("auction_id");
+                    String itemName = rs.getString("item_name");
+                    double bidAmount = rs.getDouble("bid_amount");
+                    String bidTimeStr = rs.getTimestamp("bid_time") != null ? rs.getTimestamp("bid_time").toString() : "";
+
+                    LocalDateTime endTime = rs.getTimestamp("end_time").toLocalDateTime();
+                    int currentWinnerId = rs.getInt("current_winner_id");
+                    String auctionStatus = rs.getString("auction_status");
+
+                    // --- TÍNH TOÁN TRẠNG THÁI ĐỘNG CHUẨN XÁC ---
+                    String dynamicStatus = "THẤT BẠI";
+                    LocalDateTime now = LocalDateTime.now();
+
+                    if ("FINISHED".equalsIgnoreCase(auctionStatus) || "SOLD".equalsIgnoreCase(auctionStatus) || now.isAfter(endTime)) {
+                        // Nếu phiên đã kết thúc
+                        if (bidderId == currentWinnerId) {
+                            dynamicStatus = "THẮNG CUỘC";
+                        } else {
+                            dynamicStatus = "THẤT BẠI";
+                        }
+                    } else {
+                        // Nếu phiên vẫn đang diễn ra
+                        if (bidderId == currentWinnerId) {
+                            dynamicStatus = "ĐANG DẪN ĐẦU";
+                        } else {
+                            dynamicStatus = "BỊ ĐÈ GIÁ";
+                        }
+                    }
+
+                    // Đóng gói vào đối tượng hiển thị dòng của bạn (chuyển dynamicStatus vào cột trạng thái)
+                    com.auction.common.model.BidHistoryRow row = new com.auction.common.model.BidHistoryRow(
+                            id, auctionId, itemName, bidAmount, bidTimeStr, dynamicStatus
+                    );
+                    list.add(row);
                 }
             }
         } catch (SQLException e) {
@@ -286,5 +418,4 @@ public class AuctionDAO {
         }
         return list;
     }
-
 }
