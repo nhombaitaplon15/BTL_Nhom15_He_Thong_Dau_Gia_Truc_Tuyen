@@ -8,6 +8,7 @@ import com.auction.common.model.Item;
 import com.auction.common.model.User;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.ItemDAO;
+import com.auction.server.dao.PaymentDAO;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -29,6 +30,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML private Label lblBidderName;
     @FXML private Label lblBalance;
+    @FXML private Label lblEscrowBalance;
     @FXML private TextField txtSearch;
     @FXML private GridPane gridAuctions;
     @FXML private VBox sidebarContainer;
@@ -39,6 +41,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
+    private final PaymentDAO paymentDAO = new PaymentDAO();
 
     private final List<ItemCardController> activeCardControllers = new ArrayList<>();
 
@@ -58,12 +61,36 @@ public class The_Home_Page_Bidder_View_Controller {
         if (lblBidderName != null) {
             lblBidderName.setText(user.getUsername());
         }
-        if (lblBalance != null) {
-            lblBalance.setText(String.format("%,.0f UETệ", user.getBalance()));
-        }
+
+        updateWalletUI();
 
         if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
         loadAuctionsFromDatabase("VEHICLE");
+    }
+
+    public void updateWalletUI() {
+        if (currentUser == null) return;
+
+        new Thread(() -> {
+            try {
+                double actualBalance = paymentDAO.getBalance(currentUser.getId());
+                double actualEscrow = paymentDAO.getEscrowBalance(currentUser.getId());
+
+                Platform.runLater(() -> {
+                    currentUser.setBalance(actualBalance);
+
+                    if (lblBalance != null) {
+                        lblBalance.setText(String.format("%,.0f UETệ", actualBalance));
+                    }
+                    if (lblEscrowBalance != null) {
+                        lblEscrowBalance.setText(String.format("Tạm giữ: %,.0f UETệ", actualEscrow));
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("❌ Lỗi đồng bộ ví tiền trên màn hình trang chủ!");
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private void clearActiveTimers() {
@@ -105,6 +132,7 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML
     void handleNavDashboard(ActionEvent event) {
+        updateWalletUI();
         if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
         loadAuctionsFromDatabase("VEHICLE");
     }
@@ -147,7 +175,12 @@ public class The_Home_Page_Bidder_View_Controller {
                     ((ProfileController) controller).setUserData(this.currentUser);
                 } else if (type == 5 && controller instanceof BiddingHistoryController) {
                     ((BiddingHistoryController) controller).setUserData(this.currentUser);
-                    ((BiddingHistoryController) controller).setMainHomeController(((javafx.scene.Node) event.getSource()).getScene());
+
+                    // 🎯 SỬA LỖI: Truyền thêm tham số thứ 2 là "this" (chính là controller Trang Chủ này)
+                    ((BiddingHistoryController) controller).setMainHomeController(
+                            ((javafx.scene.Node) event.getSource()).getScene(),
+                            this
+                    );
                 }
             }
 
@@ -160,18 +193,21 @@ public class The_Home_Page_Bidder_View_Controller {
 
     @FXML
     void handleRoomVehicle(MouseEvent event) {
+        updateWalletUI();
         if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: PHƯƠNG TIỆN (Live)");
         loadAuctionsFromDatabase("VEHICLE");
     }
 
     @FXML
     void handleRoomArt(MouseEvent event) {
+        updateWalletUI();
         if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: NGHỆ THUẬT (Live)");
         loadAuctionsFromDatabase("ART");
     }
 
     @FXML
     void handleRoomElectronics(MouseEvent event) {
+        updateWalletUI();
         if (lblRoomTitle != null) lblRoomTitle.setText("🔥 Phòng Đấu Giá: ĐIỆN TỬ (Live)");
         loadAuctionsFromDatabase("ELECTRONICS");
     }
@@ -185,9 +221,6 @@ public class The_Home_Page_Bidder_View_Controller {
         }
     }
 
-    /**
-     * ⚡ THAY THẾ TOÀN DIỆN LUỒNG DỮ LIỆU ĐỘNG TỪ DATABASE KÈM ĐẾM NGƯỢC
-     */
     private void loadAuctionsFromDatabase(String category) {
         if (gridAuctions == null) return;
 
@@ -196,7 +229,6 @@ public class The_Home_Page_Bidder_View_Controller {
 
         new Thread(() -> {
             try {
-                // 🎯 SỬA ĐỒNG BỘ: Sử dụng hàm getLiveAuctionsByCategory tối ưu theo danh mục
                 List<Auction> activeAuctions = auctionDAO.getLiveAuctionsByCategory(category);
 
                 Platform.runLater(() -> {
@@ -209,7 +241,6 @@ public class The_Home_Page_Bidder_View_Controller {
                             LocalDateTime now = LocalDateTime.now();
 
                             for (Auction auction : activeAuctions) {
-                                // Bộ lọc kép an toàn kiểm tra thời gian thực
                                 if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
                                     continue;
                                 }

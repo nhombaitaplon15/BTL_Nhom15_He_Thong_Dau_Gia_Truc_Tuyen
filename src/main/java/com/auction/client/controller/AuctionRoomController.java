@@ -3,7 +3,7 @@ package com.auction.client.controller;
 import com.auction.common.model.*;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.ItemDAO;
-import com.auction.server.dao.UserDAO;
+import com.auction.server.dao.PaymentDAO; // 🎯 THAY THẾ: Sử dụng PaymentDAO thay thế cho UserDAO cũ để kiểm soát ví tạm giữ
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -30,7 +30,8 @@ public class AuctionRoomController {
     @FXML private ImageView imgProduct;
     @FXML private Label lblDescription;
     @FXML private Label lblCountdown;
-    @FXML private Label lblUserBalance;
+    @FXML private Label lblUserBalance; // Label hiển thị ví chính màu xanh lá
+    @FXML private Label lblUserEscrow;  // 🎯 BỔ SUNG: Ánh xạ nhãn hiển thị tiền Đang đóng băng (Nhóm bạn nhớ điền fx:id="lblUserEscrow" vào FXML nhé)
     @FXML private Label lblStartPrice;
     @FXML private Label lblCurrentPrice;
     @FXML private TextField txtBidAmount;
@@ -42,7 +43,7 @@ public class AuctionRoomController {
 
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
-    private final UserDAO userDAO = new UserDAO();
+    private final PaymentDAO paymentDAO = new PaymentDAO(); // 🎯 THAY THẾ: Khởi tạo PaymentDAO xử lý luồng tiền bình thông nhau
 
     private int activeAuctionId;
     private User currentOnlineUser;
@@ -61,11 +62,13 @@ public class AuctionRoomController {
         new Thread(() -> {
             try {
                 Auction auction = auctionDAO.getAuctionById(activeAuctionId);
-                double realBalance = userDAO.getBalance(currentOnlineUser.getId());
+
+                // 🎯 ĐỒNG BỘ VÍ TIỀN: Kéo cả hai thông số tiền khả dụng và tiền đóng băng cọc từ Postgres
+                double realBalance = paymentDAO.getBalance(currentOnlineUser.getId());
+                double realEscrow = paymentDAO.getEscrowBalance(currentOnlineUser.getId());
                 currentOnlineUser.setBalance(realBalance);
 
-                // 🎯 BỔ SUNG: Lấy danh sách lịch sử đặt giá từ Database lên
-                // (Hãy đảm bảo trong AuctionDAO của bạn đã có hàm tương tự hoặc sửa lại tên hàm cho đúng)
+                // Lấy danh sách lịch sử đặt giá từ Database lên
                 List<BiddingHistory> historyList = auctionDAO.getBiddingHistoryByAuctionId(activeAuctionId);
 
                 if (auction != null) {
@@ -75,7 +78,10 @@ public class AuctionRoomController {
                     Platform.runLater(() -> {
                         if (lblCurrentPrice != null) lblCurrentPrice.setText(String.format("%,.0f UETệ", auction.getCurrentPrice()));
                         if (lblStartPrice != null) lblStartPrice.setText(String.format("%,.0f UETệ", auction.getStartingPrice()));
+
+                        // Đổ dữ liệu tiền mặt phân tách dấu phẩy lên giao diện phòng Live
                         if (lblUserBalance != null) lblUserBalance.setText(String.format("%,.0f UETệ", realBalance));
+                        if (lblUserEscrow != null) lblUserEscrow.setText(String.format("%,.0f UETệ", realEscrow));
 
                         if (item != null) {
                             if (lblProductName != null) lblProductName.setText(item.getName());
@@ -93,7 +99,7 @@ public class AuctionRoomController {
                             }
                         }
 
-                        // 🎯 KÍCH HOẠT: Đổ dữ liệu lịch sử đặt giá lên giao diện VBox
+                        // Đổ dữ liệu lịch sử đặt giá lên giao diện VBox
                         populateBidHistory(historyList);
 
                         startRoomCountdown(auction.getEndTime());
@@ -106,7 +112,7 @@ public class AuctionRoomController {
     }
 
     /**
-     * 🎯 HÀM MỚI: Sinh giao diện danh sách lịch sử đặt giá động
+     * Sinh giao diện danh sách lịch sử đặt giá động
      */
     private void populateBidHistory(List<BiddingHistory> historyList) {
         if (listHistoryContainer == null) return;
@@ -126,7 +132,6 @@ public class AuctionRoomController {
             row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; " +
                     "-fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
 
-            // Tên người đặt (Ẩn bớt ký tự hoặc hiện đầy đủ tùy bạn, ở đây hiển thị ID hoặc tên nếu bạn đã JOIN bảng)
             String bidderName = "Người dùng #" + bid.getId();
             if (bid.getId() == currentOnlineUser.getId()) {
                 bidderName = "Bạn (Tôi)";
@@ -232,19 +237,25 @@ public class AuctionRoomController {
                 showAlert("Lỗi đặt giá", "Giá đặt phải lớn hơn giá hiện tại!", Alert.AlertType.ERROR);
                 return;
             }
-            if (currentOnlineUser.getBalance() < bidAmount) {
-                showAlert("Lỗi tài khoản", "Số dư ví không đủ!", Alert.AlertType.ERROR);
+
+            // 🎯 ĐỒNG BỘ LOGIC: Kiểm tra số dư ví khả dụng chuẩn xác thông qua Database trước khi gửi lệnh đi
+            double actualBalanceOnDB = paymentDAO.getBalance(currentOnlineUser.getId());
+            if (actualBalanceOnDB < bidAmount) {
+                showAlert("Lỗi tài khoản", "Số dư ví không đủ để tham gia đấu giá!", Alert.AlertType.ERROR);
                 return;
             }
 
+            // Chạy hàm Transaction đóng băng tiền túi, ném vào quỹ ký quỹ escrow_balance
             boolean success = auctionDAO.executePlaceBidTransaction(activeAuctionId, currentOnlineUser.getId(), bidAmount);
 
             if (success) {
-                showAlert("Thành công", "Đặt giá thành công!", Alert.AlertType.INFORMATION);
+                showAlert("Thành công", "Đặt giá thành công! Số tiền đặt đã được chuyển sang trạng thái tạm đóng băng bảo lãnh.", Alert.AlertType.INFORMATION);
                 txtBidAmount.clear();
-                refreshRoomData(); // Hàm này chạy lại sẽ tự nạp danh sách lịch sử mới nhất vừa đặt xong!
+
+                // 🎯 ÉP TẢI LẠI: Đồng bộ lập tức tiền mặt sụt giảm, tiền ví tạm nhảy lên giao diện
+                refreshRoomData();
             } else {
-                showAlert("Thất bại", "Đặt giá thất bại! Đã có người trả giá cao hơn.", Alert.AlertType.ERROR);
+                showAlert("Thất bại", "Đặt giá thất bại! Đã có người nhanh tay hơn trả giá cao hơn bạn.", Alert.AlertType.ERROR);
                 refreshRoomData();
             }
         } catch (NumberFormatException e) {
