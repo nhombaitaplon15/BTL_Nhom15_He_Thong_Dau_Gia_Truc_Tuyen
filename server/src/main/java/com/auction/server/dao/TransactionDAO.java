@@ -38,7 +38,7 @@ public class TransactionDAO {
     }
     // tạo ra khi nạp rút thông thường
     public boolean createTransaction(int userId, double amount, String type,  String status) throws SQLException {
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = DBConnection.getConnection()) {
             return createTransaction(conn, userId, amount, type, status);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -57,7 +57,7 @@ public class TransactionDAO {
         if (type.equalsIgnoreCase("WITHDRAW")) {
             sqlUpdateUser += " AND balance >= ?";
         }
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // Bước 1: Cập nhật phiếu
@@ -92,7 +92,7 @@ public class TransactionDAO {
     // từ chối giao dịch
     public boolean rejectTransaction(int transId) {
         String sql = "UPDATE transactions SET status = 'REJECTED' WHERE transaction_id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, transId);
             return ps.executeUpdate() > 0;
@@ -112,7 +112,7 @@ public class TransactionDAO {
     """;
 
         try (
-                Connection conn = DatabaseConnection.connect();
+                Connection conn = DBConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()
         ) {

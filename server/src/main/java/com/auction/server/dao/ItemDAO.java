@@ -5,7 +5,6 @@ import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
 import com.auction.common.model.Vehicle;
 import com.auction.common.factory.ItemFactory;
-import com.auction.server.dao.DatabaseConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class ItemDAO {
     public List<Item> getAllItems() {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -32,7 +31,7 @@ public class ItemDAO {
     // 2. Lấy 1 Item theo ID cụ thể
     public Item getItemById(int id) {
         String sql = "SELECT * FROM items WHERE item_id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -111,7 +110,7 @@ public class ItemDAO {
     public boolean deleteItem(int itemId) {
         String sql = "DELETE FROM items WHERE item_id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             // Truyền ID cần xóa vào dấu ?
@@ -131,7 +130,7 @@ public class ItemDAO {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE item_type = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, itemType);
@@ -153,7 +152,7 @@ public class ItemDAO {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE seller_id = ?";
         try (
-                Connection conn = DatabaseConnection.connect();
+                Connection conn = DBConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)
         ) {
             ps.setInt(1, sellerId);

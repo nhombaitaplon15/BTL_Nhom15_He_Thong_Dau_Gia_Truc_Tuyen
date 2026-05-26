@@ -24,7 +24,7 @@ public class LoginController {
     @FXML
     void handleForgotPassword(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ForgotPasswordView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/ForgotPasswordView.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
@@ -86,9 +86,9 @@ public class LoginController {
         try {
             // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
             if ("ADMIN".equalsIgnoreCase(role)) {
-                fxmlFile = "/view/The_Home_Page_Admin_View.fxml";
+                fxmlFile = "/view/view/The_Home_Page_Admin_View.fxml";
             } else {
-                fxmlFile = "/view/The_Home_Page_Bidder_View.fxml";
+                fxmlFile = "/view/view/The_Home_Page_Bidder_View.fxml";
             }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));

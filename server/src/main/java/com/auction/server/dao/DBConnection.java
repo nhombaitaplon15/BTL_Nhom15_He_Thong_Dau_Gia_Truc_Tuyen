@@ -5,7 +5,7 @@ import java.sql.*;
 public class DBConnection {  // cầu nối với database
     // thông tin kêt nối
     private static final String URL = "jdbc:postgresql://kodama.proxy.rlwy.net:46536/railway";
-    private static final String USERNAME = "postgres";
+    private static final String USER = "postgres";
     private static final String PASSWORD = "eNJOOrTZxDClFPrAggDhzicWhwDNlhUI";
 
 
@@ -16,7 +16,7 @@ public class DBConnection {  // cầu nối với database
             Class.forName("org.postgresql.Driver");
 
             // thiết lập kết nối
-            return DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            return DriverManager.getConnection(URL, USER, PASSWORD);
 
         } catch (ClassNotFoundException e) {System.err.println("Lỗi: Không tìm thấy Driver PostgreSQL JDBC!");
             e.printStackTrace();

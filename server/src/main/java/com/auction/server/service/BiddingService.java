@@ -5,11 +5,7 @@ import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
 import com.auction.common.exception.AuctionException ;  // [SỬA] com.auction.exception -> com.auction.common.exception
 import com.auction.common.exception.ErrorCode ;         // [SỬA] com.auction.exception -> com.auction.common.exception
-import com.auction.server.dao.AuctionDAO ;
-import com.auction.server.dao.DatabaseConnection ;
-import com.auction.server.dao.TransactionDAO ;
-import com.auction.server.dao.PaymentDAO ;
-import com.auction.server.dao.BiddingHistoryDAO;
+import com.auction.server.dao.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -65,7 +61,7 @@ public class BiddingService {
     }
 
     private void executeBidTransaction(User user, Auction auction, double amount) {
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 if (auction.getCurrentWinnerId() != null) {
@@ -118,7 +114,7 @@ public class BiddingService {
         double refundAmount = bidAmount - penaltyAmount;
         int adminId = 1;
 
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 paymentDAO.updateBalance(conn, winner.getId(), refundAmount, "+");
