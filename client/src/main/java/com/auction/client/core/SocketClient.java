@@ -12,15 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 import javafx.application.Platform;
 
-/**
- * SocketClient - Singleton quản lý toàn bộ kết nối TCP với Server.
- *
- * ĐÃ SỬA LỖI CHÍNH:
- * - processResponse() trước đây RỖng hoàn toàn => KHÔNG có gì update UI khi server gửi broadcast.
- * - Nay processResponse() gọi MessageRouter.route(message) để phân phối tới đúng Controller.
- *
- * Đặt tại: client/src/main/java/com/auction/client/core/SocketClient.java
- */
 public class SocketClient {
     private static final SocketClient instance = new SocketClient();
     private static final String SERVER_IP = "127.0.0.1";

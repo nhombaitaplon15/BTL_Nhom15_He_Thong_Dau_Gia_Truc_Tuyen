@@ -178,4 +178,5 @@ public class ManagerService {
     public List<Auction> getAuctionsBySeller(int sellerId) {
         return auctionDAO.getAuctionsBySeller(sellerId);
     }
+    public Auction getAuctionById(int auctionId) {return auctionDAO.getAuctionById(auctionId);}
 }

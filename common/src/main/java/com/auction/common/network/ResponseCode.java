@@ -15,6 +15,7 @@ public enum ResponseCode {
     LOGIN_FAILED,           // payload: null
     REGISTER_SUCCESS,       // payload: null
     REGISTER_FAILED,        // payload: null
+    AUCTION_STATUS_CHANGED,
 
     // ===================== BIDDER =====================
     ROOM_LIST_RESULT,           // payload: List<Auction>
@@ -71,6 +72,6 @@ public enum ResponseCode {
     // Broadcast tới tất cả Admin đang online khi có phiên mới cần duyệt
     ADMIN_NEW_PENDING_AUCTION,      // (Broadcast to Admin) payload: Auction
 
-    // ===================== ERROR =====================
-    ERROR_MESSAGE               // payload: String errorDetail
+    ADMIN_AUCTION_APPROVED, // ===================== ERROR =====================
+    ADMIN_AUCTION_REJECTED, ERROR_MESSAGE               // payload: String errorDetail
 }

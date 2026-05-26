@@ -7,29 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/**
- * MessageRouter - Event Bus trung tâm phía Client (Pattern: Observer / Event Bus).
- *
- * VẤN ĐỀ cũ: SocketClient.processResponse() rỗng hoàn toàn => không có gì update UI.
- *
- * GIẢI PHÁP: Mỗi Controller đăng ký (register) handler tương ứng với ResponseCode
- * mà nó quan tâm. Khi SocketClient nhận message từ server, gọi router.route()
- * và router sẽ tìm đúng Controller để notify.
- *
- * Ưu điểm:
- * - SocketClient không cần biết Controller nào đang hiển thị
- * - Mỗi màn hình tự đăng ký/hủy đăng ký handler của mình
- * - Thread-safe (ConcurrentHashMap)
- *
- * Cách dùng trong Controller:
- *   @FXML public void initialize() {
- *       MessageRouter.getInstance().register(ResponseCode.NEW_BID_UPDATE, this::handleBidUpdate);
- *   }
- *   // Nhớ hủy khi rời màn hình:
- *   MessageRouter.getInstance().unregister(ResponseCode.NEW_BID_UPDATE);
- *
- * Đặt tại: client/src/main/java/com/auction/client/core/MessageRouter.java
- */
 public class MessageRouter {
     private static final MessageRouter instance = new MessageRouter();
 

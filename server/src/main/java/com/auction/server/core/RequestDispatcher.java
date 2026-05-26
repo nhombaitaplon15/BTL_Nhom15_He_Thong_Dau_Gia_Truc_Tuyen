@@ -387,8 +387,13 @@ public class RequestDispatcher {
             Integer auctionId = (Integer) request.getPayload();
             boolean success = adminService.approveAuction(auctionId);
             if (success) {
-                client.sendMessage(new Message(ResponseCode.ADMIN_APPROVE_SUCCESS,
-                        "Đã duyệt phiên #" + auctionId, auctionId));
+                Auction updatedAuction = managerService.getAuctionOrThrow(auctionId);
+
+                client.sendMessage(new Message(
+                        ResponseCode.ADMIN_APPROVE_SUCCESS,
+                        "Đã duyệt phiên #" + auctionId,
+                        updatedAuction
+                ));
 
                 // Push thông báo tới Seller chủ phiên
                 Auction auction = managerService.getAuctionOrThrow(auctionId);
@@ -445,7 +450,7 @@ public class RequestDispatcher {
     private void handleAdminGetAllTransactions(ClientHandler client) {
         try {
             List<TransactionRequest> transactions = transactionService.getAllTransactions();
-            client.sendMessage(new Message(ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, "OK", transactions));
+            client.sendMessage(new Message(ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, "OK", transactions));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được giao dịch", null));
         }
@@ -455,7 +460,7 @@ public class RequestDispatcher {
         try {
             Integer txId = (Integer) request.getPayload();
             transactionService.approveTransaction(txId);
-            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_APPROVED, "Đã duyệt giao dịch", txId));
+            client.sendMessage(new Message(ResponseCode.ADMIN_AUCTION_APPROVED, "Đã duyệt giao dịch", txId));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi duyệt giao dịch: " + e.getMessage(), null));
         }
@@ -465,7 +470,7 @@ public class RequestDispatcher {
         try {
             Integer txId = (Integer) request.getPayload();
             transactionService.rejectTransaction(txId);
-            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_REJECTED, "Đã từ chối giao dịch", txId));
+            client.sendMessage(new Message(ResponseCode.ADMIN_AUCTION_REJECTED, "Đã từ chối giao dịch", txId));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi từ chối giao dịch: " + e.getMessage(), null));
         }
