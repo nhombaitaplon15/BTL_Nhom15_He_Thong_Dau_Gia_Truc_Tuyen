@@ -1,4 +1,4 @@
-package com.auction.client.controller.bidder;
+package com.auction.client.controller;
 
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
@@ -91,4 +91,3 @@ public class ReportIssueController {
         }).start();
     }
 }
-

@@ -67,7 +67,9 @@ public class Auction implements Serializable {
 
     public void setItem(Item itemData) {
     }
-
+    public void setItemId(int itemId) {
+        this.itemId = itemId;
+    }
     private Item item;
     public Item getItem() {
         return this.item;
