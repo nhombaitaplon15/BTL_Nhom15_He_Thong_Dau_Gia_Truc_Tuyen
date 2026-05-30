@@ -25,7 +25,6 @@ import javafx.stage.Stage;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class The_Auction_Page_Admin_View_Controller implements Initializable {
@@ -36,14 +35,10 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     @FXML private TableColumn<Auction, Void> colFinancials;
     @FXML private TableColumn<Auction, Void> colStatusAndTime;
     @FXML private TableColumn<Auction, Void> colAction;
-    @FXML private Label lblStatusBar;   // Thanh trạng thái phía dưới bảng
+    @FXML private Label lblStatusBar;
 
     private User currentUser;
     private final ObservableList<Auction> auctionList = FXCollections.observableArrayList();
-
-    // =========================================================
-    // LIFECYCLE
-    // =========================================================
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -56,14 +51,8 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         this.currentUser = user;
     }
 
-    /**
-     * Đăng ký các handler nhận response từ server.
-     */
     private void registerRealtimeHandlers() {
-        // Nhận danh sách tất cả phiên
         MessageRouter.getInstance().register(ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, this::onAuctionsReceived);
-
-        // Nhận kết quả duyệt/từ chối/block
         MessageRouter.getInstance().register(ResponseCode.ADMIN_APPROVE_SUCCESS, msg -> onActionSuccess(msg, "duyệt"));
         MessageRouter.getInstance().register(ResponseCode.ADMIN_APPROVE_FAILED,  msg -> onActionFailed(msg));
         MessageRouter.getInstance().register(ResponseCode.ADMIN_REJECT_SUCCESS,  msg -> onActionSuccess(msg, "từ chối"));
@@ -72,39 +61,28 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         MessageRouter.getInstance().register(ResponseCode.ADMIN_BLOCK_FAILED,    msg -> onActionFailed(msg));
         MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_CREATED, msg -> onTransactionCreated());
         MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_FAILED,  msg -> onActionFailed(msg));
-
-        // [REALTIME] Tự động load lại khi có Seller gửi phiên mới
         MessageRouter.getInstance().register(ResponseCode.ADMIN_NEW_PENDING_AUCTION, msg -> {
             setStatus("🔔 Có phiên mới cần duyệt! Đang tải lại...");
             loadAuctions();
         });
     }
 
-    // =========================================================
-    // DATA
-    // =========================================================
-
-    /**
-     * [ĐÃ SỬA] Gửi request qua socket thay vì gọi managerService.getAllAuctions() trực tiếp.
-     */
     private void loadAuctions() {
         SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
         setStatus("⏳ Đang tải danh sách phiên...");
     }
 
-    // =========================================================
-    // REALTIME HANDLERS
-    // =========================================================
-
-    @SuppressWarnings("unchecked")
     private void onAuctionsReceived(Message message) {
         List<Auction> list = (List<Auction>) message.getPayload();
-        auctionList.clear();
-        if (list != null) auctionList.addAll(list);
-        auctionTable.setItems(null);
-        auctionTable.setItems(auctionList);
-        auctionTable.refresh();
-        setStatus("✅ Đã tải " + auctionList.size() + " phiên đấu giá.");
+        // Bọc trong Platform.runLater để ép JavaFX vẽ lại bảng ngay lập tức khi quay lại trang
+        javafx.application.Platform.runLater(() -> {
+            auctionList.clear();
+            if (list != null) auctionList.addAll(list);
+            auctionTable.setItems(null);
+            auctionTable.setItems(auctionList);
+            auctionTable.refresh();
+            setStatus("✅ Đã tải " + auctionList.size() + " phiên đấu giá.");
+        });
     }
 
     private void onActionSuccess(Message msg, String action) {
@@ -125,12 +103,7 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         loadAuctions();
     }
 
-    // =========================================================
-    // TABLE SETUP (giao diện giống file gốc nhưng action gọi socket)
-    // =========================================================
-
     private void setupPremiumTable() {
-        // --- CỘT 1: SẢN PHẨM & MÃ PHIÊN ---
         colItemAndId.setCellFactory(param -> new TableCell<Auction, Void>() {
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
@@ -143,8 +116,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 setGraphic(new VBox(4, lblTitle, lblId));
             }
         });
-
-        // --- CỘT 2: ĐỐI TƯỢNG THAM GIA ---
         colParticipants.setCellFactory(param -> new TableCell<Auction, Void>() {
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
@@ -159,8 +130,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 setGraphic(new VBox(4, lblSeller, lblWinner));
             }
         });
-
-        // --- CỘT 3: TÀI CHÍNH ---
         colFinancials.setCellFactory(param -> new TableCell<Auction, Void>() {
             @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
@@ -175,7 +144,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
             }
         });
 
-        // --- CỘT 4: TRẠNG THÁI & THỜI GIAN ---
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         colStatusAndTime.setCellFactory(param -> new TableCell<Auction, Void>() {
             @Override protected void updateItem(Void item, boolean empty) {
@@ -200,7 +168,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
             }
         });
 
-        // --- CỘT 5: HÀNH ĐỘNG (gọi socket - không gọi service trực tiếp) ---
         colAction.setCellFactory(param -> new TableCell<Auction, Void>() {
             private final Button btnInfo        = new Button("Xem");
             private final Button btnApprove     = new Button("Duyệt");
@@ -217,7 +184,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 btnBlock.setStyle("-fx-background-color: #FFBB00; -fx-text-fill: #1B2559; -fx-font-weight: bold; -fx-cursor: hand;");
                 btnTransaction.setStyle("-fx-background-color: #E0E7FF; -fx-text-fill: #4338CA; -fx-border-color: #C7D2FE; -fx-font-weight: bold; -fx-cursor: hand;");
 
-                // XEM
                 btnInfo.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -231,7 +197,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                                     + "\nTrạng thái: " + ac.getAuctionStatus());
                 });
 
-                // [SỬA] DUYỆT - gọi socket thay vì adminService.approveAuction()
                 btnApprove.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -246,7 +211,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                     });
                 });
 
-                // [SỬA] TỪ CHỐI - gọi socket
                 btnReject.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -261,8 +225,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                         }
                     });
                 });
-
-                // [SỬA] CHẶN KHẨN CẤP - gọi socket
                 btnBlock.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -277,8 +239,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                         }
                     });
                 });
-
-                // [SỬA] TẠO GIAO DỊCH - gọi socket
                 btnTransaction.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -326,13 +286,13 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
 
 
     @FXML public void goToHomePage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Home_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Home_Page_Admin_View.fxml");
     }
     @FXML public void goToTransactionPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Transaction_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Transaction_Page_Admin_View.fxml");
     }
     @FXML public void goToSettingsPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Settings_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Settings_Page_Admin_View.fxml");
     }
 
     private void switchPage(ActionEvent event, String fxmlPath) {
@@ -340,8 +300,15 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
             Object ctrl = loader.getController();
-            if (ctrl instanceof The_Transaction_Page_Admin_View_Controller)
+
+            // --- CHỈ SỬA KHU VỰC NÀY ---
+            if (ctrl instanceof The_Transaction_Page_Admin_View_Controller) {
                 ((The_Transaction_Page_Admin_View_Controller) ctrl).setUserData(currentUser);
+            } else if (ctrl instanceof The_Home_Page_Admin_View_Controller) {
+                ((The_Home_Page_Admin_View_Controller) ctrl).setUserData(currentUser);
+            }
+            // ---------------------------
+
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.setMaximized(true);

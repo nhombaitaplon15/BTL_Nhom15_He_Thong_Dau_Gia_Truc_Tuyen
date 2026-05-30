@@ -627,13 +627,13 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     // =========================================================
 
     @FXML public void goToHomePage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Home_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Home_Page_Admin_View.fxml");
     }
     @FXML public void goToAuctionPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Auction_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Auction_Page_Admin_View.fxml");
     }
     @FXML public void goToSettingsPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Settings_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Settings_Page_Admin_View.fxml");
     }
 
     private void switchPage(ActionEvent event, String fxmlPath) {

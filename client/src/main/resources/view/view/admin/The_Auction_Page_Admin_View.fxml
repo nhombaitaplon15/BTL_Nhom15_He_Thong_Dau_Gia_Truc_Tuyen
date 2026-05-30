@@ -38,11 +38,6 @@
                                 <Font name="Times New Roman Bold" size="16.0" />
                             </font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToSettingsPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Cài đặt">
-                            <font>
-                                <Font name="Times New Roman Bold" size="16.0" />
-                            </font>
-                        </Button>
                     </children>
                 </HBox>
 
@@ -84,7 +79,7 @@
 
                         <VBox>
                             <children>
-                                <TableView fx:id="auctionTable" prefHeight="650.0" prefWidth="1150.0" style="-fx-background-color: #FFFFFF;" styleClass="my-table" stylesheets="@css/style.css" VBox.vgrow="ALWAYS">
+                                <TableView fx:id="auctionTable" prefHeight="650.0" prefWidth="1150.0" style="-fx-background-color: #FFFFFF;" styleClass="my-table" stylesheets="@../css/style.css" VBox.vgrow="ALWAYS">
                                     <columns>
                                         <TableColumn fx:id="colItemAndId" prefWidth="320.0" text="Sản phẩm &amp; Mã phiên" />
                                         <TableColumn fx:id="colParticipants" prefWidth="220.0" text="Đối tượng tham gia" />

@@ -7,9 +7,11 @@
 <?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
@@ -31,9 +33,6 @@
                             <font><Font name="Times New Roman Bold" size="16.0" /></font>
                         </Button>
                         <Button mnemonicParsing="false" onAction="#goToTransactionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Quản lý giao dịch">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#goToSettingsPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Cài đặt">
                             <font><Font name="Times New Roman Bold" size="16.0" /></font>
                         </Button>
                     </children>
@@ -106,6 +105,14 @@
                                                         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
                                                     </padding>
                                                     <children>
+                                                        <Label text="Thống kê lượt Bid" textFill="#2b3674">
+                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                                                        </Label>
+                                                        <Label text="Biểu đồ phân tích biến động tổng số lượt đặt giá (Bid) trong vòng 7 ngày qua" textFill="#a3aed0">
+                                                            <font><Font name="Times New Roman" size="13.0" /></font>
+                                                            <VBox.margin><Insets bottom="10.0" top="2.0" /></VBox.margin>
+                                                        </Label>
+
                                                         <BarChart fx:id="trendChart" alternativeRowFillVisible="false" animated="false" legendVisible="false" maxHeight="Infinity" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                                                             <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
                                                             <yAxis><NumberAxis side="LEFT" /></yAxis>
@@ -138,23 +145,64 @@
                                                         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
                                                     </padding>
                                                     <children>
-                                                        <PieChart fx:id="statusPieChart" labelsVisible="true" legendVisible="true" maxHeight="Infinity" maxWidth="Infinity" prefHeight="338.0" prefWidth="389.0" style="-fx-background-color: white;" VBox.vgrow="ALWAYS" />
+
+                                                        <Label text="Trạng thái phiên" textFill="#2b3674">
+                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                                                        </Label>
+
+                                                        <StackPane alignment="CENTER" VBox.vgrow="ALWAYS">
+                                                            <children>
+
+                                                                <PieChart fx:id="statusPieChart" labelsVisible="false" legendSide="RIGHT" legendVisible="true" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: transparent;" />
+
+                                                                <StackPane fx:id="donutHolePane" maxHeight="120.0" maxWidth="120.0" prefHeight="120.0" prefWidth="120.0" style="-fx-background-color: white; -fx-background-radius: 100px;">
+                                                                    <children>
+                                                                        <VBox alignment="CENTER" spacing="2.0">
+                                                                            <children>
+                                                                                <Label text="Tổng Phiên" textFill="#a3aed0">
+                                                                                    <font><Font name="Times New Roman Bold" size="13.0" /></font>
+                                                                                </Label>
+                                                                                <Label fx:id="lblTotalAuctions" text="0" textFill="#2b3674">
+                                                                                    <font><Font name="Times New Roman Bold" size="32.0" /></font>
+                                                                                </Label>
+                                                                            </children>
+                                                                        </VBox>
+                                                                    </children>
+                                                                </StackPane>
+
+                                                            </children>
+                                                        </StackPane>
+
                                                     </children>
                                                 </VBox>
 
-                                                <VBox maxHeight="220.0" minHeight="180.0" prefHeight="180.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 4);" VBox.vgrow="NEVER">
-                                                    <padding>
-                                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-                                                    </padding>
+                                                <VBox spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-padding: 20;">
                                                     <children>
-                                                        <Label text="Thống kê nhanh" textFill="#2b3674">
-                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                                                        </Label>
-                                                        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
-                                                            <content>
-                                                                <VBox fx:id="quickStatsContainer" spacing="10.0" />
-                                                            </content>
-                                                        </ScrollPane>
+                                                        <Label style="-fx-text-fill: #1B2559; -fx-font-weight: bold; -fx-font-size: 16;" text="Độ Hot Danh Mục" />
+
+                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                                            <children>
+                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Art" />
+                                                                <ProgressBar fx:id="progressArt" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #05CD99; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
+                                                                <Label fx:id="lblArtStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
+                                                            </children>
+                                                        </HBox>
+
+                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                                            <children>
+                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Vehicle" />
+                                                                <ProgressBar fx:id="progressVehicle" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #FFB547; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
+                                                                <Label fx:id="lblVehicleStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
+                                                            </children>
+                                                        </HBox>
+
+                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                                                            <children>
+                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Electronics" />
+                                                                <ProgressBar fx:id="progressElectronics" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #4318FF; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
+                                                                <Label fx:id="lblElectronicsStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
+                                                            </children>
+                                                        </HBox>
                                                     </children>
                                                 </VBox>
                                             </children>

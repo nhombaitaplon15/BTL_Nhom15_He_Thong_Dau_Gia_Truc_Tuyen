@@ -1,24 +1,24 @@
+/* =========================================================
+   1. BUTTON WELCOME & BACKGROUND MÀN HÌNH
+   ========================================================= */
 .button-welcome {
     -fx-background-color: #70e0bb;
     -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-background-radius: 5px; /* Bo góc nút */
+    -fx-background-radius: 5px;
 }
-
-/* Hiệu ứng khi di chuột vào */
 .button-welcome:hover {
     -fx-background-color: #34dbae;
 }
-/* Thiết lập ảnh nền cho màn hình mở đầu */
 .nen-anh-full {
-    -fx-background-image: url("../images/anen1.jpg"); /* Tên file ảnh nền của bạn */
-    -fx-background-size: 100% 100%; /* Ép ảnh giãn ra lấp đầy 100% chiều ngang và dọc */
+    -fx-background-image: url("../images/anen1.jpg");
+    -fx-background-size: 100% 100%;
     -fx-background-repeat: no-repeat;
 }
-/* =========================================================
-   BẢNG ĐẤU GIÁ (GỘP BẢN CŨ VÀ MỚI)
-   ========================================================= */
 
+/* =========================================================
+   2. BẢNG ĐẤU GIÁ (PREMIUM TABLE VIEW)
+   ========================================================= */
 .my-table {
     -fx-background-color: transparent;
     -fx-control-inner-background: transparent;
@@ -27,12 +27,12 @@
     -fx-border-radius: 16;
     -fx-border-color: #dbe2ea;
     -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 15, 0, 0, 4);
     -fx-padding: 10;
-    -fx-table-cell-border-color: transparent; /* Xóa dòng kẻ dọc */
+    -fx-table-cell-border-color: transparent;
 }
 
-/* --- QUAN TRỌNG: ẨN SẠCH CÁC HÀNG TRỐNG (EMPTY ROWS) --- */
+/* Ẩn hàng trống */
 .my-table .table-row-cell:empty {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -41,7 +41,7 @@
     -fx-border-width: 0px;
 }
 
-/* --- HEADER --- */
+/* Table Header */
 .my-table .column-header-background {
     -fx-background-color: white;
     -fx-background-radius: 16 16 0 0;
@@ -54,14 +54,13 @@
     -fx-border-color: transparent;
 }
 .my-table .column-header .label {
-    -fx-font-family: "Times New Roman";
+    -fx-font-family: "Segoe UI", "Arial";
     -fx-text-fill: #334155;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-alignment: CENTER;
 }
 
-/* --- NỀN BÊN TRONG BẢNG THÀNH TRONG SUỐT --- */
 .my-table .virtual-flow,
 .my-table .virtual-flow .corner,
 .my-table .virtual-flow .clipped-container,
@@ -69,30 +68,23 @@
     -fx-background-color: transparent;
 }
 
-/* --- HÀNG DỮ LIỆU CÓ THẬT --- */
+/* Hàng dữ liệu */
 .my-table .table-row-cell {
     -fx-background-color: white;
-    -fx-cell-size: 60px; /* Chiều cao để chứa 2 dòng text */
-    -fx-border-color: transparent transparent #f1f5f9 transparent; /* Chỉ kẻ viền dưới mỏng */
+    -fx-cell-size: 60px;
+    -fx-border-color: transparent transparent #f1f5f9 transparent;
 }
-
-/* --- HIỆU ỨNG HOVER CHỈ CHO HÀNG CÓ DỮ LIỆU --- */
 .my-table .table-row-cell:filled:hover {
     -fx-background-color: #F4F7FE !important;
     -fx-transition: 0.2s;
 }
-
-/* --- CÁC Ô BÊN TRONG --- */
 .my-table .table-cell {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-alignment: CENTER_LEFT;
 }
 
-/* =========================================================
-   PREMIUM COMPONENTS (BADGE & BUTTONS)
-   ========================================================= */
-
+/* Status Badges & Actions */
 .status-badge {
     -fx-background-radius: 12px;
     -fx-padding: 4px 12px 4px 12px;
@@ -101,9 +93,9 @@
     -fx-font-size: 11px;
 }
 .badge-waiting { -fx-background-color: #FFF9E6; -fx-text-fill: #D48806; }
-.badge-open { -fx-background-color: #E6FFFA; -fx-text-fill: #00A67E; }
-.badge-closed { -fx-background-color: #F5F5F5; -fx-text-fill: #8C8C8C; }
-.badge-rejected { -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; }
+.badge-open    { -fx-background-color: #E6FFFA; -fx-text-fill: #00A67E; }
+.badge-closed  { -fx-background-color: #F5F5F5; -fx-text-fill: #8C8C8C; }
+.badge-rejected{ -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; }
 
 .btn-action {
     -fx-background-radius: 6px;
@@ -112,4 +104,78 @@
     -fx-font-weight: bold;
     -fx-font-size: 12px;
     -fx-cursor: hand;
+}
+
+/* =========================================================
+   BIỂU ĐỒ BÁNH (PREMIUM PIE CHART)
+   ========================================================= */
+.pie-chart {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-legend-visible: true;
+    -fx-legend-side: right;
+}
+
+.chart-pie {
+    -fx-border-color: white;
+    -fx-border-width: 3px;
+    -fx-background-insets: 0; /* Lệnh quan trọng: Xóa bỏ hiệu ứng nổi 3D mặc định */
+    -fx-transition: 0.3s;
+}
+
+/* Hiệu ứng khi di chuột vào từng miếng bánh */
+.chart-pie:hover {
+    -fx-scale-x: 1.04;
+    -fx-scale-y: 1.04;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);
+}
+
+/* Đổi sang hệ màu Flat Design hiện đại (Giống ảnh 5) */
+.default-color0.chart-pie { -fx-pie-color: #8156C6; } /* Tím đậm - Waiting */
+.default-color0.chart-legend-item-symbol { -fx-background-color: #8156C6; }
+
+.default-color1.chart-pie { -fx-pie-color: #A63F3F; } /* Đỏ trầm - Open */
+.default-color1.chart-legend-item-symbol { -fx-background-color: #A63F3F; }
+
+.default-color2.chart-pie { -fx-pie-color: #7A8D91; } /* Xám đá - Running */
+.default-color2.chart-legend-item-symbol { -fx-background-color: #7A8D91; }
+
+.default-color3.chart-pie { -fx-pie-color: #F07B3F; } /* Cam sạch - Rejected */
+.default-color3.chart-legend-item-symbol { -fx-background-color: #F07B3F; }
+
+.default-color4.chart-pie { -fx-pie-color: #2A9D8F; } /* Xanh ngọc - End */
+.default-color4.chart-legend-item-symbol { -fx-background-color: #2A9D8F; }
+
+/* Định dạng bảng chú thích bên phải */
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 0px 0px 0px 20px; /* Đẩy Legend xa ra khỏi bánh một chút */
+}
+
+.chart-legend-item {
+    -fx-text-fill: #1B2559;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 6px 0 6px 0;
+}
+
+/* Biến ô vuông chú thích thành chấm tròn */
+.chart-legend-item-symbol {
+    -fx-background-radius: 50%;
+    -fx-padding: 6px;
+}
+/* Làm cho thanh tiến trình mảnh mai và bo tròn cực mạnh */
+.progress-bar {
+    -fx-min-height: 10px;
+    -fx-pref-height: 10px;
+    -fx-max-height: 10px;
+}
+
+.progress-bar .track {
+    -fx-background-color: #E2E8F0; /* Màu nền của phần chưa chạy tới (màu xám nhạt) */
+    -fx-background-radius: 20px;   /* Bo tròn nền */
+}
+
+.progress-bar .bar {
+    -fx-background-radius: 20px;   /* Bo tròn thanh màu */
+    -fx-background-insets: 0;      /* Làm thanh màu khít với khung nền */
 }
