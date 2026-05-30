@@ -1,8 +1,8 @@
-package com.auction.server.core;
+package src.main.java.com.auction.server.core;
 
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
-import com.auction.server.service.UserService;
+import src.main.java.com.auction.server.service.UserService;
 
 import java.util.Collection;
 import java.util.Set;

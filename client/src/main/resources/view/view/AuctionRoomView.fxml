@@ -70,106 +70,131 @@
                         </VBox>
                     </content>
                 </ScrollPane>
+                <ScrollPane prefHeight="806.0" prefWidth="425.0">
+                    <content>
 
-                <VBox maxWidth="400.0" minWidth="400.0" prefWidth="400.0" spacing="25.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 15, 0, 0, 6);">
-                    <children>
-                        <VBox alignment="CENTER" style="-fx-background-color: #EFF6FF; -fx-background-radius: 12; -fx-border-color: #BFDBFE; -fx-border-radius: 12;">
+                        <VBox maxWidth="412.0" minWidth="400.0" prefHeight="815.0" prefWidth="412.0" spacing="25.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 15, 0, 0, 6);">
                             <children>
-                                <Label style="-fx-text-fill: #1E40AF;" text="THỜI GIAN CÒN LẠI">
-                                    <font><Font name="System Bold" size="13.0" /></font>
-                                </Label>
-                                <Label fx:id="lblCountdown" style="-fx-text-fill: #DC2626;" text="--h : --m : --s">
-                                    <font><Font name="System Bold" size="28.0" /></font>
-                                    <VBox.margin><Insets top="5.0" /></VBox.margin>
-                                </Label>
-                            </children>
-                            <padding><Insets bottom="15.0" top="15.0" /></padding>
-                        </VBox>
-
-                        <VBox spacing="12.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 12; -fx-padding: 15;">
-                            <children>
-                                <HBox alignment="CENTER_LEFT">
+                                <VBox alignment="CENTER" style="-fx-background-color: #EFF6FF; -fx-background-radius: 12; -fx-border-color: #BFDBFE; -fx-border-radius: 12;">
                                     <children>
-                                        <Label style="-fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 14px;" text="Ví tiền của bạn:" />
-                                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label fx:id="lblUserBalance" style="-fx-text-fill: #22C55E; -fx-font-weight: bold; -fx-font-size: 15px;" text="0 UETệ" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-
-                                <HBox alignment="CENTER_LEFT" style="-fx-padding: 2 0 0 0;">
-                                    <children>
-                                        <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px; -fx-font-style: italic;" text="Tiền đang tạm giữ:" />
-                                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label fx:id="lblUserEscrow" style="-fx-text-fill: #EA580C; -fx-font-weight: bold; -fx-font-size: 14px;" text="0 UETệ" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-
-                                <Separator prefWidth="200.0" />
-
-                                <HBox alignment="CENTER_LEFT">
-                                    <children>
-                                        <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px;" text="Giá khởi điểm:" />
-                                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label fx:id="lblStartPrice" style="-fx-text-fill: #64748B; -fx-text-decoration: line-through; -fx-font-size: 13px;" text="0 UETệ" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-                                <Separator prefWidth="200.0" />
-                                <HBox alignment="CENTER_LEFT">
-                                    <children>
-                                        <Label style="-fx-text-fill: #1E293B; -fx-font-size: 15px;" text="GIÁ HIỆN TẠI:">
-                                            <font><Font name="System Bold" size="15.0" /></font>
+                                        <Label style="-fx-text-fill: #1E40AF;" text="THỜI GIAN CÒN LẠI">
+                                            <font>
+                                                <Font name="System Bold" size="13.0" />
+                                            </font>
                                         </Label>
-                                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                        <Label fx:id="lblCountdown" style="-fx-text-fill: #DC2626;" text="--h : --m : --s">
+                                            <font>
+                                                <Font name="System Bold" size="28.0" />
+                                            </font>
+                                            <VBox.margin>
+                                                <Insets top="5.0" />
+                                            </VBox.margin>
+                                        </Label>
+                                    </children>
+                                    <padding>
+                                        <Insets bottom="15.0" top="15.0" />
+                                    </padding>
+                                </VBox>
+
+                                <VBox spacing="12.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 12; -fx-padding: 15;">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT">
                                             <children>
-                                                <Label fx:id="lblCurrentPrice" style="-fx-text-fill: #0056B3;" text="0 UETệ">
-                                                    <font><Font name="System Bold" size="22.0" /></font>
+                                                <Label style="-fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 14px;" text="Ví tiền của bạn:" />
+                                                <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label fx:id="lblUserBalance" style="-fx-text-fill: #22C55E; -fx-font-weight: bold; -fx-font-size: 15px;" text="0 UETệ" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+
+                                        <HBox alignment="CENTER_LEFT" style="-fx-padding: 2 0 0 0;">
+                                            <children>
+                                                <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px; -fx-font-style: italic;" text="Tiền đang tạm giữ:" />
+                                                <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label fx:id="lblUserEscrow" style="-fx-text-fill: #EA580C; -fx-font-weight: bold; -fx-font-size: 14px;" text="0 UETệ" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+
+                                        <Separator prefWidth="200.0" />
+
+                                        <HBox alignment="CENTER_LEFT">
+                                            <children>
+                                                <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px;" text="Giá khởi điểm:" />
+                                                <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label fx:id="lblStartPrice" style="-fx-text-fill: #64748B; -fx-text-decoration: line-through; -fx-font-size: 13px;" text="0 UETệ" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </HBox>
+                                        <Separator prefWidth="200.0" />
+                                        <HBox alignment="CENTER_LEFT">
+                                            <children>
+                                                <Label style="-fx-text-fill: #1E293B; -fx-font-size: 15px;" text="GIÁ HIỆN TẠI:">
+                                                    <font>
+                                                        <Font name="System Bold" size="15.0" />
+                                                    </font>
                                                 </Label>
+                                                <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label fx:id="lblCurrentPrice" style="-fx-text-fill: #0056B3;" text="0 UETệ">
+                                                            <font>
+                                                                <Font name="System Bold" size="22.0" />
+                                                            </font>
+                                                        </Label>
+                                                    </children>
+                                                </HBox>
                                             </children>
                                         </HBox>
                                     </children>
-                                </HBox>
-                            </children>
-                        </VBox>
+                                </VBox>
 
-                        <Separator prefWidth="200.0" />
+                                <Separator prefWidth="200.0" />
 
-                        <VBox spacing="12.0">
-                            <children>
-                                <Label style="-fx-text-fill: #334155;" text="Nhập mức giá muốn trả (UETệ):">
-                                    <font><Font name="System Bold" size="14.0" /></font>
-                                </Label>
-                                <TextField fx:id="txtBidAmount" prefHeight="45.0" style="-fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-radius: 8; -fx-font-size: 15px;">
+                                <VBox spacing="12.0">
+                                    <children>
+                                        <Label style="-fx-text-fill: #334155;" text="Nhập mức giá muốn trả (UETệ):">
+                                            <font>
+                                                <Font name="System Bold" size="14.0" />
+                                            </font>
+                                        </Label>
+                                        <TextField fx:id="txtBidAmount" prefHeight="45.0" style="-fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-radius: 8; -fx-font-size: 15px;">
+                                            <font>
+                                                <Font name="System Bold" size="14.0" />
+                                            </font>
+                                        </TextField>
+                                        <Button fx:id="btnPlaceBid" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#onSubmitBid" prefHeight="48.0" style="-fx-background-color: #0056B3; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;" text="XÁC NHẬN ĐẶT GIÁ">
+                                            <font>
+                                                <Font name="System Bold" size="15.0" />
+                                            </font>
+                                        </Button>
+                                    </children>
+                                </VBox>
+
+                                <Separator prefWidth="200.0" />
+                                <Label prefHeight="0.0" prefWidth="183.0" style="-fx-text-fill: #475569;" text="Lịch sử đặt giá trong phòng">
                                     <font>
                                         <Font name="System Bold" size="14.0" />
-                                    </font></TextField>
-                                <Button fx:id="btnPlaceBid" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#onSubmitBid" prefHeight="48.0" style="-fx-background-color: #0056B3; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;" text="XÁC NHẬN ĐẶT GIÁ">
-                                    <font><Font name="System Bold" size="15.0" /></font>
-                                </Button>
-                            </children>
-                        </VBox>
-
-                        <Separator prefWidth="200.0" />
-
-                        <VBox fx:id="boxBidHistory" spacing="10.0" VBox.vgrow="ALWAYS">
-                            <children>
-                                <Label style="-fx-text-fill: #475569;" text="Lịch sử đặt giá trong phòng">
-                                    <font><Font name="System Bold" size="14.0" /></font>
+                                    </font>
                                 </Label>
-                                <VBox fx:id="listHistoryContainer" spacing="8.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 12; -fx-padding: 15;" VBox.vgrow="ALWAYS" />
+
+                                <VBox fx:id="boxBidHistory" spacing="10.0" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <VBox fx:id="listHistoryContainer" prefHeight="166.0" prefWidth="348.0" spacing="8.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 12; -fx-padding: 15;" />
+                                    </children>
+                                </VBox>
                             </children>
+                            <padding>
+                                <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+                            </padding>
                         </VBox>
-                    </children>
-                    <padding><Insets bottom="25.0" left="25.0" right="25.0" top="25.0" /></padding>
-                </VBox>
+                    </content>
+                </ScrollPane>
             </children>
         </HBox>
     </children>

@@ -1,11 +1,9 @@
 package com.auction.client.controller;
-
 import com.auction.common.model.*;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.service.BiddingService;
-import com.auction.exception.AuctionException;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -28,26 +26,27 @@ import java.util.List;
 
 public class AuctionRoomController {
 
+    // 🎯 Đồng bộ 4 ID Admin để xác định Admin quản lý phòng
+    private static final int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
+
     @FXML private Label lblProductName;
     @FXML private ImageView imgProduct;
     @FXML private Label lblDescription;
     @FXML private Label lblCountdown;
-    @FXML private Label lblUserBalance; // Hiển thị ví chính khả dụng
-    @FXML private Label lblUserEscrow;  // Hiển thị tiền tạm giữ ký quỹ
+    @FXML private Label lblUserBalance;
+    @FXML private Label lblUserEscrow;
     @FXML private Label lblStartPrice;
     @FXML private Label lblCurrentPrice;
     @FXML private TextField txtBidAmount;
     @FXML private Button btnPlaceBid;
 
-    // Khung chứa danh sách lịch sử đặt giá
     @FXML private VBox listHistoryContainer;
     @FXML private VBox vboxProperties;
+    @FXML private VBox boxBidHistory;
 
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
     private final PaymentDAO paymentDAO = new PaymentDAO();
-
-    // Kết nối đến BiddingService, truyền null vì chạy trực tiếp qua Database luồng Client
     private final BiddingService biddingService = new BiddingService(null);
 
     private int activeAuctionId;
@@ -62,31 +61,44 @@ public class AuctionRoomController {
         if (lblProductName != null) lblProductName.setText(itemName);
         refreshRoomData();
     }
-
     private void refreshRoomData() {
         new Thread(() -> {
             try {
                 Auction auction = auctionDAO.getAuctionById(activeAuctionId);
 
-                // Kéo thông số tiền khả dụng và tiền đóng băng cọc từ Postgres lên RAM
                 double realBalance = paymentDAO.getBalance(currentOnlineUser.getId());
-                double realEscrow = paymentDAO.getEscrowBalance(currentOnlineUser.getId());
                 currentOnlineUser.setBalance(realBalance);
 
-                // Lấy danh sách lịch sử đặt giá từ Database lên
                 List<BiddingHistory> historyList = auctionDAO.getBiddingHistoryByAuctionId(activeAuctionId);
 
                 if (auction != null) {
                     this.currentAuctionPrice = auction.getCurrentPrice();
                     Item item = itemDAO.getItemById(auction.getItemId());
 
+                    // 🎯 ĐÃ SỬA LOGIC: Tính số tiền cọc của RIÊNG Bidder này đang bị Admin giữ
+                    double bidderEscrowInThisRoom = 0;
+
+                    // Nếu người đang dẫn đầu phiên đấu giá chính là User đang đăng nhập này
+                    if (auction.getCurrentWinnerId() == currentOnlineUser.getId()) {
+                        bidderEscrowInThisRoom = auction.getCurrentPrice();
+                        // Tiền cọc đang bị Admin đóng băng chính là mức giá cao nhất mà họ đã trả
+                    } else {
+                        bidderEscrowInThisRoom = 0;
+                        // Nếu bị người khác đè giá, tiền đã hoàn về ví chính nên ví tạm của họ bằng 0
+                    }
+
+                    final double finalEscrow = bidderEscrowInThisRoom;
+
                     Platform.runLater(() -> {
                         if (lblCurrentPrice != null) lblCurrentPrice.setText(String.format("%,.0f UETệ", auction.getCurrentPrice()));
                         if (lblStartPrice != null) lblStartPrice.setText(String.format("%,.0f UETệ", auction.getStartingPrice()));
 
-                        // Đổ dữ liệu tiền mặt phân tách dấu phẩy lên giao diện phòng Live
                         if (lblUserBalance != null) lblUserBalance.setText(String.format("%,.0f UETệ", realBalance));
-                        if (lblUserEscrow != null) lblUserEscrow.setText(String.format("%,.0f UETệ", realEscrow));
+
+                        // 🎯 HIỂN THỊ CHUẨN: Chỉ hiện số tiền cọc cá nhân của Bidder này đang nằm trong ví Admin
+                        if (lblUserEscrow != null) {
+                            lblUserEscrow.setText(String.format("Tiền cọc của bạn: %,.0f UETệ", finalEscrow));
+                        }
 
                         if (item != null) {
                             if (lblProductName != null) lblProductName.setText(item.getName());
@@ -104,9 +116,7 @@ public class AuctionRoomController {
                             }
                         }
 
-                        // Đổ dữ liệu lịch sử đặt giá lên giao diện VBox
                         populateBidHistory(historyList);
-
                         startRoomCountdown(auction.getEndTime());
                     });
                 }
@@ -128,22 +138,19 @@ public class AuctionRoomController {
             return;
         }
 
-        // Khởi tạo nhanh một đối tượng UserDAO hoặc tận dụng hàm chạy SQL trực tiếp tại đây để lấy tên
-        com.auction.server.dao.AuctionDAO tempDao = new com.auction.server.dao.AuctionDAO();
+        historyList.sort((b1, b2) -> Double.compare(b2.getBidAmount(), b1.getBidAmount()));
 
         for (BiddingHistory bid : historyList) {
             HBox row = new HBox(10);
             row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; " +
                     "-fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
 
-            // 🎯 CÁCH ĐI TẮT: Sử dụng luôn bid.getBidderId() vốn đã có sẵn trong Model của bạn!
             int bId = bid.getBidderId();
             String bidderName = "Người dùng #" + bId;
 
             if (bId == currentOnlineUser.getId()) {
                 bidderName = "Bạn (Tôi)";
             } else {
-                // Thực hiện một câu truy vấn siêu tốc để lấy Username từ user_id trực tiếp, không cần sửa Model!
                 String sqlGetUsername = "SELECT username FROM public.users WHERE user_id = ?";
                 try (java.sql.Connection conn = com.auction.server.dao.DBConnection.getConnection();
                      java.sql.PreparedStatement ps = conn.prepareStatement(sqlGetUsername)) {
@@ -154,18 +161,18 @@ public class AuctionRoomController {
                         }
                     }
                 } catch (Exception e) {
-                    // Nếu lỗi thì giữ nguyên "Người dùng #ID", không lo bị crash ứng dụng
+                    // Giữ nguyên fallback name nếu lỗi
                 }
             }
 
             Label lblUser = new Label(bidderName);
-            lblUser.setStyle("-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
 
-            // Highlight nếu là lượt của bạn
             if (bId == currentOnlineUser.getId()) {
-                lblUser.setStyle("-fx-text-fill: #0f172a; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
-                row.setStyle("-fx-padding: 8 12; -fx-background-color: #f8fafc; -fx-background-radius: 8; " +
-                        "-fx-border-color: #cbd5e1; -fx-border-radius: 8; -fx-alignment: center-left;");
+                lblUser.setStyle("-fx-text-fill: #0F172A; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
+                row.setStyle("-fx-padding: 8 12; -fx-background-color: #EFF6FF; -fx-background-radius: 8; " +
+                        "-fx-border-color: #BFDBFE; -fx-border-radius: 8; -fx-alignment: center-left;");
+            } else {
+                lblUser.setStyle("-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
             }
 
             Label lblPrice = new Label(String.format("%,.0f UETệ", bid.getBidAmount()));
@@ -183,6 +190,46 @@ public class AuctionRoomController {
             row.getChildren().addAll(lblUser, rightContainer);
             listHistoryContainer.getChildren().add(row);
         }
+    }
+
+    public void addSingleBidToHistory(int bidderId, String username, double bidAmount) {
+        Platform.runLater(() -> {
+            if (bidAmount > this.currentAuctionPrice) {
+                this.currentAuctionPrice = bidAmount;
+                if (lblCurrentPrice != null) {
+                    lblCurrentPrice.setText(String.format("%,.0f UETệ", bidAmount));
+                }
+            }
+
+            if (!listHistoryContainer.getChildren().isEmpty() && listHistoryContainer.getChildren().get(0) instanceof Label) {
+                listHistoryContainer.getChildren().clear();
+            }
+
+            HBox row = new HBox(10);
+            row.setStyle("-fx-padding: 8 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-alignment: center-left;");
+
+            String displayName = (bidderId == currentOnlineUser.getId()) ? "Bạn (Tôi)" : username;
+            Label lblUser = new Label(displayName);
+
+            if (bidderId == currentOnlineUser.getId()) {
+                lblUser.setStyle("-fx-text-fill: #0F172A; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
+                row.setStyle("-fx-padding: 8 12; -fx-background-color: #EFF6FF; -fx-background-radius: 8; -fx-border-color: #BFDBFE; -fx-border-radius: 8; -fx-alignment: center-left;");
+            } else {
+                lblUser.setStyle("-fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
+                row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
+            }
+
+            Label lblPrice = new Label(String.format("%,.0f UETệ", bidAmount));
+            lblPrice.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 13px;");
+
+            HBox rightContainer = new HBox();
+            javafx.scene.layout.HBox.setHgrow(rightContainer, javafx.scene.layout.Priority.ALWAYS);
+            rightContainer.setStyle("-fx-alignment: center-right;");
+            rightContainer.getChildren().add(lblPrice);
+
+            row.getChildren().addAll(lblUser, rightContainer);
+            listHistoryContainer.getChildren().add(0, row);
+        });
     }
 
     private void loadProductProperties(Item item) {
@@ -247,21 +294,12 @@ public class AuctionRoomController {
         roomCountdownTimeline.play();
     }
 
-    /**
-     * 🎯 GIỮ NGUYÊN TÊN HÀM VÀ NÚT BẤM CŨ
-     */
-
-
     @FXML
     void handleBackToMarket(ActionEvent event) {
         if (roomCountdownTimeline != null) roomCountdownTimeline.stop();
         Stage stage = (Stage) lblProductName.getScene().getWindow();
         stage.close();
     }
-    // Khai báo BiddingService ở đầu Class AuctionRoomController nếu chưa có:
-    // private final com.auction.service.BiddingService biddingService = new com.auction.service.BiddingService(managerService);
-    // Hoặc nếu gọi thẳng qua DB (Direct) thì khởi tạo mặc định:
-
 
     @FXML
     void onSubmitBid(ActionEvent event) {
@@ -274,59 +312,48 @@ public class AuctionRoomController {
         try {
             double bidAmount = Double.parseDouble(inputStr);
 
-            // 1. Kiểm tra nhanh ở Client để đỡ mất công gọi xuống Service
             if (bidAmount <= currentAuctionPrice) {
                 showAlert("Lỗi đặt giá", "Giá đặt phải lớn hơn giá hiện tại!", Alert.AlertType.ERROR);
                 return;
             }
 
-            // 2. Lấy thông tin phiên đấu giá hiện tại từ Database
             Auction auction = auctionDAO.getAuctionById(activeAuctionId);
             if (auction == null) {
                 showAlert("Lỗi", "Không tìm thấy thông tin phiên đấu giá này!", Alert.AlertType.ERROR);
                 return;
             }
 
-            // Kiểm tra trạng thái phiên đấu giá trước khi truyền đi
             if (!"RUNNING".equalsIgnoreCase(auction.getAuctionStatus())) {
                 showAlert("Lỗi", "Phiên đấu giá này đã kết thúc hoặc chưa bắt đầu!", Alert.AlertType.ERROR);
                 return;
             }
 
-            // 3. ỦY QUYỀN TOÀN BỘ LOGIC CHO VŨ KHÍ BÍ MẬT "BiddingService" XỬ LÝ
             try {
-                // Sử dụng hàm đặt giá trực tiếp từ DB kết hợp Transaction nguyên tử của bạn
                 biddingService.placeBidDirectFromDB(currentOnlineUser, auction.getAuctionId(), bidAmount);
-
-                // Nếu chạy đến đây không văng Exception -> Đặt giá thành công!
-                showAlert("Thành công", "Đặt giá thành công! Số tiền cũ của người trước đã được hoàn trả, tài khoản của bạn đã được đóng băng giữ cọc.", Alert.AlertType.INFORMATION);
+                showAlert("Thành công", "Đặt giá thành công! Số tiền cũ của người trước đã được hoàn trả, tài khoản hệ thống Admin đã đóng băng giữ cọc phiên này.", Alert.AlertType.INFORMATION);
                 txtBidAmount.clear();
 
             } catch (com.auction.exception.AuctionException ae) {
-                // Bắt các lỗi nghiệp vụ được định nghĩa từ ErrorCode của bạn (Ví dụ: BID_TOO_LOW, INTERNAL_ERROR)
                 showAlert("Thất bại", "Lỗi hệ thống: " + ae.getMessage(), Alert.AlertType.ERROR);
             } catch (Exception ex) {
                 showAlert("Thất bại", "Giao dịch không thành công. Vui lòng kiểm tra lại số dư ví chính!", Alert.AlertType.ERROR);
                 ex.printStackTrace();
             }
 
-            // 4. Đồng bộ làm mới số dư hiển thị và bảng lịch sử phòng đấu giá ngay tức thì
             refreshRoomData();
 
         } catch (NumberFormatException e) {
             showAlert("Lỗi định dạng", "Vui lòng nhập số tiền hợp lệ!", Alert.AlertType.ERROR);
         }
     }
-    /**
-     * 🎯 SỬA LỖI GẠCH ĐỎ: Thêm cặp ngoặc đóng mở () cho hàm showAndWait() chuẩn JavaFX
-     */
+
     private void showAlert(String title, String content, Alert.AlertType type) {
         Platform.runLater(() -> {
             Alert alert = new Alert(type);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(content);
-            alert.showAndWait(); // 🎯 ĐÃ THÊM () Ở ĐÂY ĐỂ SỬA LỖI BIÊN DỊCH
+            alert.showAndWait();
         });
     }
 }

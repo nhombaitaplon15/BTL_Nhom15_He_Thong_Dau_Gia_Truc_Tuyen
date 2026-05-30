@@ -1,8 +1,4 @@
 package com.auction.client.controller;
-
-import com.auction.client.controller.bidder.ProfileController;
-import com.auction.client.controller.bidder.TransactionHistoryController;
-import com.auction.client.controller.bidder.WalletController;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
@@ -68,22 +64,45 @@ public class The_Home_Page_Bidder_View_Controller {
         loadAuctionsFromDatabase("VEHICLE");
     }
 
+    /**
+     * 🎯 ĐÃ SỬA: Bổ sung tiền tố "Tạm giữ: " vào hàm hiển thị nhãn để khớp giao diện FXML
+     */
     public void updateWalletUI() {
         if (currentUser == null) return;
 
         new Thread(() -> {
             try {
+                // 1. Lấy số dư ví chính thực tế từ Database
                 double actualBalance = paymentDAO.getBalance(currentUser.getId());
-                double actualEscrow = paymentDAO.getEscrowBalance(currentUser.getId());
+
+                // 2. Tính tổng số tiền cọc hiện tại của riêng cá nhân Bidder này đang bị đóng băng trong quỹ Admin
+                double totalUserEscrow = 0;
+                String sqlEscrow = "SELECT SUM(current_price) FROM auctions WHERE current_winner_id = ? AND auction_status = 'RUNNING'";
+
+                try (java.sql.Connection conn = com.auction.server.dao.DBConnection.getConnection();
+                     java.sql.PreparedStatement ps = conn.prepareStatement(sqlEscrow)) {
+                    ps.setInt(1, currentUser.getId());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            totalUserEscrow = rs.getDouble(1);
+                        }
+                    }
+                }
+
+                final double finalEscrow = totalUserEscrow;
 
                 Platform.runLater(() -> {
+                    // Cập nhật số dư mới vào thực thể user hiện hành
                     currentUser.setBalance(actualBalance);
 
+                    // Hiển thị số dư ví chính
                     if (lblBalance != null) {
                         lblBalance.setText(String.format("%,.0f UETệ", actualBalance));
                     }
+
+                    // 🎯 HIỂN THỊ CHUẨN: Giữ nguyên từ "Tạm giữ: " và format tiền tệ đi kèm
                     if (lblEscrowBalance != null) {
-                        lblEscrowBalance.setText(String.format("Tạm giữ: %,.0f UETệ", actualEscrow));
+                        lblEscrowBalance.setText(String.format("Tạm giữ: %,.0f UETệ", finalEscrow));
                     }
                 });
             } catch (Exception e) {
@@ -175,8 +194,6 @@ public class The_Home_Page_Bidder_View_Controller {
                     ((ProfileController) controller).setUserData(this.currentUser);
                 } else if (type == 5 && controller instanceof BiddingHistoryController) {
                     ((BiddingHistoryController) controller).setUserData(this.currentUser);
-
-                    // 🎯 SỬA LỖI: Truyền thêm tham số thứ 2 là "this" (chính là controller Trang Chủ này)
                     ((BiddingHistoryController) controller).setMainHomeController(
                             ((javafx.scene.Node) event.getSource()).getScene(),
                             this

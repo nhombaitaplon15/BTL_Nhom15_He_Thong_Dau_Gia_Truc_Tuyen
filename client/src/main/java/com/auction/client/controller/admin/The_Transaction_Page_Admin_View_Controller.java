@@ -1,7 +1,7 @@
 package com.auction.client.controller.admin; // [SỬA] client.controller.admin -> com.auction.client.controller.admin
 
-import com.auction.client.core.MessageRouter;
-import com.auction.client.core.SocketClient;
+import MessageRouter;
+import SocketClient;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;

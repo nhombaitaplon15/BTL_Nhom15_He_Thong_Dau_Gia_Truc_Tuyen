@@ -1,5 +1,3 @@
-package com.auction.client.core;
-
 import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
 

@@ -1,4 +1,4 @@
-package com.auction.server.core;
+package src.main.java.com.auction.server.core;
 
 import com.auction.common.exception.AuctionException;
 import com.auction.common.model.Auction;
@@ -6,13 +6,13 @@ import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.*;
-import com.auction.server.service.AdminService;
-import com.auction.server.service.BiddingService;
-import com.auction.server.service.ItemService;
-import com.auction.server.service.ManagerService;
-import com.auction.server.service.SellerService;
-import com.auction.server.service.TransactionService;
-import com.auction.server.service.UserService;
+import src.main.java.com.auction.server.service.AdminService;
+import src.main.java.com.auction.server.service.BiddingService;
+import src.main.java.com.auction.server.service.ItemService;
+import src.main.java.com.auction.server.service.ManagerService;
+import src.main.java.com.auction.server.service.SellerService;
+import src.main.java.com.auction.server.service.TransactionService;
+import src.main.java.com.auction.server.service.UserService;
 
 import java.util.List;
 

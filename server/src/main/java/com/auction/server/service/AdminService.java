@@ -1,9 +1,9 @@
-package com.auction.server.service;
+package src.main.java.com.auction.server.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.exception.AuctionException ;
 import com.auction.common.exception.ErrorCode ;
-import com.auction.server.dao.AuctionDAO ;
+import src.main.java.com.auction.server.dao.AuctionDAO;
 
 import java.util.List;
 import java.util.Map;

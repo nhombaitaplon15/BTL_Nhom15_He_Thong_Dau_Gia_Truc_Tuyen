@@ -1,4 +1,4 @@
-package com.auction.server.core;
+package src.main.java.com.auction.server.core;
 
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;

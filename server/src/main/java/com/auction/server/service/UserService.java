@@ -1,25 +1,29 @@
-package com.auction.server.service;
+package src.main.java.com.auction.server.service;
 
 import com.auction.common.model.User;
 import com.auction.common.exception.AuctionException;
 import com.auction.common.exception.ErrorCode;
 import com.auction.common.factory.UserFactory;
-import com.auction.server.dao.UserDAO;
+import src.main.java.com.auction.server.dao.UserDAO;
+
+import java.util.List;
 
 public class UserService {
     private UserDAO userDAO = new UserDAO();
 
-    // 1. XỬ LÝ LOGIC ĐĂNG KÝ (Nhận String trực tiếp từ Controller - Gọn gàng, không lo lớp Abstract)
+    // --- 1. HỆ THỐNG ĐĂNG KÝ & ĐĂNG NHẬP ---
+
+    /** Xử lý đăng ký tài khoản mới trực tiếp từ dữ liệu chuỗi chu chuyển */
     public boolean handleRegister(String username, String password, String email, String phone) {
         try {
-            // Kiểm tra định dạng (Truyền các chuỗi đã lấy ra)
+            // Kiểm tra định dạng dữ liệu đầu vào
             validateFormat(password, phone, email);
 
-            // Kiểm tra trùng lặp trong DB
+            // Kiểm tra trùng lặp thuộc tính trong Database SQL
             checkDuplicates(username, email, phone);
             User finalUser = UserFactory.createUser(0, username, email, password, phone, "ACTIVE", "BIDDER", 0.0);
 
-            // Lưu vào SQL
+            // Lưu dữ liệu xuống SQL
             if (!userDAO.register(finalUser)) {
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi hệ thống: Không thể lưu tài khoản!");
             }
@@ -30,21 +34,21 @@ public class UserService {
         } catch (AuctionException e) {
             throw e;
         } catch (Exception e) {
-            // CẢI TIẾN CRITICAL: Không nuốt lỗi nữa, ném thẳng thông điệp gốc từ SQL/System lên Giao diện để debug
             System.err.println("Lỗi đăng ký tại Service: " + e.getMessage());
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database/Hệ thống gốc: " + e.getMessage());
         }
     }
-    // 2. XỬ LÝ ĐĂNG NHẬP (Đã sửa: Nhận String trực tiếp thay vì Object User phiền phức)
+
+    /** Xử lý xác thực đăng nhập và kiểm tra trạng thái hoạt động */
     public User handleLogin(String username, String password) {
         User user = userDAO.checkLogin(username, password);
 
-        // Guard: Không tìm thấy user hoặc sai pass
+        // Guard: Không tìm thấy user hoặc nhập sai mật khẩu
         if (user == null) {
             throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tài khoản hoặc mật khẩu không chính xác!");
         }
 
-        // Guard: Tài khoản bị khóa
+        // Guard: Tài khoản bị vô hiệu hóa
         if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tài khoản hiện đang bị khóa bởi Admin!");
         }
@@ -52,9 +56,10 @@ public class UserService {
         return user;
     }
 
-    // 3. ĐỔI MẬT KHẨU
+    // --- 2. QUẢN LÝ THÔNG TIN TÀI KHOẢN ---
+
+    /** Thực thi quy trình đổi mật khẩu an toàn và đồng bộ bộ nhớ đệm RAM */
     public void handleChangePassword(User currentUser, String oldP, String newP, String confirmP) {
-        // Guards: Kiểm tra logic mật khẩu
         if (!currentUser.getPassword().equals(oldP))
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Mật khẩu cũ không đúng!");
         if (newP.equals(oldP))
@@ -64,27 +69,25 @@ public class UserService {
         if (!newP.equals(confirmP))
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Xác nhận mật khẩu không khớp!");
 
-        // Update SQL
+        // Cập nhật xuống SQL
         if (!userDAO.updatePassword(currentUser.getUsername(), newP)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database: Không thể cập nhật mật khẩu!");
         }
-        currentUser.setPassword(newP); // Cập nhật đối tượng trong RAM để tránh lệch giao diện
+        currentUser.setPassword(newP); // Cập nhật RAM gốc để tránh lệch dữ liệu hiển thị trên Client
     }
 
-    // 4. XỬ LÝ LOGIC QUÊN MẬT KHẨU
+    /** Xử lý logic khôi phục mật khẩu khi người dùng quên */
     public void handleForgotPassword(String username, String phone, String newPass) {
-        // Guard: Kiểm tra username có tồn tại không
         if (!userDAO.isFieldExists("username", username)) {
             throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tên đăng nhập không tồn tại!");
         }
 
-        // Thực thi reset mật khẩu
         if (!userDAO.updatePassword(username, newPass)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể reset mật khẩu!");
         }
     }
 
-    // 5. LẤY USER THEO ID
+    /** Truy vấn thực thể User dựa vào ID định danh */
     public User getUserById(int userId) {
         try {
             User user = userDAO.getUserById(userId);
@@ -98,25 +101,61 @@ public class UserService {
         }
     }
 
-    // 6. CHUYỂN ĐỔI VAI TRÒ (Giữ nguyên ID)
+    /** Chuyển đổi qua lại giữa vai trò Người mua (Bidder) và Người bán (Seller) */
     public void handleSwitchRole(User currentUser) {
-        // Guard: Admin không được đổi vai
         if (currentUser.isAdmin()) {
-            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin không thể thực hiện chức năng này!");
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin hệ thống không thể thực hiện chức năng này!");
         }
         String targetRole = currentUser.getRole().equalsIgnoreCase("BIDDER") ? "SELLER" : "BIDDER";
 
-        // Cập nhật SQL
         if (userDAO.updateRole(currentUser.getId(), targetRole)) {
-            currentUser.setRole(targetRole); // Đồng bộ đối tượng Java trong phiên làm việc
+            currentUser.setRole(targetRole); // Đồng bộ vai trò thực thể trên RAM Java Session
             System.out.println(">>> Đã chuyển sang vai trò: " + targetRole);
-        }
-        else {
+        } else {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể cập nhật vai trò!");
         }
     }
 
-    // CÁC HÀM HỖ TRỢ TRÁNH CODE SMELLS (VALIDATION)
+    // --- 3. [CỤM TÍNH NĂNG ĐỘC QUYỀN] QUẢN TRỊ ADMIN & PROFILE ---
+
+    /** Chỉnh sửa cập nhật hồ sơ cá nhân người dùng (Email, Số điện thoại) */
+    public void updateProfile(User updatedUser) {
+        if (updatedUser == null) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Dữ liệu người dùng không hợp lệ!");
+        }
+        User current = userDAO.getUserById(updatedUser.getId());
+        if (current == null) {
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Không tìm thấy người dùng trên hệ thống!");
+        }
+        current.setEmail(updatedUser.getEmail());
+        current.setPhone(updatedUser.getPhone());
+
+        if (!userDAO.updateProfile(current)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể cập nhật hồ sơ cá nhân dưới SQL!");
+        }
+    }
+
+    /** Lấy toàn bộ danh sách tài khoản phục vụ màn hình Admin Dashboard */
+    public List<User> getAllUsers() {
+        return userDAO.getAllUsers();
+    }
+
+    /** Khóa tài khoản người dùng vi phạm quy chế sàn (BAN USER) */
+    public void banUser(Integer userId) {
+        if (!userDAO.updateStatus(userId, "LOCKED")) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Thao tác khóa tài khoản thất bại!");
+        }
+    }
+
+    /** Gỡ lệnh khóa, kích hoạt lại tài khoản người dùng (UNBAN USER) */
+    public void unbanUser(Integer userId) {
+        if (!userDAO.updateStatus(userId, "ACTIVE")) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Thao tác mở khóa tài khoản thất bại!");
+        }
+    }
+
+    // --- 4. BỘ TIỀN XỬ LÝ DỮ LIỆU ĐẦU VÀO (VALIDATION) ---
+
     private void validateFormat(String pass, String phone, String email) {
         if (!phone.matches("^\\d{10}$")) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số điện thoại phải có đúng 10 chữ số!");
@@ -126,73 +165,19 @@ public class UserService {
         }
         String lowerEmail = email.toLowerCase().trim();
         if (!lowerEmail.contains("@") || !lowerEmail.contains(".")) {
-            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Email không hợp lệ!");
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Cú pháp địa chỉ Email không hợp lệ!");
         }
         if (!lowerEmail.endsWith(".com") && !lowerEmail.endsWith(".net") && !lowerEmail.endsWith(".vn") && !lowerEmail.endsWith(".org") && !lowerEmail.endsWith(".edu.vn")) {
-            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Hệ thống chỉ chấp nhận các email có đuôi kết thúc bằng: .com, .net, .vn, .org, .edu.vn");
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Hệ thống chỉ chấp nhận các email có đuôi: .com, .net, .vn, .org, .edu.vn");
         }
     }
-
 
     private void checkDuplicates(String user, String mail, String phone) {
         if (userDAO.isFieldExists("username", user))
-            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tên đăng nhập đã tồn tại!");
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tên đăng nhập này đã tồn tại!");
         if (userDAO.isFieldExists("email", mail))
-            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Email đã được sử dụng!");
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Địa chỉ Email này đã được sử dụng!");
         if (userDAO.isFieldExists("phone", phone))
-            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại đã đăng ký!");
-    }
-
-    // Update profile
-    public void updateProfile(User updatedUser) {
-
-        if (updatedUser == null) {
-            throw new AuctionException(
-                    ErrorCode.INVALID_INPUT.name(),
-                    "User không hợp lệ"
-            );
-        }
-        User current = userDAO.getUserById(updatedUser.getId());
-        if (current == null) {
-            throw new AuctionException(
-                    ErrorCode.USER_NOT_FOUND.name(),
-                    "Không tìm thấy user"
-            );
-        }
-        current.setEmail(updatedUser.getEmail());
-        current.setPhone(updatedUser.getPhone());
-        boolean success = userDAO.updateProfile(current);
-        if (!success) {
-            throw new AuctionException(
-                    ErrorCode.INTERNAL_ERROR.name(),
-                    "Không thể cập nhật profile"
-            );
-        }
-    }
-    // Get all users
-    public java.util.List<User> getAllUsers() {
-        return userDAO.getAllUsers();
-    }
-
-    // Ban user
-    public void banUser(Integer userId) {
-        boolean success = userDAO.updateStatus(userId, "LOCKED");
-        if (!success) {
-            throw new AuctionException(
-                    ErrorCode.INTERNAL_ERROR.name(),
-                    "Không thể khóa user"
-            );
-        }
-    }
-
-    // Unban user
-    public void unbanUser(Integer userId) {
-        boolean success = userDAO.updateStatus(userId, "ACTIVE");
-        if (!success) {
-            throw new AuctionException(
-                    ErrorCode.INTERNAL_ERROR.name(),
-                    "Không thể mở khóa user"
-            );
-        }
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Số điện thoại này đã được đăng ký!");
     }
 }

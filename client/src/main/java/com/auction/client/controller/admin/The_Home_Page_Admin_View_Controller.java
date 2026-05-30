@@ -1,14 +1,11 @@
 package com.auction.client.controller.admin; // [SỬA] client.controller.admin -> com.auction.client.controller.admin
 
-import com.auction.client.core.MessageRouter;
-import com.auction.client.core.SocketClient;
+import MessageRouter;
 import com.auction.common.model.Auction;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
-import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
 
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

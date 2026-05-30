@@ -3,10 +3,11 @@ package com.auction.service;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.TransactionDAO;
-import com.auction.server.service.ManagerService;
-import com.auction.server.service.TransactionService;
+import src.main.java.com.auction.server.dao.PaymentDAO;
+import src.main.java.com.auction.server.dao.TransactionDAO;
+import src.main.java.com.auction.server.dao.DBConnection;
+import src.main.java.com.auction.server.service.ManagerService;
+import src.main.java.com.auction.server.service.TransactionService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -158,10 +159,10 @@ class TransactionServiceTest {
             User liveUser = makeBidder(3, 0);
             when(managerService.getUserById(3)).thenReturn(liveUser);
 
-            try (MockedStatic<com.auction.server.dao.DBConnection> mockedConnection =
-                         Mockito.mockStatic(com.auction.server.dao.DBConnection.class)) {
+            try (MockedStatic<DBConnection> mockedConnection =
+                         Mockito.mockStatic(DBConnection.class)) {
 
-                mockedConnection.when(com.auction.server.dao.DBConnection::getConnection)
+                mockedConnection.when(DBConnection::getConnection)
                         .thenThrow(new SQLException("Cố tình làm lỗi kết nối database để test"));
 
                 AuctionException ex = assertThrows(AuctionException.class,
@@ -180,10 +181,10 @@ class TransactionServiceTest {
             User liveUser = makeBidder(3, 1_000_000);
             when(managerService.getUserById(3)).thenReturn(liveUser);
 
-            try (MockedStatic<com.auction.server.dao.DBConnection> mockedConnection =
-                         Mockito.mockStatic(com.auction.server.dao.DBConnection.class)) {
+            try (MockedStatic<DBConnection> mockedConnection =
+                         Mockito.mockStatic(DBConnection.class)) {
 
-                mockedConnection.when(com.auction.server.dao.DBConnection::getConnection)
+                mockedConnection.when(DBConnection::getConnection)
                         .thenThrow(new SQLException("Cố tình làm lỗi kết nối database để test"));
 
                 AuctionException ex = assertThrows(AuctionException.class,

@@ -1,9 +1,9 @@
 package com.auction.service;
 
 import com.auction.exception.AuctionException;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.TransactionDAO;
-import com.auction.server.service.PaymentService;
+import src.main.java.com.auction.server.dao.PaymentDAO;
+import src.main.java.com.auction.server.dao.TransactionDAO;
+import src.main.java.com.auction.server.service.PaymentService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;

@@ -1,14 +1,12 @@
-package com.auction.server.core;
+package src.main.java.com.auction.server.core;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.UserDAO;
-import com.auction.server.service.BiddingService;
-import com.auction.server.service.ManagerService;
+import src.main.java.com.auction.server.dao.UserDAO;
+import src.main.java.com.auction.server.service.BiddingService;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

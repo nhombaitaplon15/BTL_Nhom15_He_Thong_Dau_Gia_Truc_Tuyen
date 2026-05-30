@@ -1,13 +1,13 @@
-package com.auction.server.service;
+package src.main.java.com.auction.server.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.User;
 import com.auction.common.exception.AuctionException;
 import com.auction.common.exception.ErrorCode;
-import com.auction.server.dao.AuctionDAO ;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.TransactionDAO;
-import com.auction.server.dao.DatabaseConnection;
+import src.main.java.com.auction.server.dao.AuctionDAO;
+import src.main.java.com.auction.server.dao.PaymentDAO;
+import src.main.java.com.auction.server.dao.TransactionDAO;
+import src.main.java.com.auction.server.dao.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;

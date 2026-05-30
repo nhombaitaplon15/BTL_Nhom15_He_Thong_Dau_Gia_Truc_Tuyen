@@ -1,11 +1,10 @@
-package com.auction.server.dao;
+package src.main.java.com.auction.server.dao;
 
 import com.auction.common.model.Art;
 import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
 import com.auction.common.model.Vehicle;
 import com.auction.common.factory.ItemFactory;
-import com.auction.server.dao.DatabaseConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -13,11 +12,11 @@ import java.util.List;
 
 public class ItemDAO {
 
-    // 1. Lấy toàn bộ danh sách Item
+    // --- 1. LẤY TOÀN BỘ DANH SÁCH ITEM ---
     public List<Item> getAllItems() {
         List<Item> items = new ArrayList<>();
-        String sql = "SELECT * FROM items";
-        try (Connection conn = DatabaseConnection.connect();
+        String sql = "SELECT * FROM public.items";
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -29,10 +28,10 @@ public class ItemDAO {
         return items;
     }
 
-    // 2. Lấy 1 Item theo ID cụ thể
+    // --- 2. LẤY 1 ITEM THEO ID CỤ THỂ ---
     public Item getItemById(int id) {
-        String sql = "SELECT * FROM items WHERE item_id = ?";
-        try (Connection conn = DatabaseConnection.connect();
+        String sql = "SELECT * FROM public.items WHERE item_id = ?";
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -44,50 +43,50 @@ public class ItemDAO {
         return null;
     }
 
-    // 3. Thêm mới một Item (Xử lý đa hình)
-// 3. Thêm mới một Item (SỬA: Nhận conn, trả về item_id tự tăng, chuẩn hóa vị trí index)
+    // --- 3. THÊM MỚI MỘT ITEM (XỬ LÝ ĐA HÌNH SINGLE TABLE) ---
     public int insertItem(Connection conn, Item item) throws SQLException {
-        String sql = "INSERT INTO items (name, description, item_type, starting_price, item_condition, " +
-                "seller_id, img_item, brand, model, warranty_months, artist, " + // Sửa warranty_years thành warranty_months theo class
-                "year_created, medium, has_certificate, make, model_vehicle, manufacture_year, " +
-                "mileage, fuel_type, license_plate, created_at) " +
+        String sql = "INSERT INTO public.items (name, description, item_type, starting_price, item_condition, " +
+                "seller_id, brand, model, warranty_months, artist, year_created, medium, has_certificate, " +
+                "make, model_vehicle, manufacture_year, mileage, fuel_type, img_item, license_plate, created_at) " +
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
 
-        // Thêm cờ RETURN_GENERATED_KEYS để lấy ID tự tăng từ DB
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // Set các trường chung (Vị trí 1 -> 7)
+            // Tham số chung (Vị trí từ 1 -> 6)
             ps.setString(1, item.getName());
             ps.setString(2, item.getDescription());
             ps.setString(3, item.getItemType());
             ps.setDouble(4, item.getStartingPrice());
             ps.setString(5, item.getItemCondition());
             ps.setInt(6, item.getSellerId());
-            ps.setString(7, item.getImgItem());
 
-            // Set tất cả các trường đặc thù từ vị trí 8 đến 20 về NULL mặc định trước
-            for (int i = 8; i <= 20; i++) {
+            // Làm sạch các ô đặc thù từ 7 tới 20 về NULL mặc định để tránh lỗi rác dữ liệu chéo loại sản phẩm
+            for (int i = 7; i <= 20; i++) {
                 ps.setNull(i, Types.NULL);
             }
 
-            // Set dữ liệu chuẩn hóa chính xác theo số thứ tự dấu '?' trong câu SQL trên:
-            // 8:brand, 9:model, 10:warranty_months, 11:artist, 12:year_created, 13:medium, 14:has_certificate
-            // 15:make, 16:model_vehicle, 17:manufacture_year, 18:mileage, 19:fuel_type, 20:license_plate
+            // Gán giá trị đặc thù dựa trên mô hình thừa kế của đối tượng
             if (item instanceof Electronics e) {
-                ps.setString(8, e.getBrand());
-                ps.setString(9, e.getModel());
-                ps.setInt(10, e.getWarrantyMonths());
+                ps.setString(7, e.getBrand());
+                ps.setString(8, e.getModel());
+                ps.setInt(9, e.getWarrantyMonths());
             } else if (item instanceof Art a) {
-                ps.setString(11, a.getArtist());
-                ps.setInt(12, a.getYearCreated());
-                ps.setString(13, a.getMedium());
-                ps.setBoolean(14, a.isHasCertificate());
+                ps.setString(10, a.getArtist());
+                ps.setInt(11, a.getYearCreated());
+                ps.setString(12, a.getMedium());
+                // Gán chuỗi dạng chữ ("true"/"false") khớp kiểu dữ liệu TEXT/VARCHAR trong DB
+                ps.setString(13, String.valueOf(a.isHasCertificate()));
             } else if (item instanceof Vehicle v) {
-                ps.setString(15, v.getMake());
-                ps.setString(16, v.getModelVehicle());
-                ps.setInt(17, v.getManufactureYear());
-                ps.setInt(18, v.getMileage());
-                ps.setString(19, v.getFuelType());
+                ps.setString(14, v.getMake());
+                ps.setString(15, v.getModelVehicle());
+                ps.setInt(16, v.getManufactureYear());
+                ps.setInt(17, v.getMileage());
+                ps.setString(18, v.getFuelType());
+            }
+
+            // Gán các trường nằm cuối câu lệnh SQL (19: img_item, 20: license_plate)
+            ps.setString(19, item.getImgItem());
+            if (item instanceof Vehicle v) {
                 ps.setString(20, v.getLicensePlate());
             }
 
@@ -96,7 +95,7 @@ public class ItemDAO {
                 throw new SQLException("Tạo sản phẩm thất bại, không có dòng nào được thêm!");
             }
 
-            // Bóc tách lấy ID tự động tăng ra ngoài để trả về cho Service
+            // Bóc tách lấy ID tự động tăng (Primary Key) trả về cho phía Service bọc giao dịch
             try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     return generatedKeys.getInt(1);
@@ -107,55 +106,43 @@ public class ItemDAO {
         }
     }
 
-    // 4. Xóa Item
+    // --- 4. XÓA ITEM ---
     public boolean deleteItem(int itemId) {
-        String sql = "DELETE FROM items WHERE item_id = ?";
-
-        try (Connection conn = DatabaseConnection.connect();
+        String sql = "DELETE FROM public.items WHERE item_id = ?";
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            // Truyền ID cần xóa vào dấu ?
             ps.setInt(1, itemId);
-
-            // executeUpdate() trả về số dòng bị ảnh hưởng. Nếu > 0 nghĩa là xóa thành công.
-            int affectedRows = ps.executeUpdate();
-            return affectedRows > 0;
-
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("Lỗi khi xóa sản phẩm: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
-    // 5. Lấy danh sách sản phẩm theo loại (VEHICLE, ART, ELECTRONICS)
+
+    // --- 5. LẤY DANH SÁCH SẢN PHẨM THEO LOẠI (VEHICLE, ART, ELECTRONICS) ---
     public List<Item> getItemsByType(String itemType) {
         List<Item> items = new ArrayList<>();
-        String sql = "SELECT * FROM items WHERE item_type = ?";
-
-        try (Connection conn = DatabaseConnection.connect();
+        String sql = "SELECT * FROM public.items WHERE item_type = ?";
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, itemType);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    // Sử dụng đúng ItemFactory có sẵn trong dự án của bạn để tự động map sang class con
                     items.add(ItemFactory.createFromResultSet(rs));
                 }
             }
         } catch (SQLException e) {
-            System.err.println("❌ Lỗi khi lấy danh sách sản phẩm theo loại (" + itemType + "): " + e.getMessage());
             e.printStackTrace();
         }
         return items;
     }
 
+    // --- 6. LẤY DANH SÁCH SẢN PHẨM THEO SELLER (GIỮ LẠI TỪ FILE 1) ---
     public List<Item> getItemsBySeller(int sellerId) {
         List<Item> items = new ArrayList<>();
-        String sql = "SELECT * FROM items WHERE seller_id = ?";
-        try (
-                Connection conn = DatabaseConnection.connect();
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+        String sql = "SELECT * FROM public.items WHERE seller_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, sellerId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -163,7 +150,8 @@ public class ItemDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi lấy item theo seller: " + e.getMessage());
+            System.err.println("❌ Lỗi lấy danh sách item theo seller: " + e.getMessage());
+            e.printStackTrace();
         }
         return items;
     }

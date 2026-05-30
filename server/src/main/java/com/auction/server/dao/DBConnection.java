@@ -1,4 +1,4 @@
-package com.auction.server.dao;
+package src.main.java.com.auction.server.dao;
 
 import java.sql.*;
 
