@@ -38,11 +38,6 @@
                                 <Font name="Times New Roman Bold" size="16.0" />
                             </font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToSettingsPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Cài đặt">
-                            <font>
-                                <Font name="Times New Roman Bold" size="16.0" />
-                            </font>
-                        </Button>
                     </children>
                 </HBox>
 
@@ -71,14 +66,7 @@
                                 <ComboBox prefHeight="42.0" prefWidth="160.0" promptText="Trạng thái" style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #E9EDF7; -fx-border-radius: 10; -fx-cursor: hand;" />
                                 <ComboBox prefHeight="42.0" prefWidth="160.0" promptText="Thời gian" style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #E9EDF7; -fx-border-radius: 10; -fx-cursor: hand;" />
 
-                                <Button mnemonicParsing="false" prefHeight="42.0" style="-fx-background-color: #3876a6; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="+ Tạo phiên mới">
-                                    <font>
-                                        <Font name="Times New Roman Bold" size="14.0" />
-                                    </font>
-                                    <padding>
-                                        <Insets left="20.0" right="20.0" />
-                                    </padding>
-                                </Button>
+
                             </children>
                         </HBox>
 
@@ -99,15 +87,7 @@
                             </children>
                         </VBox>
 
-                        <HBox alignment="CENTER_RIGHT">
-                            <children>
-                                <Button mnemonicParsing="false" onAction="#Welcome_back" prefHeight="40.0" prefWidth="120.0" style="-fx-background-color: #f4b305; -fx-background-radius: 12; -fx-cursor: hand;" text="Quay lại" textFill="WHITE">
-                                    <font>
-                                        <Font name="Times New Roman Bold" size="14.0" />
-                                    </font>
-                                </Button>
-                            </children>
-                        </HBox>
+
 
                     </children>
                 </VBox>

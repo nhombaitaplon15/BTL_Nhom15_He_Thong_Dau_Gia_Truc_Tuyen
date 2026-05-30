@@ -106,17 +106,26 @@ public class AdminService {
 
     //Hàm để Admin chặn phiên đấu giá
     public boolean blockAuction(int auctionId) {
-        // Có thể bổ sung kiểm tra trạng thái tại đây nếu cần
+        Auction auction = managerService.getAuction(auctionId);
+        if (auction == null) {
+            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(),
+                    "Không tìm thấy phiên đấu giá #" + auctionId);
+        }
+        String status = auction.getAuctionStatus();
+        // Chỉ cho phép block phiên đang OPEN hoặc RUNNING
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status) && !"WAITING_FOR_ADMIN".equals(status)) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
+                    "Không thể chặn phiên ở trạng thái: " + status
+                            + ". Chỉ có thể chặn phiên đang WAITING_FOR_ADMIN, OPEN hoặc RUNNING.");
+        }
         try {
-            if (auctionDAO.updateStatus(auctionId, "BLOCKED")) {
-                logAction(auctionId, "BLOCKED");
-                System.out.println(">>> [ADMIN] Đã phong tỏa khẩn cấp phiên đấu giá: " + auctionId);
-                return true;
-            }
+            auctionDAO.updateStatus(auctionId, "BLOCKED");
+            logAction(auctionId, "BLOCKED");
+            System.out.println(">>> [ADMIN] Đã phong tỏa khẩn cấp phiên đấu giá: " + auctionId);
+            return true;
         } catch (Exception e) {
-            throw new com.auction.common.exception.AuctionException(com.auction.common.exception.ErrorCode.INTERNAL_ERROR.name(),
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(),
                     "Lỗi hệ thống khi chặn phiên: " + e.getMessage());
         }
-        return false;
     }
 }

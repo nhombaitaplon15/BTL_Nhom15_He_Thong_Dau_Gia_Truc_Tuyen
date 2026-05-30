@@ -242,21 +242,20 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 btnTransaction.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
-                    if (ac.getCurrentWinnerId() == null || ac.getCurrentWinnerId() == 0) {
-                        showAlert(Alert.AlertType.WARNING, "Không Thể Tạo Giao Dịch",
-                                "Phiên kết thúc nhưng không có người thắng.");
-                        return;
-                    }
+                    String winnerInfo = (ac.getCurrentWinnerId() != null && ac.getCurrentWinnerId() > 0)
+                            ? "Người thắng: ID#" + ac.getCurrentWinnerId()
+                            : "Không có người thắng";
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                             "Tạo giao dịch cho phiên #" + ac.getAuctionId()
                                     + "?\nGiá: " + String.format("%,.0f đ", ac.getCurrentPrice())
-                                    + " | Người thắng: ID#" + ac.getCurrentWinnerId(),
+                                    + " | " + winnerInfo,
                             ButtonType.YES, ButtonType.NO);
                     confirm.showAndWait().ifPresent(btn -> {
                         if (btn == ButtonType.YES) {
+                            int winnerId = (ac.getCurrentWinnerId() != null) ? ac.getCurrentWinnerId() : 0;
                             SocketClient.getInstance().sendRequest(
                                     RequestCode.ADMIN_CREATE_TRANSACTION,
-                                    new Object[]{ac.getAuctionId(), ac.getCurrentWinnerId(), ac.getCurrentPrice()});
+                                    new Object[]{ac.getAuctionId(), winnerId, ac.getCurrentPrice()});
                         }
                     });
                 });
@@ -272,12 +271,16 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 String status = ac.getAuctionStatus();
                 container.getChildren().clear();
                 container.getChildren().add(btnInfo);
-                if ("WAITING_FOR_ADMIN".equals(status)) {
-                    container.getChildren().addAll(btnApprove, btnReject);
-                } else if ("OPEN".equals(status) || "RUNNING".equals(status)) {
-                    container.getChildren().add(btnBlock);
-                } else if ("CLOSED".equals(status) || "FINISHED".equals(status) || "SOLD".equals(status)) {
-                    container.getChildren().add(btnTransaction);
+                switch (status != null ? status : "") {
+                    case "WAITING_FOR_ADMIN" ->
+                            container.getChildren().addAll(btnApprove, btnReject, btnBlock);
+                    case "OPEN" ->
+                            container.getChildren().add(btnBlock);
+                    case "RUNNING" ->
+                            container.getChildren().addAll(btnBlock, btnTransaction);
+                    case "CLOSED", "FINISHED", "SOLD", "ENDED" ->
+                            container.getChildren().add(btnTransaction);
+                    // BLOCKED, REJECTED: chỉ hiện Xem (không action thêm)
                 }
                 setGraphic(container);
             }

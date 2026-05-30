@@ -35,8 +35,15 @@
                         <Button mnemonicParsing="false" onAction="#goToTransactionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Quản lý giao dịch">
                             <font><Font name="Times New Roman Bold" size="16.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToSettingsPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Cài đặt">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                        <HBox HBox.hgrow="ALWAYS" />
+                        <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                            <Label fx:id="lblAdminName" style="-fx-text-fill: #2B3674; -fx-font-weight: bold;" text="Admin">
+                                <font><Font name="Times New Roman Bold" size="14.0" /></font>
+                            </Label>
+                            <Label fx:id="lblPendingCount" style="-fx-text-fill: #FF8800; -fx-font-size: 11px;" text="Chờ duyệt: 0" />
+                        </VBox>
+                        <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: #EF4444; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 4 12 4 12;" text="Đăng xuất">
+                            <font><Font name="Times New Roman Bold" size="13.0" /></font>
                         </Button>
                     </children>
                 </HBox>
@@ -116,7 +123,7 @@
                                                             <VBox.margin><Insets bottom="10.0" top="2.0" /></VBox.margin>
                                                         </Label>
 
-                                                        <BarChart fx:id="trendChart" alternativeRowFillVisible="false" animated="false" legendVisible="false" maxHeight="Infinity" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                                                        <BarChart fx:id="trendChart" alternativeRowFillVisible="false" animated="false" legendVisible="true" maxHeight="Infinity" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                                                             <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
                                                             <yAxis><NumberAxis side="LEFT" /></yAxis>
                                                         </BarChart>
@@ -133,7 +140,11 @@
                                                         </Label>
                                                         <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
                                                             <content>
-                                                                <VBox fx:id="liveFeedContainer" spacing="10.0" />
+                                                                <VBox fx:id="liveFeedContainer" spacing="10.0">
+                                                                    <children>
+                                                                        <Label style="-fx-text-fill: #A3AED0; -fx-font-size: 12px;" text="⏳ Đang chờ hoạt động bid mới..." />
+                                                                    </children>
+                                                                </VBox>
                                                             </content>
                                                         </ScrollPane>
                                                     </children>
@@ -179,7 +190,7 @@
                                                     </children>
                                                 </VBox>
 
-                                                <VBox spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-padding: 20;">
+                                                <VBox spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-padding: 20;" VBox.vgrow="ALWAYS">
                                                     <children>
                                                         <Label style="-fx-text-fill: #1B2559; -fx-font-weight: bold; -fx-font-size: 16;" text="Độ Hot Danh Mục" />
 

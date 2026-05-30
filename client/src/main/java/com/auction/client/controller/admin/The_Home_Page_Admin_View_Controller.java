@@ -227,39 +227,51 @@ public class The_Home_Page_Admin_View_Controller {
         trendChart.getData().clear();
 
         LocalDate today = LocalDate.now();
-        Map<String, Integer> dailyBids = new LinkedHashMap<>();
 
-        // Khởi tạo 7 cột ngày gần nhất
+        // --- Series 1: Số phiên tạo mỗi ngày (7 ngày qua) ---
+        Map<String, Integer> dailyAuctions = new LinkedHashMap<>();
+        for (int i = 6; i >= 0; i--) {
+            dailyAuctions.put(today.minusDays(i).format(dayFormatter), 0);
+        }
+        for (Auction a : auctions) {
+            LocalDate aDay = (a.getCreatedAt() != null) ? a.getCreatedAt().toLocalDate() : today;
+            if (!aDay.isBefore(today.minusDays(6)) && !aDay.isAfter(today)) {
+                dailyAuctions.merge(aDay.format(dayFormatter), 1, Integer::sum);
+            }
+        }
+
+        // --- Series 2: Tổng lượt bid mỗi ngày (nếu có) ---
+        Map<String, Integer> dailyBids = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) {
             dailyBids.put(today.minusDays(i).format(dayFormatter), 0);
         }
-
         for (Auction a : auctions) {
-            LocalDate aDay;
-            if (a.getCreatedAt() != null) {
-                aDay = a.getCreatedAt().toLocalDate();
-            } else {
-                // CƠ CHẾ DỰ PHÒNG: Nếu trường createdAt bị null từ DB, map tạm vào ngày hôm nay để test số liệu
-                aDay = today;
-            }
-
+            LocalDate aDay = (a.getCreatedAt() != null) ? a.getCreatedAt().toLocalDate() : today;
             if (!aDay.isBefore(today.minusDays(6)) && !aDay.isAfter(today)) {
                 dailyBids.merge(aDay.format(dayFormatter), a.getTotalBids(), Integer::sum);
             }
         }
 
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Lượt bid");
-        dailyBids.forEach((day, bids) -> series.getData().add(new XYChart.Data<>(day, bids)));
+        XYChart.Series<String, Number> seriesAuctions = new XYChart.Series<>();
+        seriesAuctions.setName("Phiên tạo");
+        dailyAuctions.forEach((day, count) -> seriesAuctions.getData().add(new XYChart.Data<>(day, count)));
 
-        trendChart.getData().add(series);
+        XYChart.Series<String, Number> seriesBids = new XYChart.Series<>();
+        seriesBids.setName("Lượt bid");
+        dailyBids.forEach((day, bids) -> seriesBids.getData().add(new XYChart.Data<>(day, bids)));
 
-        // Áp màu sắc tím Premium cho cột sau khi dựng thành công
-        Platform.runLater(() -> series.getData().forEach(d -> {
-            if (d.getNode() != null) {
-                d.getNode().setStyle("-fx-bar-fill: #4318FF; -fx-background-radius: 4 4 0 0;");
-            }
-        }));
+        trendChart.getData().addAll(seriesAuctions, seriesBids);
+
+        Platform.runLater(() -> {
+            seriesAuctions.getData().forEach(d -> {
+                if (d.getNode() != null)
+                    d.getNode().setStyle("-fx-bar-fill: #4318FF; -fx-background-radius: 4 4 0 0;");
+            });
+            seriesBids.getData().forEach(d -> {
+                if (d.getNode() != null)
+                    d.getNode().setStyle("-fx-bar-fill: #05CD99; -fx-background-radius: 4 4 0 0;");
+            });
+        });
     }
 
 

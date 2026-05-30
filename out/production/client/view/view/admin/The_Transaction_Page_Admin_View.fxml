@@ -34,9 +34,6 @@
                         <Button mnemonicParsing="false" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #2B3674; -fx-border-color: #3989b9; -fx-border-width: 0 0 3 0;" text="Quản lý giao dịch">
                             <font><Font name="Times New Roman Bold" size="16.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToSettingsPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Cài đặt">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                        </Button>
                     </children>
                 </HBox>
 

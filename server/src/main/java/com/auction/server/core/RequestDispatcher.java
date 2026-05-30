@@ -450,7 +450,7 @@ public class RequestDispatcher {
     private void handleAdminGetAllTransactions(ClientHandler client) {
         try {
             List<TransactionRequest> transactions = transactionService.getAllTransactions();
-            client.sendMessage(new Message(ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, "OK", transactions));
+            client.sendMessage(new Message(ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, "OK", transactions));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được giao dịch", null));
         }

@@ -6,6 +6,7 @@ import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.service.BiddingService;
+import com.auction.server.core.SessionManager;
 import com.auction.server.service.ManagerService;
 
 import java.time.LocalDateTime;
@@ -105,12 +106,16 @@ public class AuctionRoom {
                 currentWinnerId = userId;
 
                 // --- BƯỚC 5: Broadcast NEW_BID_UPDATE đến TẤT CẢ người trong phòng ---
-                // Payload: Object[] {auctionId, newPrice, winnerId} để client parse
-                Object[] broadcastPayload = {auctionId, bidAmount, userId};
+                // Payload: Object[] {auctionId, newPrice, winnerName(String)} để Admin LiveFeed parse
+                String winnerName = (user.getUsername() != null) ? user.getUsername() : ("User#" + userId);
+                Object[] broadcastPayload = {auctionId, bidAmount, winnerName};
                 Message broadcastMsg = new Message(ResponseCode.NEW_BID_UPDATE,
-                        String.format("Giá mới: %,.0f đ (bởi User#%d)", bidAmount, userId),
+                        String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, winnerName),
                         broadcastPayload);
                 broadcastToAll(broadcastMsg);
+
+                // --- BƯỚC 5b: Gửi thêm tới Admin đang online để LiveFeed cập nhật ---
+                SessionManager.getInstance().broadcastToAdmins(broadcastMsg);
 
                 // --- BƯỚC 6: Riêng người thắng nhận BID_SUCCESS ---
                 handler.sendMessage(new Message(ResponseCode.BID_SUCCESS,

@@ -96,23 +96,19 @@ public class TransactionService {
     }
     // 3. Tạo hóa đơn thanh toán khi chốt phiên đấu giá
     public void createTransactionFromAuction(int auctionId, int winnerId, double amount) {
-        if (winnerId <= 0) {
-            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "ID người thắng không hợp lệ!");
-        }
-
+        // winnerId = 0 nghĩa là phiên kết thúc không có người thắng — vẫn ghi nhận để audit
         try {
-            // Tạo một giao dịch thanh toán mới, trạng thái 'PENDING' chờ người dùng thanh toán
-            String description = "Thanh toán phiên đấu giá #" + auctionId;
-
-            // Gọi DAO để lưu xuống DB (Tùy thuộc vào cấu trúc bảng Transaction của bạn,
-            // có thể cần điều chỉnh lại tên cột type cho phù hợp, ví dụ "PAYMENT" hoặc "AUCTION_PAYMENT")
-            boolean success = transDAO.createTransaction(winnerId, amount, description, "PENDING");
-
+            String type = "AUCTION_PAYMENT";
+            // Nếu không có người thắng, ghi vào user_id = 0 hoặc bỏ qua tùy chính sách
+            if (winnerId <= 0) {
+                System.out.println(">>> [TRANSACTION] Phiên #" + auctionId + " không có người thắng, bỏ qua tạo giao dịch.");
+                return;
+            }
+            boolean success = transDAO.createTransaction(winnerId, amount, type, "PENDING");
             if (!success) {
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể tạo hóa đơn giao dịch!");
             }
             System.out.println(">>> [TRANSACTION] Đã tạo hóa đơn " + amount + " cho User ID: " + winnerId);
-
         } catch (SQLException e) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo giao dịch: " + e.getMessage());
         }
