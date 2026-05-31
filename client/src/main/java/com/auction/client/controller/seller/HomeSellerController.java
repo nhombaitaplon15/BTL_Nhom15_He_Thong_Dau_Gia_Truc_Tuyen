@@ -6,7 +6,7 @@ import com.auction.common.model.Auction;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -25,12 +25,12 @@ public class HomeSellerController {
   @FXML private Label lblExpectedRevenue;
   @FXML private Label lblTodayBids;
   @FXML private ListView<String>        listRealtimeFeed;
-  @FXML private TableView<AuctionItemDAO> tblEndingSoon;
-  @FXML private TableColumn<AuctionItemDAO, String> colItemName;
-  @FXML private TableColumn<AuctionItemDAO, String> colStartPrice;
-  @FXML private TableColumn<AuctionItemDAO, String> colCurrentPrice;
-  @FXML private TableColumn<AuctionItemDAO, String> colEndTime;
-  @FXML private TableColumn<AuctionItemDAO, String> colStatus;
+  @FXML private TableView<AuctionItemDTO> tblEndingSoon;
+  @FXML private TableColumn<AuctionItemDTO, String> colItemName;
+  @FXML private TableColumn<AuctionItemDTO, String> colStartPrice;
+  @FXML private TableColumn<AuctionItemDTO, String> colCurrentPrice;
+  @FXML private TableColumn<AuctionItemDTO, String> colEndTime;
+  @FXML private TableColumn<AuctionItemDTO, String> colStatus;
 
   // ── Khai báo đường dây liên lạc (Callback) để nhờ Controller chính đổi tab ──
   public static Runnable onRequireSwitchToMyProducts;
@@ -97,14 +97,14 @@ public class HomeSellerController {
   @SuppressWarnings("unchecked")
   private void handleInitialAuctionsData(Message message) {
     try {
-      List<AuctionItemDAO> list = (List<AuctionItemDAO>) message.getPayload();
+      List<AuctionItemDTO> list = (List<AuctionItemDTO>) message.getPayload();
       if (list == null) return;
 
       int activeCount = 0, pendingCount = 0;
       double expectedRevenue = 0;
-      ObservableList<AuctionItemDAO> tableData = FXCollections.observableArrayList();
+      ObservableList<AuctionItemDTO> tableData = FXCollections.observableArrayList();
 
-      for (AuctionItemDAO row : list) {
+      for (AuctionItemDTO row : list) {
         Auction a = row.getAuction();
         String status = a.getAuctionStatus();
 
@@ -147,7 +147,7 @@ public class HomeSellerController {
       lblExpectedRevenue.setText(formatMoney(newPrice) + " UETệ");
       incrementLabel(lblTodayBids, 1);
 
-      for (AuctionItemDAO row : tblEndingSoon.getItems()) {
+      for (AuctionItemDTO row : tblEndingSoon.getItems()) {
         if (row.getAuction().getAuctionId() == auctionId) {
           row.getAuction().setCurrentPrice(newPrice);
           row.getAuction().setTotalBids(row.getAuction().getTotalBids() + 1);

@@ -6,7 +6,7 @@ import com.auction.common.model.Auction;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -17,7 +17,6 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -39,7 +38,7 @@ public class EditAuctionController {
   @FXML private Button btnSave;
 
   // ── STATE ──
-  private AuctionItemDAO currentAuctionItem;
+  private AuctionItemDTO currentAuctionItem;
   private Runnable onSuccessCallback;
 
   // ── HANDLERS ──
@@ -67,7 +66,7 @@ public class EditAuctionController {
   }
 
   // Nạp dữ liệu cũ vào form để người dùng sửa
-  public void setAuctionData(AuctionItemDAO itemDAO) {
+  public void setAuctionData(AuctionItemDTO itemDAO) {
     this.currentAuctionItem = itemDAO;
     Auction auction = itemDAO.getAuction();
 

@@ -1,6 +1,6 @@
 package com.auction.client.controller.seller;
 
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -40,15 +40,15 @@ public class ProductsCardController {
   // --- Image ---
   @FXML private ImageView imgProduct;
 
-  private Consumer<AuctionItemDAO> onDetailCallback;
-  private AuctionItemDAO currentItem;
-  private Consumer<AuctionItemDAO> onCancelCallback;
+  private Consumer<AuctionItemDTO> onDetailCallback;
+  private AuctionItemDTO currentItem;
+  private Consumer<AuctionItemDTO> onCancelCallback;
 
   private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
   private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private static final NumberFormat VN_FMT = NumberFormat.getInstance(new Locale("vi", "VN"));
 
-  public void setData(AuctionItemDAO dto, CardType type) {
+  public void setData(AuctionItemDTO dto, CardType type) {
     try {
       // SỬA Ở ĐÂY: Gán dữ liệu cho biến global của class
       this.currentItem = dto;
@@ -181,7 +181,7 @@ public class ProductsCardController {
     node.setVisible(visible);
     node.setManaged(visible);
   }
-  public void setOnDetailCallback(Consumer<AuctionItemDAO> callback) {
+  public void setOnDetailCallback(Consumer<AuctionItemDTO> callback) {
     this.onDetailCallback = callback;
   }
   @FXML
@@ -190,7 +190,7 @@ public class ProductsCardController {
       onDetailCallback.accept(currentItem);
     }
   }
-  public void setOnCancelCallback(Consumer<AuctionItemDAO> callback) {
+  public void setOnCancelCallback(Consumer<AuctionItemDTO> callback) {
     this.onCancelCallback = callback;
   }
 

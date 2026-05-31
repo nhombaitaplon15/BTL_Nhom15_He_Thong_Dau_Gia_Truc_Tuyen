@@ -4,6 +4,7 @@ import com.auction.common.factory.ItemFactory;
 import com.auction.common.model.Auction;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.BiddingHistory;
+import com.auction.server.core.AuctionItemDTO;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -402,8 +403,8 @@ public class AuctionDAO {
     public boolean deleteAll() {
         return executeUpdate("DELETE FROM public.auctions");
     }
-    public List<AuctionItemDAO> getAuctionsBySellerStatusAndKeyword(int sellerId, String status, String keyword) {
-        List<AuctionItemDAO> list = new ArrayList<>();
+    public List<AuctionItemDTO> getAuctionsBySellerStatusAndKeyword(int sellerId, String status, String keyword) {
+        List<AuctionItemDTO> list = new ArrayList<>();
 
         // Thêm điều kiện a.seller_id = ? vào câu truy vấn
         String sql = "SELECT i.*, a.* " +
@@ -419,15 +420,15 @@ public class AuctionDAO {
             while (rs.next()) {
                 com.auction.common.model.Item item = ItemFactory.createFromResultSet(rs);
                 Auction auction = map(rs);
-                list.add(new AuctionItemDAO(item, auction));
+                list.add(new AuctionItemDTO(item, auction));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return list;
     }
-    public List<AuctionItemDAO> getFinishedAuctionsBySeller(int sellerId, String keyword) {
-        List<AuctionItemDAO> list = new ArrayList<>();
+    public List<AuctionItemDTO> getFinishedAuctionsBySeller(int sellerId, String keyword) {
+        List<AuctionItemDTO> list = new ArrayList<>();
 
         String sql = "SELECT i.*, a.* " +
             "FROM items i " +
@@ -444,7 +445,7 @@ public class AuctionDAO {
             while (rs.next()) {
                 com.auction.common.model.Item item    = ItemFactory.createFromResultSet(rs);
                 Auction auction = map(rs);
-                list.add(new AuctionItemDAO(item, auction));
+                list.add(new AuctionItemDTO(item, auction));
             }
         } catch (SQLException e) {
             e.printStackTrace();

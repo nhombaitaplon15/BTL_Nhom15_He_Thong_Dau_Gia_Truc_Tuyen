@@ -8,7 +8,7 @@ import com.auction.common.exception.ErrorCode ;
 import com.auction.server.core.AuctionRoom;
 import com.auction.server.core.AuctionRoomManager;
 import com.auction.server.dao.AuctionDAO ;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import com.auction.server.dao.UserDAO ;
 
 import java.time.LocalDateTime;
@@ -189,14 +189,14 @@ public class ManagerService {
     }
     public Auction getAuctionById(int auctionId) {return auctionDAO.getAuctionById(auctionId);}
 
-    public List<AuctionItemDAO> getAuctionItemsBySeller(int sellerId) {
+    public List<AuctionItemDTO> getAuctionItemsBySeller(int sellerId) {
         List<Auction> auctions = auctionDAO.getAuctionsBySeller(sellerId);
-        List<AuctionItemDAO> combinedList = new java.util.ArrayList<>();
+        List<AuctionItemDTO> combinedList = new java.util.ArrayList<>();
 
         for (Auction auction : auctions) {
             try {
                 Item item = itemService.getItemById(auction.getItemId());
-                AuctionItemDAO combined = new AuctionItemDAO(item, auction);
+                AuctionItemDTO combined = new AuctionItemDTO(item, auction);
                 combinedList.add(combined);
             } catch (Exception e) {
                 System.err.println("[MANAGER] Không tìm thấy item cho phiên: " + auction.getAuctionId());

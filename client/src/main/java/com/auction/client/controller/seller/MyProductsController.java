@@ -5,7 +5,7 @@ import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -31,9 +31,9 @@ public class MyProductsController {
   @FXML private ScrollPane paneSold;
 
   // --- ListView ---
-  @FXML private ListView<AuctionItemDAO> listAuctioning;
-  @FXML private ListView<AuctionItemDAO> listPending;
-  @FXML private ListView<AuctionItemDAO> listSold;
+  @FXML private ListView<AuctionItemDTO> listAuctioning;
+  @FXML private ListView<AuctionItemDTO> listPending;
+  @FXML private ListView<AuctionItemDTO> listSold;
 
   // --- Label đếm số lượng ---
   @FXML private Label lblCountAuc;
@@ -56,9 +56,9 @@ public class MyProductsController {
   @FXML private Parent insertItemNode = null;
 
   // Cache data từ server để filter local
-  private List<AuctionItemDAO> cachedAuctioning = List.of();
-  private List<AuctionItemDAO> cachedPending = List.of();
-  private List<AuctionItemDAO> cachedSold = List.of();
+  private List<AuctionItemDTO> cachedAuctioning = List.of();
+  private List<AuctionItemDTO> cachedPending = List.of();
+  private List<AuctionItemDTO> cachedSold = List.of();
 
   // ── Handler references để unregister ──
   private final Consumer<Message> onAuctionsResult = this::handleAuctionsResult;
@@ -148,7 +148,7 @@ public class MyProductsController {
   @SuppressWarnings("unchecked")
   private void handleAuctionsResult(Message msg) {
     if (!(msg.getPayload() instanceof List<?> rawList)) return;
-    List<AuctionItemDAO> all = (List<AuctionItemDAO>) rawList;
+    List<AuctionItemDTO> all = (List<AuctionItemDTO>) rawList;
 
     cachedAuctioning = all.stream()
         .filter(a -> "RUNNING".equalsIgnoreCase(a.getAuction().getAuctionStatus()))
@@ -177,9 +177,9 @@ public class MyProductsController {
   // ================================================================
   // FILTER LOCAL
   // ================================================================
-  private void filterLocal(List<AuctionItemDAO> source, String keyword,
-                           ListView<AuctionItemDAO> listView, Label lblCount, Label badge) {
-    List<AuctionItemDAO> filtered = (keyword == null || keyword.isBlank())
+  private void filterLocal(List<AuctionItemDTO> source, String keyword,
+                           ListView<AuctionItemDTO> listView, Label lblCount, Label badge) {
+    List<AuctionItemDTO> filtered = (keyword == null || keyword.isBlank())
         ? source
         : source.stream()
         .filter(a -> a.getItem().getName().toLowerCase()
@@ -203,7 +203,7 @@ public class MyProductsController {
         "/view/view/seller/ProductsCardView.fxml");
   }
 
-  private void setupCellFactory(ListView<AuctionItemDAO> listView,
+  private void setupCellFactory(ListView<AuctionItemDTO> listView,
                                 ProductsCardController.CardType type, String fxmlPath) {
     listView.setCellFactory(lv -> new ListCell<>() {
       private javafx.scene.Node graphic;
@@ -217,7 +217,7 @@ public class MyProductsController {
           if (controller != null) {
             // 1. Nút Chi tiết / Sửa
             controller.setOnDetailCallback(ignored -> {
-              AuctionItemDAO currentItem = getItem();
+              AuctionItemDTO currentItem = getItem();
               if (currentItem != null) {
                 if (type == ProductsCardController.CardType.PENDING) {
                   openEditDialog(currentItem);
@@ -229,7 +229,7 @@ public class MyProductsController {
 
             // 2. Nút Huỷ (Chỉ dành cho Pending)
             controller.setOnCancelCallback(ignored -> {
-              AuctionItemDAO currentItem = getItem();
+              AuctionItemDTO currentItem = getItem();
               if (currentItem != null && type == ProductsCardController.CardType.PENDING) {
                 openCancelDialog(currentItem);
               }
@@ -242,7 +242,7 @@ public class MyProductsController {
       }
 
       @Override
-      protected void updateItem(AuctionItemDAO item, boolean empty) {
+      protected void updateItem(AuctionItemDTO item, boolean empty) {
         super.updateItem(item, empty);
         if (empty || item == null) {
           setText(null); setGraphic(null);
@@ -265,7 +265,7 @@ public class MyProductsController {
     });
   }
 
-  private void openEditDialog(AuctionItemDAO item) {
+  private void openEditDialog(AuctionItemDTO item) {
     if (item == null) return;
     try {
       FXMLLoader loader = new FXMLLoader(
@@ -288,7 +288,7 @@ public class MyProductsController {
     }
   }
 
-  private void openDetailView(AuctionItemDAO auctionItem) {
+  private void openDetailView(AuctionItemDTO auctionItem) {
     if (auctionItem == null) return;
     try {
       FXMLLoader loader = new FXMLLoader(
@@ -312,7 +312,7 @@ public class MyProductsController {
     }
   }
 
-  private void openCancelDialog(AuctionItemDAO item) {
+  private void openCancelDialog(AuctionItemDTO item) {
     if (item == null) return;
     try {
       FXMLLoader loader = new FXMLLoader(

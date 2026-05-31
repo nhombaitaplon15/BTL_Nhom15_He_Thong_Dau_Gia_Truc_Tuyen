@@ -6,7 +6,6 @@ import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.*;
-import com.auction.server.dao.AuctionItemDAO;
 import com.auction.server.service.AdminService;
 import com.auction.server.service.BiddingService;
 import com.auction.server.service.ItemService;
@@ -14,8 +13,6 @@ import com.auction.server.service.ManagerService;
 import com.auction.server.service.SellerService;
 import com.auction.server.service.TransactionService;
 import com.auction.server.service.UserService;
-import com.auction.server.core.ClientHandler;
-import com.auction.server.core.AuctionRoomManager;
 
 import java.util.List;
 
@@ -355,7 +352,7 @@ public class RequestDispatcher {
             Integer sellerId = client.getLoggedInUserId();
 
             // ĐÃ SỬA: Dùng hàm getAuctionItemsBySeller mới viết để lấy List kết hợp
-            List<AuctionItemDAO> combinedAuctions =
+            List<AuctionItemDTO> combinedAuctions =
                 managerService.getAuctionItemsBySeller(sellerId);
 
             // Gửi cục data mới này về cho Client

@@ -1,13 +1,12 @@
 package com.auction.client.controller.seller;
 
-import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -40,10 +39,10 @@ public class AuctionManagementController {
 
   // ══ LISTVIEW ══
   @FXML private ListView<Item> listCreate;
-  @FXML private ListView<AuctionItemDAO> listPending;
-  @FXML private ListView<AuctionItemDAO> listOpen;
-  @FXML private ListView<AuctionItemDAO> listRunning;
-  @FXML private ListView<AuctionItemDAO> listFinished;
+  @FXML private ListView<AuctionItemDTO> listPending;
+  @FXML private ListView<AuctionItemDTO> listOpen;
+  @FXML private ListView<AuctionItemDTO> listRunning;
+  @FXML private ListView<AuctionItemDTO> listFinished;
 
   // ══ LABELS & BADGES ══
   @FXML private Label lblCreate;
@@ -71,7 +70,7 @@ public class AuctionManagementController {
 
   // ── Cache data từ server ──
   private List<Item> cachedItems = List.of();
-  private List<AuctionItemDAO> cachedAuctions = List.of();
+  private List<AuctionItemDTO> cachedAuctions = List.of();
 
   private boolean isItemsLoaded = false;
   private boolean isAuctionsLoaded = false;
@@ -168,7 +167,7 @@ public class AuctionManagementController {
   @SuppressWarnings("unchecked")
   private void handleAuctionsResult(Message msg) {
     if (!(msg.getPayload() instanceof List<?> list)) return;
-    cachedAuctions = (List<AuctionItemDAO>) list;
+    cachedAuctions = (List<AuctionItemDTO>) list;
     isAuctionsLoaded = true;
     Platform.runLater(() -> {
       filterAuctionsLocal("WAITING_FOR_ADMIN", searchPending.getText(), listPending, lblPending, badgePending, emptyPending);
@@ -217,9 +216,9 @@ public class AuctionManagementController {
   }
 
   private void filterAuctionsLocal(String status, String keyword,
-                                   ListView<AuctionItemDAO> listView,
+                                   ListView<AuctionItemDTO> listView,
                                    Label lblCount, Label badge, VBox emptyBox) {
-    List<AuctionItemDAO> filtered = cachedAuctions.stream()
+    List<AuctionItemDTO> filtered = cachedAuctions.stream()
         .filter(a -> status.equalsIgnoreCase(a.getAuction().getAuctionStatus()))
         .filter(a -> keyword == null || keyword.isBlank()
             || a.getItem().getName().toLowerCase().contains(keyword.toLowerCase()))
@@ -232,7 +231,7 @@ public class AuctionManagementController {
   }
 
   private void filterFinishedLocal(String keyword) {
-    List<AuctionItemDAO> filtered = cachedAuctions.stream()
+    List<AuctionItemDTO> filtered = cachedAuctions.stream()
         .filter(a -> {
           String s = a.getAuction().getAuctionStatus();
           return "SOLD".equalsIgnoreCase(s) || "FINISHED".equalsIgnoreCase(s)
@@ -319,10 +318,10 @@ public class AuctionManagementController {
   }
 
   @SuppressWarnings("unchecked")
-  private <C> ListCell<AuctionItemDAO> buildAuctionCell(
+  private <C> ListCell<AuctionItemDTO> buildAuctionCell(
       String fxmlPath, Class<C> ctrlClass,
-      BiConsumer<C, ListCell<AuctionItemDAO>> callbackSetup,
-      BiConsumer<C, AuctionItemDAO> dataSetup,
+      BiConsumer<C, ListCell<AuctionItemDTO>> callbackSetup,
+      BiConsumer<C, AuctionItemDTO> dataSetup,
       Consumer<C> stopTimerFn) {
 
     return new ListCell<>() {
@@ -341,7 +340,7 @@ public class AuctionManagementController {
       }
 
       @Override
-      protected void updateItem(AuctionItemDAO item, boolean empty) {
+      protected void updateItem(AuctionItemDTO item, boolean empty) {
         super.updateItem(item, empty);
         if (empty || item == null) {
           if (stopTimerFn != null && ctrl != null) stopTimerFn.accept(ctrl);
@@ -413,7 +412,7 @@ public class AuctionManagementController {
     }
   }
 
-  private void openEditDialog(AuctionItemDAO item) {
+  private void openEditDialog(AuctionItemDTO item) {
     if (item == null) return;
     try {
       FXMLLoader loader = new FXMLLoader(
@@ -435,7 +434,7 @@ public class AuctionManagementController {
     }
   }
 
-  private void cancelAuction(AuctionItemDAO auctionItem) {
+  private void cancelAuction(AuctionItemDTO auctionItem) {
     if (auctionItem == null || auctionItem.getAuction() == null) return;
 
     try {
@@ -457,7 +456,7 @@ public class AuctionManagementController {
     }
   }
 
-  private void openDetailView(AuctionItemDAO auctionItem) {
+  private void openDetailView(AuctionItemDTO auctionItem) {
     if (auctionItem == null) return;
     try {
       FXMLLoader loader = new FXMLLoader(
@@ -476,7 +475,7 @@ public class AuctionManagementController {
     }
   }
 
-  private void remindPayment(AuctionItemDAO auctionItem) {
+  private void remindPayment(AuctionItemDTO auctionItem) {
     if (auctionItem == null) return;
     AlertUtils.success("Đã gửi nhắc thanh toán cho người thắng phiên: "
         + auctionItem.getItem().getName());

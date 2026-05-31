@@ -2,6 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.common.model.*;
 import com.auction.common.factory.ItemFactory;
+import com.auction.server.core.AuctionItemDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -152,8 +153,8 @@ public class ItemDAO {
         return items;
     }
     // 5. Lấy danh sách Item theo trạng thái và từ khóa tìm kiếm (Dành cho bộ lọc UI)
-    public List<AuctionItemDAO> getSellerProductsByStatusAndKeyword(int sellerId, String status, String keyword) {
-        List<AuctionItemDAO> resultList = new ArrayList<>();
+    public List<AuctionItemDTO> getSellerProductsByStatusAndKeyword(int sellerId, String status, String keyword) {
+        List<AuctionItemDTO> resultList = new ArrayList<>();
 
         // Dùng LEFT JOIN để lấy thông tin item và auction đi kèm.
         // Chỉ lấy sản phẩm của đúng seller_id
@@ -195,7 +196,7 @@ public class ItemDAO {
                     }
 
                     // 3. Đóng gói vào DTO và ném vào List
-                    resultList.add(new AuctionItemDAO(item, auction));
+                    resultList.add(new AuctionItemDTO(item, auction));
                 }
             }
         } catch (SQLException e) {

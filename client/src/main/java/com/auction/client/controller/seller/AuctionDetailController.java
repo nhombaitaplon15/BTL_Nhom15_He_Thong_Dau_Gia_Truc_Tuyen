@@ -7,7 +7,7 @@ import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.server.core.AuctionItemDTO;
 import com.auction.server.dao.BidDAO.BidRow;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -102,7 +102,7 @@ public class AuctionDetailController {
   @FXML private Button btnContactWinner;
 
   // ── STATE ──
-  private AuctionItemDAO currentAuctionItem;
+  private AuctionItemDTO currentAuctionItem;
   private Auction        currentAuction;
   private Item           currentItem;
   private Timeline       countdownTimer;
@@ -127,7 +127,7 @@ public class AuctionDetailController {
   // ENTRY POINT
   // ════════════════════════════════════════
 
-  public void setAuctionItem(AuctionItemDAO auctionItem) {
+  public void setAuctionItem(AuctionItemDTO auctionItem) {
     this.currentAuctionItem = auctionItem;
     this.currentAuction     = auctionItem.getAuction();
     this.currentItem        = auctionItem.getItem();
