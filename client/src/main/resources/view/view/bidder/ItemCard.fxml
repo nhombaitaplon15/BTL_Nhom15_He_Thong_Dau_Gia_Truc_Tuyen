@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
-            prefHeight="400.0" prefWidth="600.0">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="300.0" spacing="8.0" style="-fx-padding: 10; -fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-radius: 8; -fx-background-radius: 8;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.bidder.ItemCardController">
+    <children>
+        <ImageView fx:id="imgItem" fitHeight="180.0" fitWidth="280.0" pickOnBounds="true" preserveRatio="false" />
 
-</AnchorPane>
+        <Label fx:id="name" prefHeight="25.0" prefWidth="280.0" style="-fx-font-weight: bold; -fx-font-size: 14px;" text="Tên sản phẩm: " />
+
+        <Label fx:id="startPrice" prefWidth="280.0" style="-fx-text-fill: #757575; -fx-font-size: 12px;" text="Giá khởi điểm: " />
+
+        <Label fx:id="currentPrice" prefWidth="280.0" style="-fx-text-fill: #ff0000; -fx-font-weight: bold; -fx-font-size: 14px;" text="Giá hiện tại: " />
+
+        <Label fx:id="timeRemaining" prefWidth="280.0" style="-fx-text-fill: #4CAF50; -fx-font-size: 12px;" text="Thời gian còn lại: --:--:--" />
+
+        <Button fx:id="btnBid" maxWidth="Infinity" onAction="#handleBidAction" prefHeight="35.0" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;" text="Đặt Giá Ngay" />
+    </children>
+</VBox>
