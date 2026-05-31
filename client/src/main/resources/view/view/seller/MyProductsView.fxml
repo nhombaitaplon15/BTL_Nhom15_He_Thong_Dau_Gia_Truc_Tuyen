@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- ĐÃ SỬA: Đổi root thành AnchorPane để ép giao diện luôn full màn hình -->
+<AnchorPane prefHeight="680.0" prefWidth="1100.0" stylesheets="@../css/product_management.css, @../css/MyProducts.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.MyProductsController1">
+
+    <!-- ĐÃ SỬA: Neo HBox dính chặt vào 4 góc của AnchorPane -->
+    <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" styleClass="main-content">
+
+        <!-- ĐÃ SỬA: Khóa cứng chiều rộng của Sidebar để không bị co dúm -->
+        <VBox styleClass="sidebar" prefWidth="260.0" minWidth="260.0" maxWidth="260.0">
+            <Label styleClass="sidebar-title" text="QUẢN LÝ SẢN PHẨM" />
+
+            <HBox fx:id="btnInsertI" onMouseClicked="#showInsertItemView" prefHeight="43.0" prefWidth="190.0">
+                <children>
+                    <Button maxWidth="Infinity" onAction="#showInsertItemView" styleClass="sidebar-add-btn" text="＋  Thêm sản phẩm mới" HBox.hgrow="ALWAYS" />
+                </children>
+            </HBox>
+
+            <HBox fx:id="btnAuctioning" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="10" styleClass="sidebar-item-active">
+                <Label styleClass="icon-blue" />
+                <Label styleClass="sidebar-text" text="Đang đấu giá" HBox.hgrow="ALWAYS" />
+                <Label fx:id="badgeAuctioning" styleClass="badge-yellow" text="0" />
+            </HBox>
+
+            <HBox fx:id="btnPending" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="10" styleClass="sidebar-item">
+                <Label styleClass="icon-grey" />
+                <Label styleClass="sidebar-text" text="Chờ duyệt phiên" HBox.hgrow="ALWAYS" />
+                <Label fx:id="badgePending" styleClass="badge-yellow" text="0" />
+            </HBox>
+
+            <HBox fx:id="btnSold" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="10" styleClass="sidebar-item">
+                <Label styleClass="icon-green" />
+                <Label styleClass="sidebar-text" text="Đã bán" HBox.hgrow="ALWAYS" />
+            </HBox>
+        </VBox>
+
+        <!-- StackPane tự động chiếm toàn bộ không gian còn lại nhờ HBox.hgrow="ALWAYS" -->
+        <StackPane fx:id="mainContentArea" styleClass="main-content" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+
+            <!-- TAB ĐANG ĐẤU GIÁ -->
+            <VBox fx:id="paneAuctioning" spacing="14" styleClass="tab-content" managed="true" visible="true">
+                <VBox spacing="2">
+                    <Label styleClass="title-text" text="Đang đấu giá" />
+                    <Label styleClass="subtitle-text" text="Các sản phẩm hiện đang trong phiên đấu giá" />
+                </VBox>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <TextField fx:id="searchAuctioning" promptText="🔍  Tìm kiếm sản phẩm..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                    <Button styleClass="btn-primary" text="Lọc" />
+                </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label styleClass="color-block-blue" />
+                    <Label styleClass="bold-text" text="Phiên đang mở" />
+                    <Label fx:id="lblCountAuc" styleClass="muted-text" text="· 0 sản phẩm" />
+                </HBox>
+
+                <!-- ĐÃ SỬA: Ép ListView tự động giãn dọc -->
+                <ListView fx:id="listAuctioning" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" maxHeight="Infinity" />
+
+                <VBox fx:id="emptyAuctioning" alignment="CENTER" managed="false" spacing="10" styleClass="empty-box" visible="false" VBox.vgrow="ALWAYS">
+                    <Label styleClass="empty-title" text="Chưa có sản phẩm đang đấu giá" />
+                    <Button styleClass="btn-primary" text="＋  Thêm sản phẩm mới" onAction="#showInsertItemView" />
+                </VBox>
+            </VBox>
+
+            <!-- TAB CHỜ DUYỆT -->
+            <VBox fx:id="panePending" spacing="14" styleClass="tab-content" managed="false" visible="false">
+                <VBox spacing="2">
+                    <Label styleClass="title-text" text="Chờ duyệt phiên" />
+                    <Label styleClass="subtitle-text" text="Sản phẩm đã gửi, đang chờ admin phê duyệt để mở phiên" />
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <TextField fx:id="searchPending" promptText="🔍  Tìm kiếm sản phẩm..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                    <Button styleClass="btn-primary" text="Lọc" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label styleClass="color-block-orange" />
+                    <Label styleClass="bold-text" text="Chờ phê duyệt" />
+                    <Label fx:id="lblCountPend" styleClass="muted-text" text="· 0 sản phẩm" />
+                </HBox>
+
+                <ListView fx:id="listPending" fixedCellSize="82.0" styleClass="transparent-list" VBox.vgrow="ALWAYS" maxHeight="Infinity" />
+
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="info-box">
+                    <Label styleClass="info-icon" text="ℹ" />
+                    <Label styleClass="info-text" text="Sản phẩm trong trạng thái này có thể sửa hoặc xoá trước khi được duyệt." wrapText="true" />
+                </HBox>
+
+                <VBox fx:id="emptyPending" alignment="CENTER" managed="false" styleClass="empty-box" visible="false" VBox.vgrow="ALWAYS">
+                    <Label styleClass="empty-title" text="Không có sản phẩm nào đang chờ duyệt" />
+                </VBox>
+            </VBox>
+
+            <!-- TAB ĐÃ BÁN -->
+            <VBox fx:id="paneSold" spacing="14" styleClass="tab-content" managed="false" visible="false">
+                <VBox spacing="2">
+                    <Label styleClass="title-text" text="Đã bán" />
+                    <Label styleClass="subtitle-text" text="Lịch sử các phiên đấu giá đã kết thúc" />
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <TextField fx:id="searchSold" promptText="🔍  Tìm kiếm sản phẩm..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                    <Button styleClass="btn-primary" text="Lọc" />
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label styleClass="color-block-green" />
+                    <Label styleClass="bold-text" text="Hoàn tất / Chờ thanh toán" />
+                    <Label fx:id="lblCountSold" styleClass="muted-text" text="· 0 sản phẩm" />
+                </HBox>
+
+                <ListView fx:id="listSold" fixedCellSize="82.0" styleClass="transparent-list" VBox.vgrow="ALWAYS" maxHeight="Infinity" />
+
+                <VBox fx:id="emptySold" alignment="CENTER" managed="false" styleClass="empty-box" visible="false" VBox.vgrow="ALWAYS">
+                    <Label styleClass="empty-title" text="Chưa có sản phẩm nào được bán" />
+                </VBox>
+            </VBox>
+
+        </StackPane>
+    </HBox>
+</AnchorPane>

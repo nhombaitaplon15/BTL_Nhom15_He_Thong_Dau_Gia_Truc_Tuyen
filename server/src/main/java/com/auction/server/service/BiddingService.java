@@ -67,8 +67,12 @@ public class BiddingService {
                 if (auction.getCurrentWinnerId() != null) {
                     int oldWinnerId = auction.getCurrentWinnerId();
                     double oldPrice = auction.getCurrentPrice();
-                    if (!paymentDAO.updateBalance(conn, oldWinnerId, oldPrice, "+")) {
-                        throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + oldWinnerId + ")");
+                    // Bước B: Hoàn tiền cho người thắng cũ (nếu có)
+                    // ĐÃ SỬA: Chặn đứng "Bóng ma User 0", chỉ hoàn tiền nếu ID người thắng > 0
+                    if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
+                        if (!paymentDAO.updateBalance(conn, auction.getCurrentWinnerId(), auction.getCurrentPrice(), "+")) {
+                            throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + auction.getCurrentWinnerId() + ")");
+                        }
                     }
                     transactionDAO.createTransaction(conn, oldWinnerId, oldPrice,
                             "REFUND_OVERBID_" + auction.getAuctionId(), "SUCCESS");

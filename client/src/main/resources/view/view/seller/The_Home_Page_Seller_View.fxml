@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane stylesheets="@../css/HomeSeller.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.The_Home_Page_Seller_View_Controller">
+    <top>
+        <HBox prefHeight="42.0" prefWidth="1006.0" spacing="20.0" style="-fx-background-color: #233A66 " BorderPane.alignment="CENTER">
+            <children>
+                <Label prefHeight="42.0" prefWidth="391.0" text="" />
+                <Button mnemonicParsing="false" onAction="#clickHome" prefHeight="42.0" prefWidth="225.0" styleClass="nav-button" text="Trang chủ" textFill="#ffd691">
+                    <font>
+                        <Font name="Times New Roman" size="17.0" />
+                    </font></Button>
+                <Button mnemonicParsing="false" onAction="#clickSanPhamCuaBan" prefHeight="42.0" prefWidth="250.0" styleClass="nav-button" text="Sản phẩm của bạn" textFill="#ffd691">
+                    <font>
+                        <Font name="Times New Roman" size="17.0" />
+                    </font></Button>
+                <Button mnemonicParsing="false" onAction="#clickAuction" prefHeight="42.0" prefWidth="240.0" styleClass="nav-button" text="Phiên đấu giá" textFill="#ffd691">
+                    <font>
+                        <Font name="Times New Roman" size="17.0" />
+                    </font></Button>
+                <Button mnemonicParsing="false" onAction="#clickAccount" prefHeight="42.0" prefWidth="209.0" styleClass="nav-button" text="Tài khoản" textFill="#ffd691">
+                    <font>
+                        <Font name="Times New Roman" size="17.0" />
+                    </font></Button>
+            </children>
+            <padding>
+                <Insets right="20.0" />
+            </padding>
+        </HBox>
+    </top>
+   <center>
+      <StackPane fx:id="mainContent" prefHeight="576.0" prefWidth="1006.0" BorderPane.alignment="CENTER" />
+   </center>
+
+</BorderPane>

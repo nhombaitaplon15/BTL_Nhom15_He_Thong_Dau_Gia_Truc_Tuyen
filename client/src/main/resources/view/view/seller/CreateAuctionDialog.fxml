@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox prefWidth="560" styleClass="dialog-overlay" stylesheets="@../css/product_management.css, @../css/CreateAuction.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.CreateAuctionController">
+
+    <VBox styleClass="dialog-content">
+
+        <HBox alignment="CENTER_LEFT" styleClass="dialog-header">
+            <Label styleClass="dialog-title" text="Tạo phiên đấu giá mới" HBox.hgrow="ALWAYS" />
+            <Button fx:id="btnCancel" onAction="#onCancel" styleClass="btn-close" text="✕" />
+        </HBox>
+
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="preview-box">
+            <ImageView fx:id="imgItemPreview" fitHeight="44" fitWidth="44" preserveRatio="true" style="-fx-background-radius: 7;" />
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label fx:id="lblItemName" styleClass="bold-text" text="—" />
+                <Label fx:id="lblItemMeta" styleClass="muted-text-small" text="—" />
+            </VBox>
+            <VBox alignment="CENTER_RIGHT" spacing="2">
+                <Label styleClass="price-label" text="Giá khởi điểm" />
+                <Label fx:id="lblStartingPrice" styleClass="price-value" text="0đ" />
+            </VBox>
+        </HBox>
+
+        <VBox spacing="0" style="-fx-padding: 16 0 0 0;">
+
+            <GridPane hgap="16" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                </columnConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="form-label" text="Ngày bắt đầu" />
+                    <DatePicker fx:id="dtpStartTime" maxWidth="Infinity" styleClass="form-input-date" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="form-label" text="Ngày kết thúc" />
+                    <DatePicker fx:id="dtpEndTime" maxWidth="Infinity" styleClass="form-input-date" />
+                </VBox>
+
+                <VBox prefHeight="47.0" prefWidth="224.0" spacing="4" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label styleClass="form-label" text="Giá mua ngay (tuỳ chọn)" />
+                    <TextField fx:id="txtBuyNowPrice" promptText="Để trống nếu không có" styleClass="form-input" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                    <Label styleClass="form-label" text="Ghi chú cho phiên" />
+                    <TextField fx:id="txtNote" promptText="VD: Xe còn đẹp, có thể xem trực tiếp..." styleClass="form-input" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                    <Label styleClass="form-label" text="Kích hoạt Anti-snipe (giây cuối)" />
+                    <Button mnemonicParsing="false" prefHeight="30.0" prefWidth="243.0" styleClass="form-input" text="60 giây" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                    <Label styleClass="form-label" text="Gia hạn thêm (giây)" />
+                    <Button mnemonicParsing="false" prefHeight="29.0" prefWidth="243.0" styleClass="form-input" text="60 giây" />
+                </VBox>
+                <rowConstraints>
+                    <RowConstraints />
+                    <RowConstraints />
+                    <RowConstraints />
+                    <RowConstraints />
+                </rowConstraints>
+            </GridPane>
+
+            <Label styleClass="note-text" text="* Phiên sẽ chờ admin duyệt trước khi được kích hoạt." />
+
+            <HBox alignment="CENTER_RIGHT" spacing="8" style="-fx-padding: 16 0 0 0;">
+                <Button onAction="#onCancel" styleClass="btn-outline" text="Huỷ" />
+                <Button fx:id="btnConfirm" onAction="#onConfirm" styleClass="btn-primary" text="Gửi tạo phiên →" />
+            </HBox>
+
+        </VBox>
+    </VBox>
+</VBox>

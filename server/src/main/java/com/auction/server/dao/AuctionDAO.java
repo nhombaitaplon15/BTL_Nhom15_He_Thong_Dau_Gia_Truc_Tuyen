@@ -1,5 +1,6 @@
 package com.auction.server.dao;
 
+import com.auction.common.factory.ItemFactory;
 import com.auction.common.model.Auction;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -26,8 +27,8 @@ public class AuctionDAO {
     // --- CÁC HÀM CẬP NHẬT (UPDATES) ---
     // --- 1. THÊM MỚI PHIÊN ĐẤU GIÁ (Dùng cho scheduleAuction) ---
     public boolean insertAuction(Auction a) {
-        String sql = "INSERT INTO auctions (item_id, seller_id, auction_status, starting_price, current_price, total_bids, current_winner_id, start_time, end_time, created_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO auctions (item_id, seller_id, auction_status, starting_price, current_price, total_bids, start_time, end_time, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         return executeUpdate(sql,
                 a.getItemId(),
@@ -36,7 +37,6 @@ public class AuctionDAO {
                 a.getStartingPrice(),
                 a.getCurrentPrice(),
                 a.getTotalBids(),
-                a.getCurrentWinnerId(),
                 Timestamp.valueOf(a.getStartTime()),
                 Timestamp.valueOf(a.getEndTime()),
                 Timestamp.valueOf(a.getCreatedAt())
@@ -125,5 +125,67 @@ public class AuctionDAO {
     }
     public List<Auction> getAuctionsBySeller(int sellerId) {
         return queryList("SELECT * FROM auctions WHERE seller_id = ?", sellerId);
+    }
+    public List<AuctionItemDAO> getAuctionsBySellerStatusAndKeyword(int sellerId, String status, String keyword) {
+        List<AuctionItemDAO> list = new ArrayList<>();
+
+        // Thêm điều kiện a.seller_id = ? vào câu truy vấn
+        String sql = "SELECT i.*, a.* " +
+            "FROM items i " +
+            "INNER JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE a.seller_id = ? AND a.auction_status = ? AND i.name ILIKE ?";
+
+        // Truyền thêm sellerId vào hàm prepare
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = prepare(conn, sql, sellerId, status, "%" + keyword + "%");
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                com.auction.common.model.Item item = ItemFactory.createFromResultSet(rs);
+                Auction auction = map(rs);
+                list.add(new AuctionItemDAO(item, auction));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    public List<AuctionItemDAO> getFinishedAuctionsBySeller(int sellerId, String keyword) {
+        List<AuctionItemDAO> list = new ArrayList<>();
+
+        String sql = "SELECT i.*, a.* " +
+            "FROM items i " +
+            "INNER JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE a.seller_id = ? " +
+            "  AND a.auction_status IN ('FINISHED', 'PAID', 'CANCELED') " +
+            "  AND i.name ILIKE ? " +
+            "ORDER BY a.end_time DESC";  // Mới kết thúc hiện trên đầu
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = prepare(conn, sql, sellerId, "%" + keyword + "%");
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                com.auction.common.model.Item item    = ItemFactory.createFromResultSet(rs);
+                Auction auction = map(rs);
+                list.add(new AuctionItemDAO(item, auction));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    // --- CẬP NHẬT THỜI GIAN KHI SỬA PHIÊN ---
+    public boolean updateAuction(Auction a) {
+        String sql = "UPDATE auctions SET start_time = ?, end_time = ? WHERE auction_id = ?";
+        return executeUpdate(sql,
+            Timestamp.valueOf(a.getStartTime()),
+            Timestamp.valueOf(a.getEndTime()),
+            a.getAuctionId());
+    }
+
+    // --- XÓA PHIÊN ĐẤU GIÁ ---
+    public boolean deleteAuction(int auctionId) {
+        return executeUpdate("DELETE FROM auctions WHERE auction_id = ?", auctionId);
     }
 }

@@ -48,7 +48,7 @@ public class ItemService {
                 int generatedItemId = itemDAO.insertItem(conn, item);
 
                 // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ
-                item.setItemId(generatedItemId);
+                item.setId(generatedItemId);
 
                 conn.commit(); // Lưu vĩnh viễn dữ liệu xuống SQL
                 System.out.println("[SERVICE] Đã thêm sản phẩm thành công với ID tự tăng: " + generatedItemId);

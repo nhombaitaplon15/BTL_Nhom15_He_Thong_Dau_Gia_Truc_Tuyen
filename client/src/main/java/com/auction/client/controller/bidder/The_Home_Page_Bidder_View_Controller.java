@@ -118,7 +118,9 @@ public class The_Home_Page_Bidder_View_Controller {
         switchSceneWithUser(event, "/view/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5);
     }
     @FXML void handleSearch(ActionEvent event) { System.out.println("Tìm kiếm: " + txtSearch.getText()); }
-    @FXML void handleSwitchToSeller(ActionEvent event) { System.out.println("Chuyển người bán"); }
+    @FXML void handleSwitchToSeller(ActionEvent event) {
+        switchSceneWithUser(event, "/view/view/seller/The_Home_Page_Seller_View.fxml", "", 5);
+        System.out.println("Chuyển người bán"); }
 
     @FXML
     void handleLogout(ActionEvent event) {

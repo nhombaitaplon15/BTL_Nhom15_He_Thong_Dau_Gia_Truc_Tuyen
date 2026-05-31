@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
  * Chứa các trường chung khớp với bảng 'items' trong Database.
  */
 public abstract class Item extends Entity implements java.io.Serializable {
-    private int itemId;
     private String name;
     private String description;
     private String itemType;      // Loại: ELECTRONICS, ART, VEHICLE
@@ -32,8 +31,7 @@ public abstract class Item extends Entity implements java.io.Serializable {
     }
 
     // --- Getters & Setters ---
-    public int getItemId() { return itemId; }
-    public void setItemId(int itemId) { this.itemId = itemId; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getImgItem() { return imgItem; }

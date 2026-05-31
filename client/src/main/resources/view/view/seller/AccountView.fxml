@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="680" prefWidth="1100" styleClass="main-container"
+            stylesheets="@../css/product_management.css, @../css/AccountSeller.css"
+            xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.client.controller.seller.AccountController">
+    <center>
+        <HBox>
+            <VBox styleClass="sidebar">
+                <Label styleClass="sidebar-title" text="TÀI KHOẢN" />
+
+                <HBox fx:id="btnProfile" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn-active">
+                    <Label styleClass="icon-gold" />
+                    <Label styleClass="sidebar-text-active" text="Thông tin cá nhân" HBox.hgrow="ALWAYS" />
+                </HBox>
+
+                <HBox fx:id="btnSecurity" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                    <Label styleClass="icon-blue" />
+                    <Label styleClass="sidebar-text" text="Bảo mật" HBox.hgrow="ALWAYS" />
+                </HBox>
+
+                <Separator styleClass="sidebar-separator" />
+
+                <HBox fx:id="btnWallet" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                    <Label styleClass="icon-green" />
+                    <Label styleClass="sidebar-text" text="Ví UETệ" HBox.hgrow="ALWAYS" />
+                </HBox>
+
+                <Separator styleClass="sidebar-separator" />
+
+                <HBox fx:id="btnLogout" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                    <Label styleClass="icon-red" />
+                    <Label styleClass="sidebar-text" text="Đăng xuất" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </VBox>
+
+            <StackPane styleClass="content-pane" HBox.hgrow="ALWAYS">
+                <ScrollPane fx:id="paneProfile" fitToWidth="true" managed="true" styleClass="tab-scroll-pane" visible="false">
+                    <VBox spacing="16" styleClass="tab-inner-vbox">
+                        <VBox spacing="2">
+                            <Label styleClass="tab-title" text="Thông tin cá nhân" />
+                            <Label styleClass="tab-subtitle" text="Quản lý thông tin hồ sơ của bạn" />
+                        </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="20" styleClass="profile-banner">
+                            <StackPane styleClass="avatar-pane">
+                                <Label fx:id="lblAvatarInitial" styleClass="avatar-letter" text="N" />
+                            </StackPane>
+
+                            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                <Label fx:id="lblFullName" styleClass="profile-banner-name" text="—" />
+                                <HBox alignment="CENTER_LEFT" spacing="8">
+                                    <Label fx:id="lblRolePill" styleClass="role-pill" text="SELLER" />
+                                    <Label fx:id="lblEmail" styleClass="profile-sub-text" text="—" />
+                                </HBox>
+                                <Label fx:id="lblMemberInfo" styleClass="profile-member-info" text="—" />
+                            </VBox>
+
+                            <HBox spacing="24">
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatProducts" styleClass="profile-banner-stat-value" text="0" />
+                                    <Label styleClass="profile-banner-stat-label" text="Sản phẩm" />
+                                </VBox>
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatSold" styleClass="profile-banner-stat-value" text="0" />
+                                    <Label styleClass="profile-banner-stat-label" text="Đã bán" />
+                                </VBox>
+                                <VBox alignment="CENTER" spacing="2">
+                                    <Label fx:id="lblStatRating" styleClass="profile-banner-stat-value" text="—" />
+                                    <Label styleClass="profile-banner-stat-label" text="Đánh giá" />
+                                </VBox>
+                            </HBox>
+                        </HBox>
+
+                        <VBox spacing="14" styleClass="white-card">
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label styleClass="sec-bar-gold" />
+                                <Label styleClass="section-title" text="Thông tin cơ bản" />
+                            </HBox>
+
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                </columnConstraints>
+                                <VBox spacing="4" GridPane.rowIndex="0">
+                                    <Label styleClass="form-label" text="Tên đăng nhập" />
+                                    <TextField fx:id="txtUsername" editable="false" styleClass="form-input-readonly" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <Label styleClass="form-label" text="Email" />
+                                    <TextField fx:id="txtEmail" promptText="example@email.com" styleClass="form-input" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <Label styleClass="form-label" text="Số điện thoại" />
+                                    <TextField fx:id="txtPhone" promptText="09xx xxx xxx" styleClass="form-input" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                                    <Label styleClass="form-label" text="Địa chỉ" />
+                                    <TextField fx:id="txtAddress" promptText="Số nhà, đường, quận, thành phố..." styleClass="form-input" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1">
+                                    <Label styleClass="form-label" text="Ngày sinh" />
+                                    <DatePicker fx:id="dpBirthDate" maxWidth="Infinity" styleClass="form-datepicker" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.rowIndex="3">
+                                    <Label styleClass="form-label" text="Vai trò" />
+                                    <TextField fx:id="txtRole" editable="false" styleClass="form-input-readonly" />
+                                </VBox>
+                                <VBox prefHeight="0.0" prefWidth="394.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                    <children>
+                                        <Button mnemonicParsing="false" prefHeight="34.0" prefWidth="250.0" styleClass="btn-gold" text="Chuyển đổi vai trò sang Bidder" />
+                                    </children>
+                                    <GridPane.margin>
+                                        <Insets />
+                                    </GridPane.margin>
+                                    <padding>
+                                        <Insets bottom="7.0" left="70.0" top="7.0" />
+                                    </padding>
+                                </VBox>
+                                <rowConstraints>
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                </rowConstraints>
+                            </GridPane>
+
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button onAction="#handleSaveProfile" styleClass="btn-primary" text="Lưu thay đổi" />
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                </ScrollPane>
+
+                <ScrollPane fx:id="paneSecurity" fitToWidth="true" managed="false" styleClass="tab-scroll-pane" visible="false">
+                    <VBox spacing="16" styleClass="tab-inner-vbox">
+                        <VBox spacing="2">
+                            <Label styleClass="tab-title" text="Bảo mật tài khoản" />
+                            <Label styleClass="tab-subtitle" text="Quản lý mật khẩu và xác thực" />
+                        </VBox>
+
+                        <VBox spacing="14" styleClass="white-card">
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label styleClass="sec-bar-blue" />
+                                <Label styleClass="section-title" text="Đổi mật khẩu" />
+                            </HBox>
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="100" />
+                                </columnConstraints>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label styleClass="form-label" text="Mật khẩu hiện tại" />
+                                    <PasswordField fx:id="txtCurrentPass" promptText="••••••••" styleClass="form-input" />
+                                </VBox>
+                                <rowConstraints>
+                                    <RowConstraints />
+                                </rowConstraints>
+                            </GridPane>
+                            <GridPane hgap="18" vgap="12">
+                                <columnConstraints>
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                </columnConstraints>
+                                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <Label styleClass="form-label" text="Mật khẩu mới" />
+                                    <PasswordField fx:id="txtNewPass" promptText="••••••••" styleClass="form-input" />
+                                </VBox>
+                                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <Label styleClass="form-label" text="Xác nhận mật khẩu mới" />
+                                    <PasswordField fx:id="txtConfirmPass" promptText="••••••••" styleClass="form-input" />
+                                </VBox>
+                                <rowConstraints>
+                                    <RowConstraints />
+                                </rowConstraints>
+                            </GridPane>
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button onAction="#handleChangePassword" styleClass="btn-primary" text="Cập nhật mật khẩu" />
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                </ScrollPane>
+
+                <ScrollPane fx:id="paneWallet" fitToWidth="true" managed="false" prefHeight="50.0" prefWidth="97.0" styleClass="tab-scroll-pane">
+                    <VBox spacing="16" styleClass="tab-inner-vbox">
+                        <VBox spacing="2">
+                            <Label styleClass="tab-title" text="Ví UETệ" />
+                            <Label styleClass="tab-subtitle" text="Quản lý số dư và lịch sử giao dịch" />
+                        </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="16" styleClass="balance-banner">
+                            <Label styleClass="wallet-icon-big" text="💰" />
+                            <VBox spacing="3" HBox.hgrow="ALWAYS">
+                                <Label styleClass="balance-label" text="SỐ DƯ HIỆN TẠI" />
+                                <Label fx:id="lblBalance" styleClass="balance-value" text="0 UETệ" />
+                                <Label fx:id="lblBalanceUpdated" styleClass="balance-sub" text="—" />
+                                <HBox prefHeight="100.0" prefWidth="200.0" spacing="15.0">
+                                    <children>
+                                        <Button onAction="#handleDeposit" styleClass="btn-gold" text="＋  Nạp tiền" />
+                                        <Button mnemonicParsing="false" onAction="#handleWithdraw" styleClass="btn-gold" text="-   Rút tiền" />
+                                    </children>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+
+                        <VBox spacing="0" styleClass="white-card">
+                            <HBox alignment="CENTER_LEFT" spacing="8" styleClass="transaction-header">
+                                <Label styleClass="sec-bar-green" />
+                                <Label styleClass="section-title" text="Lịch sử giao dịch" />
+                            </HBox>
+                            <ListView fx:id="listTransactions" fixedCellSize="54" prefHeight="270" styleClass="transaction-list" />
+
+                            <VBox fx:id="emptyTransactions" alignment="CENTER" managed="false" styleClass="empty-transactions-box" visible="false">
+                                <Label styleClass="empty-text" text="Chưa có giao dịch nào" />
+                            </VBox>
+                        </VBox>
+                    </VBox>
+                </ScrollPane>
+
+                <VBox fx:id="paneLogout" alignment="CENTER" managed="false" styleClass="logout-pane" visible="false">
+                    <VBox alignment="CENTER" spacing="14" styleClass="white-card logout-card">
+                        <Label styleClass="logout-icon" text="👋" />
+                        <Label styleClass="logout-title" text="Bạn muốn đăng xuất?" />
+                        <Label styleClass="logout-text" text="Phiên làm việc sẽ kết thúc. Các thay đổi chưa lưu sẽ bị mất." textAlignment="CENTER" wrapText="true" />
+                        <HBox alignment="CENTER" spacing="12" styleClass="logout-buttons">
+                            <Button fx:id="btnStay" styleClass="btn-primary" text="Ở lại" />
+                            <Button fx:id="btnConfirmLogout" styleClass="btn-logout" text="🚪  Xác nhận đăng xuất" />
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </StackPane>
+        </HBox>
+    </center>
+</BorderPane>
