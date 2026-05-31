@@ -1,8 +1,12 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
-import com.auction.server.dao.IssueDAO; // Nhớ import đúng vị trí file DAO vừa tạo
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -18,7 +22,6 @@ public class ReportIssueController {
 
     private BidHistoryRow currentData;
     private User currentUser;
-    private IssueDAO issueDAO = new IssueDAO(); // Khởi tạo đối tượng DAO kết nối DB
 
     @FXML
     public void initialize() {
@@ -32,11 +35,12 @@ public class ReportIssueController {
             );
             cbIssueType.getSelectionModel().selectFirst();
         }
+
+        // Đăng ký nhận kết quả báo cáo sự cố (Khớp chuẩn ResponseCode của bạn)
+        MessageRouter.getInstance().register(ResponseCode.REPORT_SENT, this::handleReportSuccess);
+        MessageRouter.getInstance().register(ResponseCode.ERROR_MESSAGE, this::handleReportFailure);
     }
 
-    /**
-     * Nhận đồng thời dữ liệu dòng chọn và thông tin User hiện tại từ màn hình chính chuyển sang
-     */
     public void setIssueData(BidHistoryRow data, User user) {
         if (data != null) {
             this.currentData = data;
@@ -48,6 +52,7 @@ public class ReportIssueController {
 
     @FXML
     private void handleCancel() {
+        cleanupListeners();
         Stage stage = (Stage) txtSessionId.getScene().getWindow();
         stage.close();
     }
@@ -59,36 +64,42 @@ public class ReportIssueController {
 
         if (description.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setContentText("Vui lòng nhập mô tả chi tiết sự cố gặp phải!");
+            alert.setContentText("Vui lòng nhập mô tả chi tiết sự cố!");
             alert.showAndWait();
             return;
         }
 
-        // Tạo luồng phụ xử lý DB nhằm tăng trải nghiệm người dùng
-        new Thread(() -> {
-            int userId = (currentUser != null) ? currentUser.getId() : 0;
-            int auctionId = (currentData != null) ? currentData.getAuctionId() : Integer.parseInt(txtSessionId.getText());
+        int auctionId = (currentData != null) ? currentData.getAuctionId() : Integer.parseInt(txtSessionId.getText());
 
-            // Thực hiện ghi nhận xuống DB
-            boolean isSuccess = issueDAO.insertIssue(userId, auctionId, issueType, description);
+        // Định dạng chuỗi văn bản thuần túy gửi lên Server tương ứng với payload kiểu String của bạn
+        String formattedMessage = String.format("[Phiên #%d] Loại lỗi: %s. Chi tiết: %s", auctionId, issueType, description);
 
-            // Trở lại luồng UI chính JavaFX để tương tác thông báo
-            Platform.runLater(() -> {
-                if (isSuccess) {
-                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
-                    successAlert.setTitle("Thành công");
-                    successAlert.setHeaderText(null);
-                    successAlert.setContentText("Báo cáo sự cố đã được gửi và lưu trữ thành công vào Database!");
-                    successAlert.showAndWait();
-                    handleCancel(); // Tự động đóng cửa sổ sau khi gửi thành công
-                } else {
-                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-                    errorAlert.setTitle("Thất bại");
-                    errorAlert.setContentText("Lỗi hệ thống! Không thể kết nối Database để lưu báo cáo.");
-                    errorAlert.showAndWait();
-                }
-            });
-        }).start();
+        // Gửi thông tin (Khớp chuẩn RequestCode của bạn)
+        SocketClient.getInstance().sendRequest(RequestCode.REPORT_ISSUE, formattedMessage);
+    }
+
+    private void handleReportSuccess(Message message) {
+        Platform.runLater(() -> {
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("Thành công");
+            successAlert.setContentText("Báo cáo sự cố đã được hệ thống ghi nhận và chuyển tới ban quản trị!");
+            successAlert.showAndWait();
+            handleCancel();
+        });
+    }
+
+    private void handleReportFailure(Message message) {
+        Platform.runLater(() -> {
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle("Thất bại");
+            String reason = (message.getPayload() instanceof String) ? (String) message.getPayload() : "Gửi báo cáo thất bại!";
+            errorAlert.setContentText(reason);
+            errorAlert.showAndWait();
+        });
+    }
+
+    private void cleanupListeners() {
+        MessageRouter.getInstance().unregister(ResponseCode.REPORT_SENT);
+        MessageRouter.getInstance().unregister(ResponseCode.ERROR_MESSAGE);
     }
 }
-
