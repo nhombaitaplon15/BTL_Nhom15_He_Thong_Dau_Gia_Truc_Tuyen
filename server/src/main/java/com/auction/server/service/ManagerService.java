@@ -205,4 +205,11 @@ public class ManagerService {
         }
         return combinedList;
     }
+
+    public void removeAuctionFromCache(int auctionId) {
+        // ManagerService hiện dùng DB làm source of truth, không giữ cache riêng.
+        // AuctionRoomManager có thể đã removeRoom khi block, đảm bảo lại ở đây.
+        AuctionRoomManager.getInstance().removeRoom(auctionId);
+        System.out.println("[MANAGER] Đã dọn dẹp cache/room cho phiên #" + auctionId);
+    }
 }

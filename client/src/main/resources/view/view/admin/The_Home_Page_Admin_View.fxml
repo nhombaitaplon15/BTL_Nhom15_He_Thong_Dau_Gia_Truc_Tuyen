@@ -15,134 +15,130 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane style="-fx-background-color: #F4F7FE;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.admin.The_Home_Page_Admin_View_Controller">
-
+<AnchorPane style="-fx-background-color: #F0F4FF;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.client.controller.admin.The_Home_Page_Admin_View_Controller">
     <children>
         <VBox fillWidth="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
 
-                <HBox alignment="CENTER_LEFT" minHeight="60.0" prefHeight="60.0" spacing="20.0" style="-fx-background-color: white;">
-                    <padding>
-                        <Insets left="30.0" right="30.0" />
-                    </padding>
+                <!-- NAVBAR - Vibrant gradient border bottom -->
+                <HBox alignment="CENTER_LEFT" minHeight="64.0" prefHeight="64.0" spacing="20.0"
+                      style="-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.12), 10, 0, 0, 2);">
+                    <padding><Insets left="32.0" right="32.0" /></padding>
                     <children>
-                        <Button mnemonicParsing="false" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #2B3674; -fx-border-color: #3989b9; -fx-border-width: 0 0 3 0;" text="Trang chủ">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                        <!-- Logo dot vibrant -->
+                        <Label text="⬡" style="-fx-text-fill: #6C63FF; -fx-font-size: 22px;"/>
+                        <Button mnemonicParsing="false"
+                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #6C63FF; -fx-border-color: #6C63FF; -fx-border-width: 0 0 3 0;"
+                                text="Trang chủ">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToAuctionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0; " text="Danh sách đấu giá">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                        <Button mnemonicParsing="false" onAction="#goToAuctionPage"
+                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;"
+                                text="Danh sách đấu giá">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToTransactionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #A3AED0;" text="Quản lý giao dịch">
-                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
+                        <Button mnemonicParsing="false" onAction="#goToTransactionPage"
+                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;"
+                                text="Quản lý giao dịch">
+                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
                         <HBox HBox.hgrow="ALWAYS" />
                         <VBox alignment="CENTER_RIGHT" spacing="2.0">
-                            <Label fx:id="lblAdminName" style="-fx-text-fill: #2B3674; -fx-font-weight: bold;" text="Admin">
+                            <Label fx:id="lblAdminName" style="-fx-text-fill: #1E293B; -fx-font-weight: bold;" text="Admin">
                                 <font><Font name="Times New Roman Bold" size="14.0" /></font>
                             </Label>
-                            <Label fx:id="lblPendingCount" style="-fx-text-fill: #FF8800; -fx-font-size: 11px;" text="Chờ duyệt: 0" />
+                            <Label fx:id="lblPendingCount" style="-fx-text-fill: #F59E0B; -fx-font-size: 11px;" text="Chờ duyệt: 0" />
                         </VBox>
-                        <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: #EF4444; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 4 12 4 12;" text="Đăng xuất">
+                        <Button mnemonicParsing="false" onAction="#handleLogout"
+                                style="-fx-background-color: linear-gradient(to right, #EF4444, #F87171); -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 6 16 6 16; -fx-effect: dropshadow(gaussian, rgba(239,68,68,0.35), 8, 0, 0, 2);"
+                                text="Đăng xuất">
                             <font><Font name="Times New Roman Bold" size="13.0" /></font>
                         </Button>
                     </children>
                 </HBox>
 
-                <HBox fillHeight="true" spacing="30.0" VBox.vgrow="ALWAYS">
-                    <padding>
-                        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
-                    </padding>
+                <!-- MAIN CONTENT -->
+                <HBox fillHeight="true" spacing="24.0" VBox.vgrow="ALWAYS">
+                    <padding><Insets bottom="28.0" left="28.0" right="28.0" top="24.0" /></padding>
                     <children>
 
-                        <VBox fillWidth="true" spacing="30.0" HBox.hgrow="ALWAYS">
+                        <VBox fillWidth="true" spacing="24.0" HBox.hgrow="ALWAYS">
                             <children>
 
-                                <HBox prefHeight="69.0" prefWidth="681.0" spacing="15.0">
+                                <!-- KPI CARDS - Vibrant gradient boxes -->
+                                <HBox spacing="16.0">
                                     <children>
-                                        <VBox spacing="15.0" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label text="Revenue" textFill="#2b3674">
-                                                    <font><Font name="Times New Roman" size="16.0" /></font>
-                                                </Label>
-                                                <Label fx:id="lblRevenue" alignment="CENTER" maxWidth="Infinity" text="0 đ" textFill="#79a49e">
-                                                    <font><Font name="Times New Roman Bold" size="28.0" /></font>
-                                                </Label>
-                                            </children>
+                                        <!-- Revenue -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS"
+                                              style="-fx-background-color: linear-gradient(to bottom-right, #ECFDF5, #D1FAE5); -fx-background-radius: 18; -fx-border-color: #6EE7B7; -fx-border-radius: 18; -fx-border-width: 1.5; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.18), 14, 0, 0, 4);">
+                                            <Label text="💰 Revenue" style="-fx-text-fill: #047857; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                                            <Label fx:id="lblRevenue" alignment="CENTER" maxWidth="Infinity" text="0 đ"
+                                                   style="-fx-text-fill: #065F46; -fx-font-size: 26px; -fx-font-weight: bold;"/>
                                         </VBox>
-
-                                        <VBox spacing="15.0" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label text="Conversion Rate" textFill="#2b3674">
-                                                    <font><Font name="Times New Roman" size="16.0" /></font>
-                                                </Label>
-                                                <Label fx:id="lblConversionRate" alignment="CENTER" maxWidth="Infinity" text="0%" textFill="#f4b305">
-                                                    <font><Font name="Times New Roman Bold" size="28.0" /></font>
-                                                </Label>
-                                            </children>
+                                        <!-- Conversion Rate -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS"
+                                              style="-fx-background-color: linear-gradient(to bottom-right, #FFFBEB, #FEF3C7); -fx-background-radius: 18; -fx-border-color: #FCD34D; -fx-border-radius: 18; -fx-border-width: 1.5; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(245,158,11,0.18), 14, 0, 0, 4);">
+                                            <Label text="📈 Conversion Rate" style="-fx-text-fill: #92400E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                                            <Label fx:id="lblConversionRate" alignment="CENTER" maxWidth="Infinity" text="0%"
+                                                   style="-fx-text-fill: #78350F; -fx-font-size: 26px; -fx-font-weight: bold;"/>
                                         </VBox>
-
-                                        <VBox spacing="15.0" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label text="Active Bidders" textFill="#2b3674">
-                                                    <font><Font name="Times New Roman" size="16.0" /></font>
-                                                </Label>
-                                                <Label fx:id="lblActiveBidders" alignment="CENTER" maxWidth="Infinity" text="0" textFill="#3c7ba6">
-                                                    <font><Font name="Times New Roman Bold" size="28.0" /></font>
-                                                </Label>
-                                            </children>
+                                        <!-- Active Bidders -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS"
+                                              style="-fx-background-color: linear-gradient(to bottom-right, #EFF6FF, #DBEAFE); -fx-background-radius: 18; -fx-border-color: #93C5FD; -fx-border-radius: 18; -fx-border-width: 1.5; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.18), 14, 0, 0, 4);">
+                                            <Label text="👥 Active Bidders" style="-fx-text-fill: #1D4ED8; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                                            <Label fx:id="lblActiveBidders" alignment="CENTER" maxWidth="Infinity" text="0 người"
+                                                   style="-fx-text-fill: #1E3A8A; -fx-font-size: 26px; -fx-font-weight: bold;"/>
                                         </VBox>
-
-                                        <VBox spacing="15.0" HBox.hgrow="ALWAYS">
-                                            <children>
-                                                <Label text="Disputes" textFill="#2b3674">
-                                                    <font><Font name="Times New Roman" size="16.0" /></font>
-                                                </Label>
-                                                <Label fx:id="lblDisputes" alignment="CENTER" maxWidth="Infinity" text="0" textFill="#a53e3e">
-                                                    <font><Font name="Times New Roman Bold" size="28.0" /></font>
-                                                </Label>
-                                            </children>
+                                        <!-- Disputes -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS"
+                                              style="-fx-background-color: linear-gradient(to bottom-right, #FFF1F2, #FFE4E6); -fx-background-radius: 18; -fx-border-color: #FDA4AF; -fx-border-radius: 18; -fx-border-width: 1.5; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(239,68,68,0.18), 14, 0, 0, 4);">
+                                            <Label text="⚠️ Disputes" style="-fx-text-fill: #B91C1C; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                                            <Label fx:id="lblDisputes" alignment="CENTER" maxWidth="Infinity" text="0 việc"
+                                                   style="-fx-text-fill: #7F1D1D; -fx-font-size: 26px; -fx-font-weight: bold;"/>
                                         </VBox>
                                     </children>
                                 </HBox>
 
-                                <HBox spacing="30.0" VBox.vgrow="ALWAYS">
+                                <!-- BOTTOM ROW: Chart + Live Feed -->
+                                <HBox spacing="20.0" VBox.vgrow="ALWAYS">
                                     <children>
-
-                                        <VBox spacing="30.0" HBox.hgrow="ALWAYS">
+                                        <VBox spacing="20.0" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <VBox prefHeight="209.0" prefWidth="531.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 4);" VBox.vgrow="ALWAYS">
-                                                    <padding>
-                                                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
-                                                    </padding>
+                                                <!-- Bar Chart -->
+                                                <VBox prefHeight="260.0"
+                                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
+                                                      VBox.vgrow="ALWAYS">
+                                                    <padding><Insets bottom="16.0" left="20.0" right="20.0" top="16.0" /></padding>
                                                     <children>
-                                                        <Label text="Thống kê lượt Bid" textFill="#2b3674">
-                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                                                        </Label>
-                                                        <Label text="Biểu đồ phân tích biến động tổng số lượt đặt giá (Bid) trong vòng 7 ngày qua" textFill="#a3aed0">
-                                                            <font><Font name="Times New Roman" size="13.0" /></font>
-                                                            <VBox.margin><Insets bottom="10.0" top="2.0" /></VBox.margin>
-                                                        </Label>
-
-                                                        <BarChart fx:id="trendChart" alternativeRowFillVisible="false" animated="false" legendVisible="true" maxHeight="Infinity" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                                                        <Label text="📊 Thống kê lượt Bid" style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+                                                        <Label text="Biểu đồ phân tích biến động tổng số lượt đặt giá (Bid) trong vòng 7 ngày qua"
+                                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                        <BarChart fx:id="trendChart" legendSide="BOTTOM" VBox.vgrow="ALWAYS"
+                                                                  style="-fx-background-color: transparent;">
                                                             <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
                                                             <yAxis><NumberAxis side="LEFT" /></yAxis>
                                                         </BarChart>
                                                     </children>
                                                 </VBox>
 
-                                                <VBox maxHeight="220.0" minHeight="180.0" prefHeight="180.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 4);" VBox.vgrow="NEVER">
-                                                    <padding>
-                                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-                                                    </padding>
+                                                <!-- Live Feed -->
+                                                <VBox maxHeight="220.0" minHeight="160.0" prefHeight="180.0"
+                                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
+                                                      VBox.vgrow="NEVER">
+                                                    <padding><Insets bottom="16.0" left="20.0" right="20.0" top="16.0" /></padding>
                                                     <children>
-                                                        <Label text="Hoạt động gần đây (Live Feed)" textFill="#2b3674">
-                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                                                        </Label>
+                                                        <HBox alignment="CENTER_LEFT" spacing="8">
+                                                            <Label text="🔴" style="-fx-font-size: 10px;"/>
+                                                            <Label text="Hoạt động gần đây (Live Feed)"
+                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+                                                        </HBox>
                                                         <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
                                                             <content>
-                                                                <VBox fx:id="liveFeedContainer" spacing="10.0">
+                                                                <VBox fx:id="liveFeedContainer" spacing="8.0">
                                                                     <children>
-                                                                        <Label style="-fx-text-fill: #A3AED0; -fx-font-size: 12px;" text="⏳ Đang chờ hoạt động bid mới..." />
+                                                                        <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"
+                                                                               text="⏳ Đang chờ hoạt động bid mới..." />
                                                                     </children>
                                                                 </VBox>
                                                             </content>
@@ -152,70 +148,83 @@
                                             </children>
                                         </VBox>
 
-                                        <VBox maxWidth="500.0" minWidth="320.0" prefWidth="420.0" spacing="30.0">
+                                        <!-- RIGHT COLUMN: Pie + Hotness -->
+                                        <VBox maxWidth="460.0" minWidth="320.0" prefWidth="400.0" spacing="20.0">
                                             <children>
-                                                <VBox prefHeight="420.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 4);" VBox.vgrow="ALWAYS">
-                                                    <padding>
-                                                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
-                                                    </padding>
+                                                <!-- Pie Chart -->
+                                                <VBox prefHeight="380.0"
+                                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
+                                                      VBox.vgrow="ALWAYS">
+                                                    <padding><Insets bottom="12.0" left="16.0" right="16.0" top="16.0" /></padding>
                                                     <children>
-
-                                                        <Label text="Trạng thái phiên" textFill="#2b3674">
-                                                            <font><Font name="Times New Roman Bold" size="16.0" /></font>
-                                                        </Label>
-
+                                                        <Label text="🥧 Trạng thái phiên"
+                                                               style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
                                                         <StackPane alignment="CENTER" VBox.vgrow="ALWAYS">
                                                             <children>
-
-                                                                <PieChart fx:id="statusPieChart" labelsVisible="false" legendSide="RIGHT" legendVisible="true" maxHeight="Infinity" maxWidth="Infinity" style="-fx-background-color: transparent;" />
-
-                                                                <StackPane fx:id="donutHolePane" maxHeight="120.0" maxWidth="120.0" prefHeight="120.0" prefWidth="120.0" style="-fx-background-color: white; -fx-background-radius: 100px;">
+                                                                <PieChart fx:id="statusPieChart" labelsVisible="false" legendSide="RIGHT"
+                                                                          legendVisible="true" maxHeight="Infinity" maxWidth="Infinity"
+                                                                          style="-fx-background-color: transparent;"
+                                                                          stylesheets="@../css/style.css"/>
+                                                                <StackPane fx:id="donutHolePane" maxHeight="120.0" maxWidth="120.0"
+                                                                           prefHeight="120.0" prefWidth="120.0"
+                                                                           style="-fx-background-color: white; -fx-background-radius: 100px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0, 0, 2);">
                                                                     <children>
                                                                         <VBox alignment="CENTER" spacing="2.0">
                                                                             <children>
-                                                                                <Label text="Tổng Phiên" textFill="#a3aed0">
-                                                                                    <font><Font name="Times New Roman Bold" size="13.0" /></font>
-                                                                                </Label>
-                                                                                <Label fx:id="lblTotalAuctions" text="0" textFill="#2b3674">
-                                                                                    <font><Font name="Times New Roman Bold" size="32.0" /></font>
-                                                                                </Label>
+                                                                                <Label text="Tổng Phiên" style="-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-font-weight: bold;"/>
+                                                                                <Label fx:id="lblTotalAuctions" text="0"
+                                                                                       style="-fx-text-fill: #6C63FF; -fx-font-size: 30px; -fx-font-weight: bold;"/>
                                                                             </children>
                                                                         </VBox>
                                                                     </children>
                                                                 </StackPane>
-
                                                             </children>
                                                         </StackPane>
-
                                                     </children>
                                                 </VBox>
 
-                                                <VBox spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-padding: 20;" VBox.vgrow="ALWAYS">
+                                                <!-- Category Hotness -->
+                                                <VBox spacing="14.0"
+                                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
+                                                      VBox.vgrow="ALWAYS">
                                                     <children>
-                                                        <Label style="-fx-text-fill: #1B2559; -fx-font-weight: bold; -fx-font-size: 16;" text="Độ Hot Danh Mục" />
-
-                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
-                                                            <children>
-                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Art" />
-                                                                <ProgressBar fx:id="progressArt" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #05CD99; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
-                                                                <Label fx:id="lblArtStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
-                                                            </children>
+                                                        <HBox alignment="CENTER_LEFT" spacing="8">
+                                                            <Label text="🔥"/>
+                                                            <Label text="Độ Hot Danh Mục"
+                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
                                                         </HBox>
 
-                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
-                                                            <children>
-                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Vehicle" />
-                                                                <ProgressBar fx:id="progressVehicle" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #FFB547; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
-                                                                <Label fx:id="lblVehicleStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
-                                                            </children>
+                                                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                                            <Label prefWidth="90.0" text="Art"
+                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+                                                            <ProgressBar fx:id="progressArt" maxWidth="1.7976931348623157E308" prefHeight="10.0"
+                                                                         progress="0.0"
+                                                                         style="-fx-accent: #10B981; -fx-control-inner-background: #E2E8F0; -fx-background-insets: 0; -fx-padding: 0;"
+                                                                         HBox.hgrow="ALWAYS"/>
+                                                            <Label fx:id="lblArtStats" text="0 bids (0%)"
+                                                                   style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
                                                         </HBox>
 
-                                                        <HBox alignment="CENTER_LEFT" spacing="15.0">
-                                                            <children>
-                                                                <Label prefWidth="90.0" style="-fx-text-fill: #1B2559; -fx-font-weight: bold;" text="Electronics" />
-                                                                <ProgressBar fx:id="progressElectronics" maxWidth="1.7976931348623157E308" prefHeight="10.0" prefWidth="90.0" progress="0.0" style="-fx-accent: #4318FF; -fx-control-inner-background: #F4F7FE; -fx-background-insets: 0; -fx-padding: 0;" HBox.hgrow="ALWAYS" />
-                                                                <Label fx:id="lblElectronicsStats" style="-fx-text-fill: #A3AED0;" text="0 bids (0%)" />
-                                                            </children>
+                                                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                                            <Label prefWidth="90.0" text="Vehicle"
+                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+                                                            <ProgressBar fx:id="progressVehicle" maxWidth="1.7976931348623157E308" prefHeight="10.0"
+                                                                         progress="0.0"
+                                                                         style="-fx-accent: #F59E0B; -fx-control-inner-background: #E2E8F0; -fx-background-insets: 0; -fx-padding: 0;"
+                                                                         HBox.hgrow="ALWAYS"/>
+                                                            <Label fx:id="lblVehicleStats" text="0 bids (0%)"
+                                                                   style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                        </HBox>
+
+                                                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                                                            <Label prefWidth="90.0" text="Electronics"
+                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+                                                            <ProgressBar fx:id="progressElectronics" maxWidth="1.7976931348623157E308" prefHeight="10.0"
+                                                                         progress="0.0"
+                                                                         style="-fx-accent: #8B5CF6; -fx-control-inner-background: #E2E8F0; -fx-background-insets: 0; -fx-padding: 0;"
+                                                                         HBox.hgrow="ALWAYS"/>
+                                                            <Label fx:id="lblElectronicsStats" text="0 bids (0%)"
+                                                                   style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
                                                         </HBox>
                                                     </children>
                                                 </VBox>

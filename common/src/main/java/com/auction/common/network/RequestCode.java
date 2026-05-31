@@ -36,8 +36,7 @@ public enum RequestCode {
     SELLER_GET_MY_AUCTIONS,    // Lấy danh sách phiên đấu giá của seller (payload: null)
     SELLER_CANCEL_AUCTION,     // Yêu cầu hủy phiên (payload: Integer auctionId)
     SELLER_CONFIRM_SALE,       // Xác nhận bán sau khi phiên kết thúc (payload: Integer auctionId)
-    SELLER_ADD_ITEM,           // Thêm sản phẩm mới (payload: Item object)
-    SELLER_EDIT_AUCTION,       // SỬA: Yêu cầu sửa phiên đấu giá (payload: Auction)
+
     // ===================== ADMIN =====================
     ADMIN_GET_ALL_AUCTIONS,    // Lấy tất cả phiên đấu giá (payload: null)
     ADMIN_APPROVE_AUCTION,     // Duyệt phiên (payload: Integer auctionId)
@@ -49,5 +48,6 @@ public enum RequestCode {
     ADMIN_CREATE_TRANSACTION,  // Tạo giao dịch từ phiên (payload: Object[] {auctionId, winnerId, price})
     ADMIN_GET_ALL_USERS,       // Lấy danh sách users (payload: null)
     ADMIN_BAN_USER,            // Ban user (payload: Integer userId)
-    ADMIN_UNBAN_USER           // Unban user (payload: Integer userId)
+    ADMIN_UNBAN_USER,          // Unban user (payload: Integer userId)
+    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
 }

@@ -104,8 +104,7 @@ public class AdminService {
         auditLog.clear();
     }
 
-    //Hàm để Admin chặn phiên đấu giá
-    public boolean blockAuction(int auctionId) {
+    public boolean blockAuction(int auctionId, String reason) {
         Auction auction = managerService.getAuction(auctionId);
         if (auction == null) {
             throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(),
@@ -120,12 +119,39 @@ public class AdminService {
         }
         try {
             auctionDAO.updateStatus(auctionId, "BLOCKED");
-            logAction(auctionId, "BLOCKED");
-            System.out.println(">>> [ADMIN] Đã phong tỏa khẩn cấp phiên đấu giá: " + auctionId);
+            String logMsg = (reason != null && !reason.isEmpty()) ? "BLOCKED: " + reason : "BLOCKED";
+            logAction(auctionId, logMsg);
+            System.out.println(">>> [ADMIN] Đã phong tỏa khẩn cấp phiên #" + auctionId
+                    + " | Lý do: " + reason);
             return true;
         } catch (Exception e) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(),
                     "Lỗi hệ thống khi chặn phiên: " + e.getMessage());
+        }
+    }
+
+    public boolean deleteBlockedAuction(int auctionId) {
+        Auction auction = managerService.getAuction(auctionId);
+        if (auction == null) {
+            System.out.println("[ADMIN] deleteBlockedAuction: phiên #" + auctionId + " không tồn tại, bỏ qua.");
+            return false;
+        }
+        if (!"BLOCKED".equals(auction.getAuctionStatus())) {
+            System.out.println("[ADMIN] deleteBlockedAuction: phiên #" + auctionId
+                    + " không ở trạng thái BLOCKED (hiện: " + auction.getAuctionStatus() + "), bỏ qua.");
+            return false;
+        }
+        try {
+            boolean deleted = auctionDAO.deleteAuction(auctionId);
+            if (deleted) {
+                managerService.removeAuctionFromCache(auctionId);
+                logAction(auctionId, "DELETED_AFTER_BLOCK");
+                System.out.println(">>> [ADMIN] Đã XÓA HOÀN TOÀN phiên BLOCKED #" + auctionId + " khỏi DB.");
+            }
+            return deleted;
+        } catch (Exception e) {
+            System.err.println("[ADMIN] Lỗi khi xóa phiên BLOCKED #" + auctionId + ": " + e.getMessage());
+            return false;
         }
     }
 }

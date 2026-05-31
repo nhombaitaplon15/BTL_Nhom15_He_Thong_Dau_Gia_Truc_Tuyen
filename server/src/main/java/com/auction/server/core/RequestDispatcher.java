@@ -92,6 +92,7 @@ public class RequestDispatcher {
                 case ADMIN_GET_ALL_USERS:         handleAdminGetAllUsers(client);                 break;
                 case ADMIN_BAN_USER:              handleAdminBanUser(client, request);            break;
                 case ADMIN_UNBAN_USER:            handleAdminUnbanUser(client, request);          break;
+                case ADMIN_DELETE_BLOCKED_AUCTION:handleAdminDeleteBlockedAuction(client, request); break;
 
                 default:
                     System.out.println("[DISPATCHER] Unknown code: " + request.getRequestCode());
@@ -476,11 +477,21 @@ public class RequestDispatcher {
 
     private void handleAdminBlockAuction(ClientHandler client, Message request) {
         try {
-            Integer auctionId = (Integer) request.getPayload();
-            boolean success = adminService.blockAuction(auctionId);
+            int auctionId;
+            String reason = "";
+            Object payload = request.getPayload();
+            // Hỗ trợ 2 dạng payload: Integer (cũ) hoặc Object[]{auctionId, reason} (mới)
+            if (payload instanceof Object[] arr) {
+                auctionId = (int) arr[0];
+                reason    = arr.length > 1 && arr[1] != null ? (String) arr[1] : "";
+            } else {
+                auctionId = (Integer) payload;
+            }
+            boolean success = adminService.blockAuction(auctionId, reason);
             if (success) {
                 client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_SUCCESS,
-                        "Đã phong tỏa phiên #" + auctionId, auctionId));
+                        "Đã phong tỏa phiên #" + auctionId + (reason.isEmpty() ? "" : " | Lý do: " + reason),
+                        auctionId));
                 // Đóng phòng đấu giá, broadcast kết thúc tới tất cả viewer
                 AuctionRoomManager.getInstance().closeRoom(auctionId);
             } else {
@@ -488,6 +499,23 @@ public class RequestDispatcher {
             }
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_FAILED, e.getMessage(), null));
+        }
+    }
+
+    private void handleAdminDeleteBlockedAuction(ClientHandler client, Message request) {
+        try {
+            Integer auctionId = (Integer) request.getPayload();
+            boolean deleted = adminService.deleteBlockedAuction(auctionId);
+            if (deleted) {
+                client.sendMessage(new Message(ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS,
+                        "Đã xóa phiên BLOCKED #" + auctionId, auctionId));
+                System.out.println("[DISPATCHER] Xóa thành công phiên BLOCKED #" + auctionId);
+            } else {
+                System.out.println("[DISPATCHER] Không xóa phiên #" + auctionId
+                        + " (có thể không tồn tại hoặc không ở BLOCKED).");
+            }
+        } catch (Exception e) {
+            System.err.println("[DISPATCHER] Lỗi xóa phiên BLOCKED: " + e.getMessage());
         }
     }
 

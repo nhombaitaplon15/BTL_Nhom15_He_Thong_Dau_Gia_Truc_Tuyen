@@ -462,6 +462,6 @@ public class AuctionDAO {
 
     // --- XÓA PHIÊN ĐẤU GIÁ ---
     public boolean deleteAuction(int auctionId) {
-        return executeUpdate("DELETE FROM auctions WHERE auction_id = ?", auctionId);
+        return executeUpdate("DELETE FROM auctions WHERE auction_id = ? AND auction_status = 'BLOCKED'", auctionId);
     }
 }
