@@ -39,7 +39,7 @@
                 </MenuBar>
             </top>
             <bottom>
-                <Button mnemonicParsing="false" onAction="#Welcome_back" text="Quay lại" BorderPane.alignment="CENTER" />
+                <Button mnemonicParsing="false" text="Quay lại" BorderPane.alignment="CENTER" />
             </bottom>
          <center>
             <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">

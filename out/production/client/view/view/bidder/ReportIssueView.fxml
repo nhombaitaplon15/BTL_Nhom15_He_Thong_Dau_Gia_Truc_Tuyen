@@ -10,11 +10,11 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox prefWidth="480.0" spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: #e2e8f0; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.bidder.ReportIssueController">
+<VBox prefWidth="480.0" spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: #e2e8f0; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.bidder.ReportIssueController">
     <children>
         <HBox alignment="CENTER_LEFT" prefHeight="55.0" style="-fx-background-color: #dc2626; -fx-background-radius: 12 12 0 0;">
             <children>
-                <Label text="⚠️ BÁO CÁO SỰ CỐ PHIÊN ĐẤU GIÁ" textFill="WHITE">
+                <Label text="⚠ BÁO CÁO SỰ CỐ PHIÊN ĐẤU GIÁ" textFill="WHITE">
                     <font>
                         <Font name="System Bold" size="16.0" />
                     </font>

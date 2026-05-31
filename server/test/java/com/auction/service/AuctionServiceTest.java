@@ -4,10 +4,11 @@ import com.auction.common.model.Auction;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
 import com.auction.exception.AuctionException;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.TransactionDAO;
-import com.auction.server.service.AuctionService;
+import src.main.java.com.auction.server.dao.AuctionDAO;
+import src.main.java.com.auction.server.dao.PaymentDAO;
+import src.main.java.com.auction.server.dao.TransactionDAO;
+import src.main.java.com.auction.server.dao.DatabaseConnection;
+import src.main.java.com.auction.server.service.AuctionService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -136,10 +137,10 @@ class AuctionServiceTest {
             Auction auction = activeAuction(1, 99, 500_000);
             auction.setEndTime(java.time.LocalDateTime.now().plusDays(1));
 
-            try (org.mockito.MockedStatic<com.auction.server.dao.DatabaseConnection> mockedConnection =
-                         org.mockito.Mockito.mockStatic(com.auction.server.dao.DatabaseConnection.class)) {
+            try (org.mockito.MockedStatic<DatabaseConnection> mockedConnection =
+                         org.mockito.Mockito.mockStatic(DatabaseConnection.class)) {
 
-                mockedConnection.when(com.auction.server.dao.DatabaseConnection::connect)
+                mockedConnection.when(DatabaseConnection::connect)
                         .thenThrow(new java.sql.SQLException("Cố tình làm lỗi kết nối database để test"));
 
                 AuctionException ex = assertThrows(AuctionException.class,

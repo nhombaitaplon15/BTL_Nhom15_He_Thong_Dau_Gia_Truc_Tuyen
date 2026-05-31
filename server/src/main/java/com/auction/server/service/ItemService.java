@@ -33,21 +33,21 @@ public class ItemService {
 
     /**
      * Thêm hàng mới (Dùng cho cả Admin và Seller)
-     * ĐÃ SỬA: Bọc SQL Transaction để hứng ID tự động tăng an toàn
+     * Bọc SQL Transaction để hứng ID tự động tăng an toàn
      */
     public void addItem(Item item) {
-        // 1. Kiểm tra dữ liệu đầu vào (Giữ nguyên)
+        // 1. Kiểm tra dữ liệu đầu vào
         validateItem(item);
 
-        // 2. Mở Connection để chạy luồng lưu trữ có ID tự sinh
+        // 2. Mở Connection qua DBConnection chung để chạy luồng lưu trữ có ID tự sinh
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false); // Bật chế độ quản lý giao dịch an toàn
 
             try {
-                // 🛠️ FIX LỖI GẠCH ĐỎ: Truyền conn vào hàm insertItem mới, hứng về item_id tự tăng kiểu int
+                // Truyền conn vào hàm insertItem mới, hứng về item_id tự tăng kiểu int
                 int generatedItemId = itemDAO.insertItem(conn, item);
 
-                // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ
+                // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ hiển thị mạng Socket
                 item.setItemId(generatedItemId);
 
                 conn.commit(); // Lưu vĩnh viễn dữ liệu xuống SQL
@@ -82,9 +82,14 @@ public class ItemService {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Giá khởi điểm không được âm!");
         }
     }
-    // tìm theo kiểu items
+
+    /** Tìm sản phẩm theo phân loại danh mục (Xe, Tranh ảnh...) */
     public List<Item> getItemsByType(String itemType) {
         return itemDAO.getItemsByType(itemType);
     }
-    public List<Item> getItemsBySeller(int sellerId) {return itemDAO.getItemsBySeller(sellerId);}
+
+    /** [BÙ TÍNH NĂNG] Tìm danh sách các sản phẩm do một Người bán cụ thể đăng lên */
+    public List<Item> getItemsBySeller(int sellerId) {
+        return itemDAO.getItemsBySeller(sellerId);
+    }
 }

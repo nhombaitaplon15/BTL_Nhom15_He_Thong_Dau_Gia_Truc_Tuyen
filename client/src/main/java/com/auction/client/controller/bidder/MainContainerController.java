@@ -1,5 +1,4 @@
 package com.auction.client.controller.bidder;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -64,8 +63,8 @@ public class MainContainerController implements Initializable {
             e.printStackTrace();
         }
     }
-     //Hàm dùng chung để ẩn/hiện thanh thực đơn (Sidebar) lề trái.
-     // Được gọi bởi chính các nút bấm gạch ngang (☰) nằm ở các trang con.
+    //Hàm dùng chung để ẩn/hiện thanh thực đơn (Sidebar) lề trái.
+    // Được gọi bởi chính các nút bấm gạch ngang (☰) nằm ở các trang con.
 
     public void toggleSidebar() {
         if (sideMenu == null) return;

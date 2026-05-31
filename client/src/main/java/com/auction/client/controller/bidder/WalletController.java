@@ -1,5 +1,4 @@
 package com.auction.client.controller.bidder;
-
 import com.auction.common.model.User;
 import com.auction.server.service.TransactionService;
 import javafx.event.ActionEvent;

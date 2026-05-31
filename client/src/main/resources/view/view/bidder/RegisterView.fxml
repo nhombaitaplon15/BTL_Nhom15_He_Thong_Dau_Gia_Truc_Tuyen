@@ -101,7 +101,7 @@
                                     <VBox.margin><Insets top="10.0" /></VBox.margin>
                                 </Button>
 
-                                <Button mnemonicParsing="false" onAction="#Welcome_back" style="-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-cursor: hand;" text="← Quay lại đăng nhập" underline="true" Alignment="CENTER" prefWidth="420.0">
+                                <Button mnemonicParsing="false" onAction="#Welcome_back" style="-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-cursor: hand;" text="← Quay lại đăng nhập" underline="true" alignment="CENTER" prefWidth="420.0">
                                     <font><Font name="Times New Roman" size="15.0" /></font>
                                 </Button>
                             </children>

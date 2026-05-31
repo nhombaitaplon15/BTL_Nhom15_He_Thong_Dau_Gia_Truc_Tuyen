@@ -1,5 +1,4 @@
 package com.auction.client.controller.bidder;
-
 import com.auction.common.model.User;
 import com.auction.server.dao.TransactionDAO; // Dựa trên import từ TransactionService của em
 import javafx.beans.property.SimpleStringProperty;

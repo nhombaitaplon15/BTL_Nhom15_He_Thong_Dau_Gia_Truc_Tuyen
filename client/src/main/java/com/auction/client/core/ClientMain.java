@@ -25,7 +25,7 @@ public class ClientMain extends Application {
             SocketClient.getInstance().connect();
 
             // 2. Nạp màn hình đăng nhập đầu tiên
-            Parent root = FXMLLoader.load(getClass().getResource("/view/view/LoginView.fxml"));
+            Parent root = FXMLLoader.load(getClass().getResource("/view/view/bidder/LoginView.fxml"));
 
             Scene scene = new Scene(root, 1280, 720);
             primaryStage.setTitle("Elite Auction - Hệ Thống Đấu Giá Trực Tuyến");

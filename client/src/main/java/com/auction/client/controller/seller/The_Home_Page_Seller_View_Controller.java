@@ -1,7 +1,7 @@
 package com.auction.client.controller.seller; // [SỬA] client.controller.seller -> com.auction.client.controller.seller
 
-import com.auction.client.core.MessageRouter;
-import com.auction.client.core.SocketClient;
+import com.auction.client.core.MessageRouter ;
+import com.auction.client.core.SocketClient ;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
@@ -20,7 +20,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
@@ -312,7 +311,7 @@ public class The_Home_Page_Seller_View_Controller {
         MessageRouter.getInstance().unregister(ResponseCode.SELLER_CANCEL_SUCCESS);
         MessageRouter.getInstance().unregister(ResponseCode.SELLER_CONFIRM_SALE_SUCCESS);
 
-        switchScene(event, "/view/view/LoginView.fxml", "Elite Auction - Đăng Nhập");
+        switchScene(event, "/view/view/bidder/LoginView.fxml", "Elite Auction - Đăng Nhập");
     }
 
     // =========================================================

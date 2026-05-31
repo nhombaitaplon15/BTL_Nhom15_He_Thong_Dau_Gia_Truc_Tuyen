@@ -27,6 +27,24 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
+/**
+ * Controller Quản Lý Phiên Đấu Giá (Admin).
+ *
+ * CÁC LỖI ĐÃ SỬA SO VỚI FILE GỐC:
+ * 1. [SỬA] Package: client.controller.admin -> com.auction.client.controller.admin
+ * 2. [XÓA] Toàn bộ import com.auction.server.service.* - CLIENT KHÔNG ĐƯỢC IMPORT SERVER!
+ * 3. [XÓA] private final ItemService itemService = new ItemService() -- gọi DB trực tiếp từ client
+ * 4. [XÓA] private final ManagerService, AdminService, TransactionService khởi tạo trực tiếp
+ * 5. [SỬA] loadAuctions(): từ managerService.getAllAuctions() -> sendRequest(ADMIN_GET_ALL_AUCTIONS)
+ * 6. [SỬA] btnApprove: adminService.approveAuction() -> sendRequest(ADMIN_APPROVE_AUCTION)
+ * 7. [SỬA] btnReject: adminService.rejectAuction() -> sendRequest(ADMIN_REJECT_AUCTION)
+ * 8. [SỬA] btnBlock: adminService.blockAuction() -> sendRequest(ADMIN_BLOCK_AUCTION)
+ * 9. [SỬA] btnTransaction: transactionService.createTransactionFromAuction() -> sendRequest(ADMIN_CREATE_TRANSACTION)
+ * 10.[THÊM] Realtime: ADMIN_NEW_PENDING_AUCTION -> tự động load lại bảng khi Seller tạo phiên mới
+ * 11.[SỬA] Đường dẫn FXML: /view/... -> /view/view/...
+ *
+ * ĐẶT TẠI: client/src/main/java/com/auction/client/controller/admin/The_Auction_Page_Admin_View_Controller.java
+ */
 public class The_Auction_Page_Admin_View_Controller implements Initializable {
 
     @FXML private TableView<Auction> auctionTable;

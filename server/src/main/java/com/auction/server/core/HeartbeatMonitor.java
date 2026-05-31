@@ -3,6 +3,7 @@ package com.auction.server.core;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import com.auction.server.core.ClientHandler;
 
 public class HeartbeatMonitor {
     private static final HeartbeatMonitor instance = new HeartbeatMonitor();

@@ -423,7 +423,7 @@ public class The_Home_Page_Admin_View_Controller {
     public void handleLogout(ActionEvent event) {
         unregisterAllHandlers();
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/view/LoginView.fxml"));
+            Parent root = FXMLLoader.load(getClass().getResource("/view/view/bidder/LoginView.fxml"));
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.show();

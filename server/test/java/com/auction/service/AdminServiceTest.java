@@ -2,9 +2,9 @@ package com.auction.service;
 
 import com.auction.common.model.Auction;
 import com.auction.exception.AuctionException;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.server.service.AdminService;
-import com.auction.server.service.ManagerService;
+import src.main.java.com.auction.server.dao.AuctionDAO;
+import src.main.java.com.auction.server.service.AdminService;
+import src.main.java.com.auction.server.service.ManagerService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;

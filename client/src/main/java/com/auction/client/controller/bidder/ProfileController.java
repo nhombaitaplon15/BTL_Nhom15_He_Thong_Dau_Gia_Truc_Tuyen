@@ -1,5 +1,4 @@
 package com.auction.client.controller.bidder;
-
 import com.auction.common.model.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

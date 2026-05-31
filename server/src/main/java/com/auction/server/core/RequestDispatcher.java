@@ -13,6 +13,8 @@ import com.auction.server.service.ManagerService;
 import com.auction.server.service.SellerService;
 import com.auction.server.service.TransactionService;
 import com.auction.server.service.UserService;
+import com.auction.server.core.ClientHandler;
+import com.auction.server.core.AuctionRoomManager;
 
 import java.util.List;
 
@@ -211,7 +213,7 @@ public class RequestDispatcher {
         try {
             Integer userId = client.getLoggedInUserId();
             if (userId == null) return;
-            var history = biddingService.getBidHistory(userId);
+            var history = biddingService.getBiddingHistory(userId);
             client.sendMessage(new Message(ResponseCode.BID_HISTORY_RESULT, "OK", history));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được lịch sử đặt giá", null));
