@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fx:id="paneInsertItem" fitToWidth="true" stylesheets="@../css/InsertItem.css" prefHeight="671.0" prefWidth="574.0" styleClass="scroll-pane-custom" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.InsertItemController">
+    <VBox spacing="16" styleClass="content-vbox">
+
+        <VBox alignment="CENTER" spacing="4">
+            <Label styleClass="header-title" text="Thêm sản phẩm mới" />
+            <Label styleClass="header-subtitle" text="Điền đầy đủ thông tin để đăng sản phẩm đấu giá" />
+        </VBox>
+
+        <VBox spacing="14" styleClass="card-container">
+            <Label styleClass="card-title-primary" text="Thông tin chung" />
+
+            <GridPane hgap="20" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                    <RowConstraints />
+                    <RowConstraints />
+                </rowConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Tên sản phẩm :" />
+                    <TextField fx:id="txtName" promptText="Nhập tên sản phẩm..." styleClass="input-field" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Loại sản phẩm :" />
+                    <ComboBox fx:id="cmbCategory" maxWidth="Infinity" promptText="-- Chọn loại --" styleClass="combo-box-custom">
+                        <items>
+                            <FXCollections fx:factory="observableArrayList" xmlns="http://javafx.com/javafx">
+                                <String fx:value="Phương tiện" />
+                                <String fx:value="Đồ điện tử" />
+                                <String fx:value="Nghệ thuật" />
+                            </FXCollections>
+                        </items>
+                    </ComboBox>
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Mô tả :" />
+                    <TextArea fx:id="txtDescription" prefHeight="80" promptText="Mô tả chi tiết sản phẩm..." styleClass="input-field" wrapText="true" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Label styleClass="input-label" text="Tình trạng :" />
+                    <TextField fx:id="txtCondition" promptText="LIKE_NEW/GOOD/FAIL/POOR" styleClass="input-field" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                    <Label styleClass="input-label" text="Giá khởi điểm (UETệ) :" />
+                    <TextField fx:id="txtStartingPrice" promptText="0" styleClass="input-field" />
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <VBox spacing="10" styleClass="card-container">
+            <Label styleClass="card-title-secondary" text="Hình ảnh sản phẩm :" />
+
+            <VBox fx:id="imgUploadZone" alignment="CENTER" spacing="8" styleClass="upload-zone">
+                <ImageView fx:id="imgPreview" fitHeight="90" fitWidth="120" preserveRatio="true" styleClass="img-preview" />
+                <Label styleClass="upload-label" text="Kéo thả ảnh vào đây hoặc nhấn để chọn file" />
+                <Button fx:id="btnChooseImage" onAction="#handleChooseImage" styleClass="btn-upload" text="Chọn ảnh" />
+            </VBox>
+
+            <Label styleClass="note-label" text="Hỗ trợ JPG, PNG. Ảnh rõ nét giúp sản phẩm được bid cao hơn." />
+        </VBox>
+
+        <VBox fx:id="vboxVehicle" managed="false" spacing="12" styleClass="section-container" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label styleClass="indicator-vehicle" />
+                <Label styleClass="section-title" text="LOẠI SẢN PHẨM : XE CỘ (VEHICLE) :" />
+            </HBox>
+            <GridPane hgap="20" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                    <RowConstraints />
+                </rowConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Hãng xe :" />
+                    <TextField fx:id="txtHangXe" promptText="Toyota, Honda..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Dòng xe :" />
+                    <TextField fx:id="txtDongXe" promptText="Camry, Civic..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Năm sản xuất :" />
+                    <TextField fx:id="txtNamSanXuat" promptText="2020" styleClass="input-field" />
+                </VBox>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Số km đã đi :" />
+                    <TextField fx:id="txtSoKm" promptText="50000" styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Loại nhiên liệu :" />
+                    <TextField fx:id="txtNhienLieu" promptText="Xăng / Điện / Hybrid..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Biển số xe :" />
+                    <TextField fx:id="txtBienSo" promptText="18D1-123.45" styleClass="input-field" />
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <VBox fx:id="vboxElectronics" managed="false" spacing="12" styleClass="section-container" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label styleClass="indicator-electronics" />
+                <Label styleClass="section-title" text="LOẠI SẢN PHẨM : ĐIỆN TỬ (ELECTRONICS) :" />
+            </HBox>
+            <GridPane hgap="20" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                </rowConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Hãng sản xuất :" />
+                    <TextField fx:id="txtHang" promptText="Apple, Samsung..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Dòng máy :" />
+                    <TextField fx:id="txtDongMay" promptText="iPhone 15, Galaxy S24..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Bảo hành (tháng) :" />
+                    <TextField fx:id="txtBaoHanh" promptText="12" styleClass="input-field" />
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <VBox fx:id="vboxArt" managed="false" spacing="12" styleClass="section-container" visible="false">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label styleClass="indicator-art" />
+                <Label styleClass="section-title" text="LOẠI SẢN PHẨM : NGHỆ THUẬT (ART) :" />
+            </HBox>
+            <GridPane hgap="20" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                    <RowConstraints />
+                </rowConstraints>
+
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Tác giả :" />
+                    <TextField fx:id="txtTacGia" promptText="Nguyễn Văn A..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="input-label" text="Năm sáng tác :" />
+                    <TextField fx:id="txtNamSangTac" promptText="1990" styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Chất liệu :" />
+                    <TextField fx:id="txtChatLieu" promptText="Sơn dầu, Lụa..." styleClass="input-field" />
+                </VBox>
+                <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label styleClass="input-label" text="Giấy chứng nhận :" />
+                    <TextField fx:id="txtGiayChungNhan" promptText="Mã chứng nhận..." styleClass="input-field" />
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <HBox alignment="CENTER_RIGHT" spacing="12">
+            <Button styleClass="btn-cancel" text="Huỷ" />
+            <Button onAction="#handleSubmit" styleClass="btn-submit" text="✓  Đăng sản phẩm" />
+        </HBox>
+        <padding>
+            <Insets left="13.0" right="15.0" />
+        </padding>
+
+    </VBox>
+</ScrollPane>

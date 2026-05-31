@@ -6,6 +6,7 @@ import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.*;
+import com.auction.server.dao.AuctionItemDAO;
 import com.auction.server.service.AdminService;
 import com.auction.server.service.BiddingService;
 import com.auction.server.service.ItemService;
@@ -76,6 +77,8 @@ public class RequestDispatcher {
                 case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client);          break;
                 case SELLER_CANCEL_AUCTION:   handleSellerCancelAuction(client, request); break;
                 case SELLER_CONFIRM_SALE:     handleSellerConfirmSale(client, request);   break;
+                case SELLER_ADD_ITEM:         handleSellerAddItem(client, request); break;
+                case SELLER_EDIT_AUCTION:     handleSellerEditAuction(client, request);   break;
 
                 // --- ADMIN ---
                 case ADMIN_GET_ALL_AUCTIONS:      handleAdminGetAllAuctions(client);              break;
@@ -337,11 +340,25 @@ public class RequestDispatcher {
         }
     }
 
+//    private void handleSellerGetMyAuctions(ClientHandler client) {
+//        try {
+//            Integer sellerId = client.getLoggedInUserId();
+//            List<Auction> auctions = managerService.getAuctionsBySeller(sellerId);
+//            client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", auctions));
+//        } catch (Exception e) {
+//            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
+//        }
+//    }
     private void handleSellerGetMyAuctions(ClientHandler client) {
         try {
             Integer sellerId = client.getLoggedInUserId();
-            List<Auction> auctions = managerService.getAuctionsBySeller(sellerId);
-            client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", auctions));
+
+            // ĐÃ SỬA: Dùng hàm getAuctionItemsBySeller mới viết để lấy List kết hợp
+            List<AuctionItemDAO> combinedAuctions =
+                managerService.getAuctionItemsBySeller(sellerId);
+
+            // Gửi cục data mới này về cho Client
+            client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", combinedAuctions));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
         }
@@ -371,6 +388,31 @@ public class RequestDispatcher {
         }
     }
 
+    private void handleSellerAddItem(ClientHandler client, Message request) {
+        try {
+            Item item = (Item) request.getPayload();
+            item.setSellerId(client.getLoggedInUserId()); // Bảo mật: override sellerId
+            itemService.addItem(item);
+            client.sendMessage(new Message(ResponseCode.SELLER_ITEMS_RESULT, "OK", null));
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, e.getMessage(), null));
+        }
+    }
+    private void handleSellerEditAuction(ClientHandler client, Message request) {
+        try {
+            Auction updatedAuction = (Auction) request.getPayload();
+            Integer sellerId = client.getLoggedInUserId();
+            User seller = userService.getUserById(sellerId);
+
+            // Gọi SellerService để xử lý logic sửa
+            sellerService.editAuction(seller, updatedAuction);
+
+            client.sendMessage(new Message(ResponseCode.SELLER_EDIT_SUCCESS, "Cập nhật thành công!", null));
+            System.out.println("[SELLER] User#" + sellerId + " đã sửa phiên #" + updatedAuction.getAuctionId());
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.SELLER_EDIT_FAILED, e.getMessage(), null));
+        }
+    }
     // =========================================================
     // ADMIN HANDLERS
     // =========================================================

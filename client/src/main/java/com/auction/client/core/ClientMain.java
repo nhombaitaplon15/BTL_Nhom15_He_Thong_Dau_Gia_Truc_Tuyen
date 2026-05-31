@@ -1,5 +1,6 @@
 package com.auction.client.core;
 
+import com.auction.common.network.RequestCode;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;

@@ -1,0 +1,135 @@
+/* ==============================================================
+   DIALOG STYLES (Create Auction)
+============================================================== */
+.root {
+    -fx-font-family: "Times New Roman";
+}
+
+.dialog-overlay {
+    -fx-background-color: rgba(26,43,74,0.4);
+    -fx-padding: 24;
+    -fx-background-radius: 10;
+}
+
+.dialog-content {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-padding: 24;
+    -fx-effect: dropshadow(gaussian, rgba(26,43,74,0.2), 24, 0, 0, 6);
+}
+
+.dialog-header {
+    -fx-padding: 0 0 16 0;
+}
+
+.dialog-title {
+    -fx-font-size: 15;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+/* ==============================================================
+   BUTTONS & INPUTS (Create Auction)
+============================================================== */
+.btn-primary {
+    -fx-background-color: #233A66;
+    -fx-text-fill: #FFD691;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-padding: 7 16 7 16;
+    -fx-background-radius: 7;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: #D4C9B0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-text-fill: #6B5E4A;
+    -fx-font-size: 12;
+    -fx-padding: 7 18 7 18;
+    -fx-cursor: hand;
+}
+
+.btn-close {
+    -fx-background-color: #F5F0E8;
+    -fx-text-fill: #6B5E4A;
+    -fx-font-size: 13;
+    -fx-cursor: hand;
+    -fx-background-radius: 99;
+    -fx-min-width: 28;
+    -fx-pref-width: 28;
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.form-label {
+    -fx-font-size: 11;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6B5E4A;
+}
+
+.form-input {
+    -fx-background-color: #FDFAF4;
+    -fx-border-color: #D4C9B0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-padding: 7 10 7 10;
+    -fx-font-size: 12;
+}
+
+.form-input-date {
+    -fx-background-color: #FDFAF4;
+    -fx-border-color: #D4C9B0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-font-size: 12;
+}
+
+/* ==============================================================
+   TEXTS & MISC (Create Auction)
+============================================================== */
+.preview-box {
+    -fx-background-color: #F5F0E8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14 10 14;
+    -fx-border-color: #E0D5C0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 8;
+}
+
+.bold-text {
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.muted-text-small {
+    -fx-font-size: 10.5;
+    -fx-text-fill: #8B7355;
+}
+
+.price-label {
+    -fx-font-size: 10;
+    -fx-text-fill: #A08C6E;
+}
+
+.price-value {
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D7A859;
+}
+
+.note-text {
+    -fx-font-size: 10.5;
+    -fx-text-fill: #A08C6E;
+    -fx-font-style: italic;
+    -fx-padding: 10 0 0 0;
+}

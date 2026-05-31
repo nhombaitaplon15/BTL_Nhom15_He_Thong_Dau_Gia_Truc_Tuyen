@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.shape.*?>
+
+<HBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.auction.client.controller.seller.AuctionOpenCardController"
+      alignment="CENTER_LEFT"
+      spacing="14"
+      style="-fx-font-family: 'Times New Roman';
+             -fx-background-color: white;
+             -fx-background-radius: 10;
+             -fx-border-color: #E0D5C0;
+             -fx-border-width: 0.5;
+             -fx-border-radius: 10;
+             -fx-padding: 12 16 12 16;"
+      prefHeight="76"
+      maxWidth="Infinity">
+
+    <StackPane style="-fx-min-width:52;-fx-pref-width:52;-fx-min-height:52;-fx-pref-height:52;
+                      -fx-background-color:#EEF2F8;-fx-background-radius:8;">
+        <ImageView fx:id="imgProduct"
+                   fitWidth="52" fitHeight="52"
+                   preserveRatio="true"/>
+    </StackPane>
+
+    <VBox spacing="3" HBox.hgrow="ALWAYS">
+        <Label fx:id="lblName"
+               text=""
+               style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;"/>
+        <Label fx:id="lblMeta"
+               text=""
+               style="-fx-font-size:11;-fx-text-fill:#8B7355;"/>
+    </VBox>
+
+    <VBox alignment="CENTER_RIGHT" spacing="1" style="-fx-min-width:175;">
+        <Label fx:id="lblPriceStart"
+               text=""
+               style= " -fx-font-size:10.5;-fx-text-fill:#A08C6E;"/>
+        <Label fx:id="lblPriceCur"
+               text=""
+               style="-fx-font-size:15;-fx-font-weight:bold;-fx-text-fill:#D7A859;"/>
+        <Label fx:id="lblBidCount"
+               text=""
+               style="-fx-font-size:10.5;-fx-text-fill:#8B7355;"/>
+    </VBox>
+
+    <VBox alignment="CENTER_RIGHT" spacing="4" style="-fx-min-width:110;">
+        <Label text="OPEN"
+               style="-fx-background-color:#E3F2FD;-fx-text-fill:#1565C0;
+                      -fx-font-size:10;-fx-font-weight:bold;
+                      -fx-padding:3 10 3 10;-fx-background-radius:99;
+                      -fx-alignment:CENTER;"/>
+
+        <HBox spacing="5" alignment="CENTER_RIGHT">
+            <Circle fx:id="dotTimer" radius="4"
+                    fill="#43A047"/>
+            <Label fx:id="lblCountdown"
+                   text=""
+                   style="-fx-font-size:11;-fx-text-fill:#6B5E4A;-fx-font-weight:bold;"/>
+        </HBox>
+    </VBox>
+
+    <Button fx:id="btnDetail"
+            text="Chi tiết"
+            onAction="#onDetail"
+            style="-fx-background-color:#F5F0E8;-fx-text-fill:#1A2B4A;
+                   -fx-font-size:12;-fx-font-weight:bold;
+                   -fx-padding:7 16 7 16;-fx-background-radius:7;
+                   -fx-cursor:hand;-fx-border-color:#D4C9B0;
+                   -fx-border-width:0.5;-fx-border-radius:7;"/>
+</HBox>

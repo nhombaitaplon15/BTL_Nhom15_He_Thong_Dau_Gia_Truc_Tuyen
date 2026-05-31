@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class CreateAuctionDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private int sellerId;
     private int itemId;
     private double startingPrice;
     private LocalDateTime startTime;
@@ -23,10 +24,14 @@ public class CreateAuctionDTO implements Serializable {
         this.startingPrice = startingPrice;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.sellerId = sellerId ;
     }
 
     public int getItemId() { return itemId; }
     public void setItemId(int itemId) { this.itemId = itemId; }
+
+    public int getSellerId() {return sellerId;}
+    public void setSellerId(int sellerId) { this.sellerId = itemId; }
 
     public double getStartingPrice() { return startingPrice; }
     public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="680" prefWidth="1100" styleClass="main-bg" stylesheets="@../css/product_management.css, @../css/AuctionManagement.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.AuctionManagementController">
+
+    <center>
+        <StackPane styleClass="main-bg">
+
+            <ScrollPane fx:id="paneCreate" fitToWidth="true" managed="true" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll">
+                <VBox spacing="14" styleClass="tab-content">
+
+                    <VBox spacing="2">
+                        <Label styleClass="title-text" text="Tạo phiên đấu giá mới" />
+                        <Label styleClass="subtitle-text" text="Chọn sản phẩm đã được admin duyệt để mở phiên đấu giá" />
+                    </VBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="searchCreate" promptText="🔍  Tìm sản phẩm đã được duyệt..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="filter-btn" text="Lọc" />
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label styleClass="color-block-gold" />
+                        <Label styleClass="bold-text" text="Sản phẩm sẵn sàng mở phiên" />
+                        <Label fx:id="lblCreate" styleClass="muted-text" text="· 0 sản phẩm" />
+                    </HBox>
+
+                    <ListView fx:id="listCreate" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" />
+
+                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="info-box">
+                        <Label styleClass="info-icon" text="ℹ" />
+                        <Label styleClass="info-text" text="Chỉ sản phẩm đã được admin duyệt mới có thể tạo phiên đấu giá." wrapText="true" />
+                    </HBox>
+
+                    <VBox fx:id="emptyCreate" alignment="CENTER" managed="false" spacing="8" styleClass="empty-box" visible="false">
+                        <Label styleClass="empty-title" text="Không có sản phẩm nào sẵn sàng tạo phiên" />
+                        <Label styleClass="empty-subtitle" text="Hãy đăng sản phẩm và chờ admin duyệt trước." />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+            <ScrollPane fx:id="panePending" fitToWidth="true" managed="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
+                <VBox spacing="14" styleClass="tab-content">
+
+                    <VBox spacing="2">
+                        <Label styleClass="title-text" text="Phiên chờ duyệt" />
+                        <Label styleClass="subtitle-text" text="Phiên đã tạo, đang chờ admin kích hoạt (chuyển sang OPEN)" />
+                    </VBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="searchPending" promptText="🔍  Tìm phiên..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="filter-btn" text="Lọc" />
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label styleClass="color-block-purple" />
+                        <Label styleClass="bold-text" text="Chờ admin kích hoạt" />
+                        <Label fx:id="lblPending" styleClass="muted-text" text="· 0 phiên" />
+                    </HBox>
+
+                    <ListView fx:id="listPending" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" />
+
+                    <HBox alignment="CENTER_LEFT" spacing="10" styleClass="info-box">
+                        <Label styleClass="info-icon" text="ℹ" />
+                        <Label styleClass="info-text" text="Phiên đang chờ duyệt có thể sửa thông tin hoặc huỷ trước khi admin kích hoạt." wrapText="true" />
+                    </HBox>
+
+                    <VBox fx:id="emptyPending" alignment="CENTER" managed="false" styleClass="empty-box" visible="false">
+                        <Label styleClass="empty-title" text="Không có phiên nào đang chờ duyệt" />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+            <ScrollPane fx:id="paneOpen" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
+                <VBox spacing="14" styleClass="tab-content">
+
+                    <VBox spacing="2">
+                        <Label styleClass="title-text" text="Phiên đang mở (OPEN)" />
+                        <Label styleClass="subtitle-text" text="Phiên đã được duyệt, chưa có bid — đang chờ bidder tham gia" />
+                    </VBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="searchOpen" promptText="🔍  Tìm phiên..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="filter-btn" text="Lọc" />
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label styleClass="color-block-blue" />
+                        <Label styleClass="bold-text" text="Đang chờ bidder tham gia" />
+                        <Label fx:id="lblOpen" styleClass="muted-text" text="· 0 phiên" />
+                    </HBox>
+
+                    <ListView fx:id="listOpen" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" />
+
+                    <VBox fx:id="emptyOpen" alignment="CENTER" managed="false" styleClass="empty-box" visible="false">
+                        <Label styleClass="empty-title" text="Không có phiên nào đang ở trạng thái OPEN" />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+            <ScrollPane fx:id="paneRunning" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
+                <VBox spacing="14" styleClass="tab-content">
+
+                    <VBox spacing="2">
+                        <Label styleClass="title-text" text="Phiên đang diễn ra (RUNNING)" />
+                        <Label styleClass="subtitle-text" text="Phiên đã có ít nhất 1 bid — đang trong giai đoạn cạnh tranh" />
+                    </VBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="searchRunning" promptText="🔍  Tìm phiên..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="filter-btn" text="Lọc" />
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label styleClass="color-block-green" />
+                        <Label styleClass="bold-text" text="Đang cạnh tranh — live" />
+                        <Label fx:id="lblRunning" styleClass="muted-text" text="· 0 phiên" />
+                    </HBox>
+
+                    <ListView fx:id="listRunning" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" />
+
+                    <VBox fx:id="emptyRunning" alignment="CENTER" managed="false" styleClass="empty-box" visible="false">
+                        <Label styleClass="empty-title" text="Không có phiên nào đang chạy" />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+            <ScrollPane fx:id="paneFinished" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
+                <VBox spacing="14" styleClass="tab-content">
+
+                    <VBox spacing="2">
+                        <Label styleClass="title-text" text="Phiên đã kết thúc" />
+                        <Label styleClass="subtitle-text" text="Lịch sử phiên — FINISHED · PAID · CANCELED" />
+                    </VBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="searchFinished" promptText="🔍  Tìm phiên..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <Button styleClass="filter-btn" text="Lọc" />
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label styleClass="color-block-orange" />
+                        <Label styleClass="bold-text" text="Tất cả kết quả" />
+                        <Label fx:id="lblFinished" styleClass="muted-text" text="· 0 phiên" />
+                    </HBox>
+
+                    <ListView fx:id="listFinished" fixedCellSize="82" styleClass="transparent-list" VBox.vgrow="ALWAYS" />
+
+                    <VBox fx:id="emptyFinished" alignment="CENTER" managed="false" styleClass="empty-box" visible="false">
+                        <Label styleClass="empty-title" text="Chưa có phiên nào kết thúc" />
+                    </VBox>
+
+                </VBox>
+            </ScrollPane>
+
+        </StackPane>
+    </center>
+
+    <left>
+
+        <VBox styleClass="sidebar-container" BorderPane.alignment="CENTER">
+
+            <Label styleClass="sidebar-title" text="QUẢN LÝ PHIÊN ĐẤU GIÁ" />
+
+            <HBox fx:id="btnCreate" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn-active">
+                <Label styleClass="icon-gold" />
+                <Label styleClass="sidebar-text-active" text="Tạo phiên mới" HBox.hgrow="ALWAYS" />
+            </HBox>
+
+            <Separator styleClass="sidebar-separator" />
+
+            <HBox fx:id="btnPending" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                <Label styleClass="icon-purple" />
+                <Label styleClass="sidebar-text" text="Chờ duyệt" HBox.hgrow="ALWAYS" />
+                <Label fx:id="badgePending" styleClass="badge-yellow" text="0" />
+            </HBox>
+
+            <HBox fx:id="btnOpen" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                <Label styleClass="icon-blue" />
+                <Label styleClass="sidebar-text" text="Đang mở (OPEN)" HBox.hgrow="ALWAYS" />
+                <Label fx:id="badgeOpen" styleClass="badge-yellow" text="0" />
+            </HBox>
+
+            <HBox fx:id="btnRunning" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                <Label styleClass="icon-green" />
+                <Label styleClass="sidebar-text" text="Đang diễn ra" HBox.hgrow="ALWAYS" />
+                <Label fx:id="badgeRunning" styleClass="badge-green" text="0" />
+            </HBox>
+
+            <HBox fx:id="btnFinished" alignment="CENTER_LEFT" maxWidth="Infinity" spacing="9" styleClass="sidebar-btn">
+                <Label styleClass="icon-orange" />
+                <Label styleClass="sidebar-text" text="Đã kết thúc" HBox.hgrow="ALWAYS" />
+            </HBox>
+
+        </VBox>
+    </left>
+
+</BorderPane>

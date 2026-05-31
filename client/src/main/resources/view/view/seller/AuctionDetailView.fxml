@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+
+  <ScrollPane fitToWidth="true" style="-fx-background-color:transparent;-fx-background:transparent;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.AuctionDetailController">
+      <VBox spacing="14" style="-fx-background-color:#F5F0E8;-fx-padding:22 28 32 28;">
+
+          <HBox alignment="CENTER_LEFT" style="-fx-padding:0 0 12 0;-fx-border-color:transparent transparent #F0EBE0 transparent;-fx-border-width:0 0 0.5 0;">
+              <VBox spacing="3" HBox.hgrow="ALWAYS">
+                  <Label fx:id="lblAuctionTitle" style="-fx-font-size:18;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+                  <Label fx:id="lblAuctionSubtitle" style="-fx-font-size:11.5;-fx-text-fill:#6B5E4A;" text="—" />
+              </VBox>
+              <Label fx:id="lblStatusPill" style="-fx-background-color:#FFF8E1;-fx-text-fill:#F57F17;-fx-font-size:11;-fx-font-weight:bold;-fx-padding:4 12 4 12;-fx-background-radius:99;" text="—" />
+          </HBox>
+
+          <HBox fx:id="sectionWarningInfo" alignment="CENTER_LEFT" managed="false" spacing="10" style="-fx-background-color:#FFF8E1;-fx-border-color:#FFE082;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" visible="false">
+              <Label fx:id="lblWarningIcon" style="-fx-text-fill:#F57F17;-fx-font-size:14;-fx-font-weight:bold;" text="ℹ" />
+              <Label fx:id="lblWarningText" style="-fx-font-size:11;-fx-text-fill:#7B5800;" text="—" wrapText="true" HBox.hgrow="ALWAYS" />
+          </HBox>
+
+          <HBox spacing="16" style="-fx-background-color:#F5F0E8;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:14 16 14 16;">
+              <ImageView fx:id="imgProduct" fitHeight="80" fitWidth="80" preserveRatio="true" style="-fx-background-color:#E8EEF7;-fx-background-radius:9;" />
+              <VBox spacing="4" HBox.hgrow="ALWAYS">
+                  <Label fx:id="lblProductName" style="-fx-font-size:15;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+                  <Label fx:id="lblItemMeta" style="-fx-font-size:11;-fx-text-fill:#8B7355;" text="—" />
+                  <Label fx:id="lblItemDesc" style="-fx-font-size:11.5;-fx-text-fill:#5A4E3A;-fx-line-spacing:2;" text="—" wrapText="true" />
+              </VBox>
+              <VBox alignment="CENTER_RIGHT" spacing="4" style="-fx-min-width:140;">
+                  <Label style="-fx-font-size:10.5;-fx-text-fill:#A08C6E;" text="Giá khởi điểm" />
+                  <Label fx:id="lblStartingPrice" style="-fx-font-size:13;-fx-text-fill:#A08C6E;" text="—" />
+                  <Label style="-fx-font-size:10.5;-fx-text-fill:#A08C6E;" text="Giá hiện tại" />
+                  <Label fx:id="lblCurrentPrice" style="-fx-font-size:18;-fx-font-weight:bold;-fx-text-fill:#D7A859;" text="—" />
+                  <Label fx:id="lblBidCount" style="-fx-font-size:10.5;-fx-text-fill:#8B7355;" text="0 lượt bid" />
+              </VBox>
+          </HBox>
+
+          <GridPane hgap="10" vgap="10">
+              <columnConstraints>
+                  <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                  <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+                  <ColumnConstraints hgrow="ALWAYS" percentWidth="33.33" />
+              </columnConstraints>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                  <Label style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="NGÀY BẮT ĐẦU" />
+                  <Label fx:id="lblStartTime" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+              </VBox>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                  <Label style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="NGÀY KẾT THÚC" />
+                  <Label fx:id="lblEndTime" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+              </VBox>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                  <Label fx:id="lblDurationLabel" style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="THỜI LƯỢNG" />
+                  <Label fx:id="lblDuration" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1565C0;" text="—" />
+              </VBox>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                  <Label style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="TỔNG LƯỢT BID" />
+                  <Label fx:id="lblTotalBids" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="0" />
+              </VBox>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                  <Label style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="SỐ BIDDER" />
+                  <Label fx:id="lblBidders" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="0" />
+              </VBox>
+
+              <VBox spacing="4" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:10 14 10 14;" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                  <Label style="-fx-font-size:9;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="BƯỚC GIÁ" />
+                  <Label fx:id="lblIncrement" style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+              </VBox>
+         <rowConstraints>
+            <RowConstraints />
+            <RowConstraints />
+         </rowConstraints>
+                </GridPane>
+
+          <HBox fx:id="sectionTimer" alignment="CENTER" managed="false" spacing="16" style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:14 16 14 16;" visible="false">
+              <VBox spacing="3">
+                  <Label fx:id="lblTimerLabel" style="-fx-font-size:10;-fx-text-fill:#8B7355;-fx-font-weight:bold;" text="THỜI GIAN CÒN LẠI" />
+                  <Label fx:id="lblTimerDisplay" style="-fx-font-size:22;-fx-font-weight:bold;-fx-text-fill:#233A66;-fx-letter-spacing:2;" text="00 : 00 : 00" />
+              </VBox>
+              <VBox spacing="6" HBox.hgrow="ALWAYS">
+                  <ProgressBar fx:id="barProgress" maxWidth="Infinity" progress="0.05" style="-fx-accent: #D7A859; -fx-background-radius: 3; -fx-pref-height: 6;" />
+              </VBox>
+              <VBox alignment="CENTER_RIGHT" spacing="2">
+                  <Label style="-fx-font-size:10;-fx-text-fill:#8B7355;" text="Kết thúc lúc" />
+                  <Label fx:id="lblEndTimeShort" style="-fx-font-size:12;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="—" />
+              </VBox>
+          </HBox>
+
+          <VBox fx:id="sectionBidHistory" managed="false" spacing="8" visible="false">
+              <HBox alignment="CENTER_LEFT" spacing="8">
+                  <Label style="-fx-min-width:3;-fx-pref-width:3;-fx-min-height:14;-fx-pref-height:14;-fx-background-color:#D7A859;-fx-background-radius:2;" />
+                  <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Lịch sử đặt giá" />
+              </HBox>
+
+              <VBox style="-fx-background-color:white;-fx-border-color:#E0D5C0;-fx-border-width:0.5;-fx-border-radius:10;-fx-background-radius:10;-fx-padding:4 16 4 16;">
+                  <ListView fx:id="listBidHistory" fixedCellSize="38" prefHeight="190" style="-fx-background-color:transparent;-fx-border-color:transparent;-fx-padding:0;" />
+              </VBox>
+          </VBox>
+
+          <VBox fx:id="sectionResult" managed="false" spacing="10" visible="false">
+              <HBox alignment="CENTER_LEFT" spacing="8">
+                  <Label style="-fx-min-width:3;-fx-pref-width:3;-fx-min-height:14;-fx-pref-height:14;-fx-background-color:#2E7D32;-fx-background-radius:2;" />
+                  <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#1A2B4A;" text="Kết quả phiên đấu giá" />
+              </HBox>
+
+              <HBox fx:id="bannerWinner" alignment="CENTER_LEFT" spacing="16" style="-fx-background-color:#233A66;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:18 20 18 20;">
+                  <Label fx:id="lblResultIcon" style="-fx-font-size:32;" text="🏆" />
+                  <VBox spacing="3" HBox.hgrow="ALWAYS">
+                      <Label style="-fx-font-size:10;-fx-text-fill:#8BA8D4;-fx-font-weight:bold;" text="NGƯỜI THẮNG CUỘC" />
+                      <Label fx:id="lblWinner" style="-fx-font-size:15;-fx-font-weight:bold;-fx-text-fill:#FFD691;" text="—" />
+                      <Label fx:id="lblWinnerTime" style="-fx-font-size:10.5;-fx-text-fill:#8BA8D4;" text="—" />
+                  </VBox>
+                  <VBox alignment="CENTER_RIGHT" spacing="2">
+                      <Label style="-fx-font-size:10;-fx-text-fill:#8BA8D4;" text="GIÁ BÁN CUỐI" />
+                      <Label fx:id="lblWinnerPrice" style="-fx-font-size:22;-fx-font-weight:bold;-fx-text-fill:#D7A859;" text="—" />
+                      <Label fx:id="lblPriceIncrease" style="-fx-font-size:10;-fx-text-fill:#8BA8D4;" text="—" />
+                  </VBox>
+              </HBox>
+
+              <HBox fx:id="bannerCanceled" alignment="CENTER_LEFT" managed="false" spacing="16" style="-fx-background-color:#FFEBEE;-fx-border-color:#FFCDD2;-fx-border-width:0.5;-fx-border-radius:12;-fx-background-radius:12;-fx-padding:18 20 18 20;" visible="false">
+                  <Label style="-fx-font-size:28;" text="❌" />
+                  <VBox spacing="3">
+                      <Label style="-fx-font-size:13;-fx-font-weight:bold;-fx-text-fill:#B71C1C;" text="PHIÊN BỊ HUỶ / KHÔNG CÓ BID" />
+                      <Label fx:id="lblCancelReason" style="-fx-font-size:11.5;-fx-text-fill:#C62828;" text="—" />
+                  </VBox>
+              </HBox>
+          </VBox>
+
+          <HBox alignment="CENTER_RIGHT" spacing="8" style="-fx-padding:6 0 0 0;">
+              <Button fx:id="btnEdit" managed="false" style="-fx-background-color:#F5F0E8;-fx-text-fill:#1A2B4A;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12;-fx-font-weight:600;-fx-padding:8 18 8 18;-fx-cursor:hand;" text="✏  Sửa phiên" visible="false" />
+              <Button fx:id="btnCancelAuction" managed="false" style="-fx-background-color:#FFEBEE;-fx-text-fill:#C62828;-fx-border-color:#FFCDD2;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12;-fx-font-weight:600;-fx-padding:8 18 8 18;-fx-cursor:hand;" text="✕  Huỷ phiên" visible="false" />
+
+              <Button fx:id="btnViewDetail" managed="false" style="-fx-background-color:#F5F0E8;-fx-text-fill:#1A2B4A;-fx-border-color:#D4C9B0;-fx-border-width:0.5;-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12;-fx-font-weight:600;-fx-padding:8 18 8 18;-fx-cursor:hand;" text="📋  Chi tiết sản phẩm" visible="false" />
+
+          </HBox>
+      </VBox>
+  </ScrollPane>

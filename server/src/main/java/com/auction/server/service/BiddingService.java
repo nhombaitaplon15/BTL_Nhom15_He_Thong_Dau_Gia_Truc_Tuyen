@@ -109,33 +109,12 @@ public class BiddingService {
                 if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
                     int oldWinnerId = auction.getCurrentWinnerId();
                     double oldPrice = auction.getCurrentPrice();
-
-                    if (oldWinnerId != user.getId() && oldPrice > 0) {
-                        int oldAdminId = ADMIN_IDS[auction.getAuctionId() % ADMIN_IDS.length];
-
-                        // Khấu trừ hoàn trả: Giảm ví tạm (escrow_balance) của Admin cũ
-                        String sqlMinusAdminEscrow = "UPDATE users SET escrow_balance = escrow_balance - ? WHERE user_id = ? AND escrow_balance >= ?";
-                        try (java.sql.PreparedStatement ps = conn.prepareStatement(sqlMinusAdminEscrow)) {
-                            ps.setDouble(1, oldPrice);
-                            ps.setInt(2, oldAdminId);
-                            ps.setDouble(3, oldPrice);
-                            ps.executeUpdate();
+                    // Bước B: Hoàn tiền cho người thắng cũ (nếu có)
+                    // ĐÃ SỬA: Chặn đứng "Bóng ma User 0", chỉ hoàn tiền nếu ID người thắng > 0
+                    if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
+                        if (!paymentDAO.updateBalance(conn, auction.getCurrentWinnerId(), auction.getCurrentPrice(), "+")) {
+                            throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + auction.getCurrentWinnerId() + ")");
                         }
-
-                        // Hoàn trả tiền vào ví chính cho người bị đè giá
-                        boolean refundOk = paymentDAO.updateBalance(conn, oldWinnerId, oldPrice, "+");
-
-                        if (!refundOk) {
-                            String bypassSql = "UPDATE users SET balance = balance + ? WHERE user_id = ?";
-                            try (java.sql.PreparedStatement ps = conn.prepareStatement(bypassSql)) {
-                                ps.setDouble(1, oldPrice);
-                                ps.setInt(2, oldWinnerId);
-                                if (ps.executeUpdate() <= 0) {
-                                    throw new SQLException("Tài khoản người giữ giá cũ không tồn tại trên hệ thống!");
-                                }
-                            }
-                        }
-                        transactionDAO.createTransaction(conn, oldWinnerId, oldPrice, "REFUND_OVERBID_" + auction.getAuctionId(), "SUCCESS");
                     }
                 }
 

@@ -46,21 +46,45 @@ public class SellerService {
         }
     }
 
-    // 3. Yêu cầu hủy phiên
+    // 4. Cập nhật (Sửa) phiên đấu giá
+    public void editAuction(User seller, Auction updatedAuction) {
+        validateSeller(seller);
+        Auction existingAuction = managerService.getAuctionOrThrow(updatedAuction.getAuctionId());
+
+        if (existingAuction.getSellerId() != seller.getId()) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Bạn không có quyền sửa phiên này!");
+        }
+
+        if (!"WAITING_FOR_ADMIN".equals(existingAuction.getAuctionStatus())) {
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chỉ có thể sửa phiên đang chờ duyệt!");
+        }
+
+        if (!auctionDAO.updateAuction(updatedAuction)) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi khi lưu thay đổi vào Database.");
+        }
+    }
+
+    // 3. Yêu cầu hủy/xóa phiên (ĐÃ SỬA LẠI LOGIC)
     public void requestCancelAuction(User seller, int auctionId) {
         validateSeller(seller);
         Auction auction = managerService.getAuctionOrThrow(auctionId);
 
-        // Chặn các trạng thái không được hủy
-        String status = auction.getAuctionStatus();
-        if ("RUNNING".equals(status) || "SOLD".equals(status)) {
-            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Phiên đang chạy hoặc đã bán, không thể hủy!");
+        if (auction.getSellerId() != seller.getId()) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Bạn không phải chủ phiên này!");
         }
 
-        // Chuyển về chờ Admin duyệt hủy
-        if (auctionDAO.updateStatus(auctionId, "WAITING_FOR_ADMIN")) {
-            auction.setAuctionStatus("WAITING_FOR_ADMIN");
-            System.out.println("[SELLER] Đã gửi yêu cầu HỦY phiên: " + auctionId);
+        String status = auction.getAuctionStatus();
+        if ("WAITING_FOR_ADMIN".equals(status)) {
+            // Đang chờ duyệt -> Xóa vĩnh viễn khỏi Database để item quay lại tab "Tạo phiên mới"
+            auctionDAO.deleteAuction(auctionId);
+            System.out.println("[SELLER] Đã XÓA phiên chờ duyệt: " + auctionId);
+        } else if ("OPEN".equals(status)) {
+            // Đã duyệt nhưng chưa tới giờ -> Chuyển thành CANCELED
+            auctionDAO.updateStatus(auctionId, "CANCELED");
+            System.out.println("[SELLER] Đã HỦY phiên đang mở: " + auctionId);
+        } else {
+            // Đang chạy hoặc đã bán -> Chặn
+            throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Không thể hủy phiên đang chạy hoặc đã kết thúc!");
         }
     }
 }

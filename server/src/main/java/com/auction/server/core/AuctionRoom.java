@@ -76,14 +76,76 @@ public class AuctionRoom {
      *
      * @param biddingService Inject từ RequestDispatcher để tái sử dụng instance
      */
+//    public void processBid(ClientHandler handler, int userId, double bidAmount, BiddingService biddingService) {
+//        roomQueueProcessor.submit(() -> {
+//            try {
+//                // --- BƯỚC 1: Fast-fail trên RAM (cực nhanh, không cần DB) ---
+//                if (bidAmount <= currentPrice.get()) {
+//                    handler.sendMessage(new Message(ResponseCode.BID_FAILED,
+//                            String.format("Giá bạn đặt (%.0f) không cao hơn giá hiện tại (%.0f)!",
+//                                    bidAmount, currentPrice.get()), null));
+//                    return;
+//                }
+//
+//                // --- BƯỚC 2: Lấy thông tin User để BiddingService validate đầy đủ ---
+//                User user = userDAO.getUserById(userId);
+//                if (user == null) {
+//                    handler.sendMessage(new Message(ResponseCode.BID_FAILED, "Không tìm thấy tài khoản!", null));
+//                    return;
+//                }
+//
+//                // --- BƯỚC 3: Thực thi toàn bộ DB transaction qua BiddingService ---
+//                // BiddingService xử lý: validate rules, trừ tiền, hoàn tiền cũ,
+//                // ghi lịch sử, anti-sniping, commit/rollback
+//                Auction auction = biddingService.getManagerService().getAuctionOrThrow(auctionId);
+//                biddingService.placeBid(user, auctionId, bidAmount);
+//
+//                // --- BƯỚC 4: DB thành công => Cập nhật RAM của phòng ---
+//                currentPrice.set(bidAmount);
+//                currentWinnerId = userId;
+//
+//                // --- BƯỚC 5: Broadcast NEW_BID_UPDATE đến TẤT CẢ người trong phòng ---
+//                // Payload: Object[] {auctionId, newPrice, winnerId} để client parse
+//                Object[] broadcastPayload = {auctionId, bidAmount, userId};
+//                Message broadcastMsg = new Message(ResponseCode.NEW_BID_UPDATE,
+//                        String.format("Giá mới: %,.0f đ (bởi User#%d)", bidAmount, userId),
+//                        broadcastPayload);
+//                broadcastToAll(broadcastMsg);
+//
+//                // --- BƯỚC 6: Riêng người thắng nhận BID_SUCCESS ---
+//                handler.sendMessage(new Message(ResponseCode.BID_SUCCESS,
+//                        String.format("✅ Bạn đang dẫn đầu với giá %,.0f đ!", bidAmount), bidAmount));
+//
+//                // --- BƯỚC 7: Kiểm tra anti-sniping - nếu end_time được gia hạn => broadcast ---
+//                if (auction.getEndTime() != null) {
+//                    Auction updatedAuction = biddingService.getManagerService().getAuction(auctionId);
+//                    if (updatedAuction != null && updatedAuction.getEndTime().isAfter(auction.getEndTime())) {
+//                        Message extendMsg = new Message(ResponseCode.AUCTION_TIME_EXTENDED,
+//                                "⏱ Phiên được gia hạn thêm 30 giây! Kết thúc lúc: "
+//                                        + updatedAuction.getEndTime().format(FORMATTER),
+//                                updatedAuction.getEndTime());
+//                        broadcastToAll(extendMsg);
+//                    }
+//                }
+//
+//                System.out.println("[ROOM-" + auctionId + "] BID thành công: User#" + userId + " = " + bidAmount);
+//
+//            } catch (Exception e) {
+//                // BiddingService throws AuctionException với message mô tả lỗi
+//                System.err.println("[ROOM-" + auctionId + "] Lỗi BID: " + e.getMessage());
+//                handler.sendMessage(new Message(ResponseCode.BID_FAILED,
+//                        e.getMessage() != null ? e.getMessage() : "Giao dịch thất bại, vui lòng thử lại!", null));
+//            }
+//        });
+//    }
     public void processBid(ClientHandler handler, int userId, double bidAmount, BiddingService biddingService) {
         roomQueueProcessor.submit(() -> {
             try {
                 // --- BƯỚC 1: Fast-fail trên RAM (cực nhanh, không cần DB) ---
                 if (bidAmount <= currentPrice.get()) {
                     handler.sendMessage(new Message(ResponseCode.BID_FAILED,
-                            String.format("Giá bạn đặt (%.0f) không cao hơn giá hiện tại (%.0f)!",
-                                    bidAmount, currentPrice.get()), null));
+                        String.format("Giá bạn đặt (%.0f) không cao hơn giá hiện tại (%.0f)!",
+                            bidAmount, currentPrice.get()), null));
                     return;
                 }
 
@@ -105,12 +167,13 @@ public class AuctionRoom {
                 currentWinnerId = userId;
 
                 // --- BƯỚC 5: Broadcast NEW_BID_UPDATE đến TẤT CẢ người trong phòng ---
-                // Payload: Object[] {auctionId, newPrice, winnerName(String)} để Admin LiveFeed parse
-                String winnerName = (user.getUsername() != null) ? user.getUsername() : ("User#" + userId);
-                Object[] broadcastPayload = {auctionId, bidAmount, winnerName};
+                // [ĐÃ SỬA]: Chuyển userId thành Tên người dùng (String) để UI không bị lỗi ClassCast
+                String bidderName = user.getUsername();
+                Object[] broadcastPayload = {auctionId, bidAmount, bidderName};
+
                 Message broadcastMsg = new Message(ResponseCode.NEW_BID_UPDATE,
-                        String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, winnerName),
-                        broadcastPayload);
+                    String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, bidderName),
+                    broadcastPayload);
                 broadcastToAll(broadcastMsg);
 
                 // --- BƯỚC 5b: Gửi thêm tới Admin đang online để LiveFeed cập nhật ---
@@ -118,31 +181,31 @@ public class AuctionRoom {
 
                 // --- BƯỚC 6: Riêng người thắng nhận BID_SUCCESS ---
                 handler.sendMessage(new Message(ResponseCode.BID_SUCCESS,
-                        String.format("✅ Bạn đang dẫn đầu với giá %,.0f đ!", bidAmount), bidAmount));
+                    String.format("✅ Bạn đang dẫn đầu với giá %,.0f đ!", bidAmount), bidAmount));
 
                 // --- BƯỚC 7: Kiểm tra anti-sniping - nếu end_time được gia hạn => broadcast ---
                 if (auction.getEndTime() != null) {
+                    // Nhớ import formatter nếu báo lỗi đỏ: DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                     Auction updatedAuction = biddingService.getManagerService().getAuction(auctionId);
                     if (updatedAuction != null && updatedAuction.getEndTime().isAfter(auction.getEndTime())) {
                         Message extendMsg = new Message(ResponseCode.AUCTION_TIME_EXTENDED,
-                                "⏱ Phiên được gia hạn thêm 30 giây! Kết thúc lúc: "
-                                        + updatedAuction.getEndTime().format(FORMATTER),
-                                updatedAuction.getEndTime());
+                            "⏱ Phiên được gia hạn thêm 30 giây! Kết thúc lúc: "
+                                + updatedAuction.getEndTime().toString(),
+                            updatedAuction.getEndTime());
                         broadcastToAll(extendMsg);
                     }
                 }
 
-                System.out.println("[ROOM-" + auctionId + "] BID thành công: User#" + userId + " = " + bidAmount);
+                System.out.println("[ROOM-" + auctionId + "] BID thành công: " + bidderName + " = " + bidAmount);
 
             } catch (Exception e) {
                 // BiddingService throws AuctionException với message mô tả lỗi
                 System.err.println("[ROOM-" + auctionId + "] Lỗi BID: " + e.getMessage());
                 handler.sendMessage(new Message(ResponseCode.BID_FAILED,
-                        e.getMessage() != null ? e.getMessage() : "Giao dịch thất bại, vui lòng thử lại!", null));
+                    e.getMessage() != null ? e.getMessage() : "Giao dịch thất bại, vui lòng thử lại!", null));
             }
         });
     }
-
     /**
      * [ĐÃ THÊM] Broadcast tin nhắn chat đến toàn bộ người trong phòng.
      * Gọi từ RequestDispatcher.handleChat()

@@ -1,9 +1,6 @@
 package com.auction.server.dao;
 
-import com.auction.common.model.Art;
-import com.auction.common.model.Electronics;
-import com.auction.common.model.Item;
-import com.auction.common.model.Vehicle;
+import com.auction.common.model.*;
 import com.auction.common.factory.ItemFactory;
 
 import java.sql.*;
@@ -71,11 +68,10 @@ public class ItemDAO {
                 ps.setString(8, e.getModel());
                 ps.setInt(9, e.getWarrantyMonths());
             } else if (item instanceof Art a) {
-                ps.setString(10, a.getArtist());
-                ps.setInt(11, a.getYearCreated());
-                ps.setString(12, a.getMedium());
-                // Gán chuỗi dạng chữ ("true"/"false") khớp kiểu dữ liệu TEXT/VARCHAR trong DB
-                ps.setString(13, String.valueOf(a.isHasCertificate()));
+                ps.setString(11, a.getArtist());
+                ps.setInt(12, a.getYearCreated());
+                ps.setString(13, a.getMedium());
+                ps.setBoolean(14, a.isHasCertificate());
             } else if (item instanceof Vehicle v) {
                 ps.setString(14, v.getMake());
                 ps.setString(15, v.getModelVehicle());
@@ -154,5 +150,90 @@ public class ItemDAO {
             e.printStackTrace();
         }
         return items;
+    }
+    // 5. Lấy danh sách Item theo trạng thái và từ khóa tìm kiếm (Dành cho bộ lọc UI)
+    public List<AuctionItemDAO> getSellerProductsByStatusAndKeyword(int sellerId, String status, String keyword) {
+        List<AuctionItemDAO> resultList = new ArrayList<>();
+
+        // Dùng LEFT JOIN để lấy thông tin item và auction đi kèm.
+        // Chỉ lấy sản phẩm của đúng seller_id
+        // Đổi i.status thành a.auction_status (hoặc a.status tùy theo tên cột trong bảng auctions của bạn)
+        String sql = "SELECT i.*, a.auction_id, a.auction_status, a.current_price, a.total_bids, a.current_winner_id " +
+            "FROM items i " +
+            "INNER JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE i.seller_id = ? AND a.auction_status = ? AND i.name ILIKE ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            // Gán giá trị cho các dấu ?
+            ps.setInt(1, sellerId);
+            ps.setString(2, status);
+            // Xử lý từ khóa tìm kiếm (nếu keyword rỗng thì "%%" sẽ lấy tất cả)
+            String searchKeyword = (keyword == null) ? "" : keyword;
+            ps.setString(3, "%" + searchKeyword + "%");
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // 1. Tận dụng sức mạnh của Factory của bạn để parse Item
+                    Item item = ItemFactory.createFromResultSet(rs);
+
+                    // 2. Tạo đối tượng Auction nếu có phiên đấu giá đi kèm
+                    Auction auction = new Auction();
+                    int auctionId = rs.getInt("auction_id");
+
+                    // Kiểm tra xem bảng auctions có dữ liệu cho item này không
+                    if (!rs.wasNull()) {
+                        auction.setAuctionId(auctionId);
+                        auction.setCurrentPrice(rs.getDouble("current_price"));
+                        auction.setTotalBids(rs.getInt("total_bids"));
+                        auction.setCurrentWinnerId(rs.getInt("current_winner_id"));
+
+                        // Nếu database của bạn có cột end_time, bạn lấy thêm ở đây:
+                        // Timestamp endTime = rs.getTimestamp("end_time");
+                        // Nếu dùng LocalDateTime: auction.setEndTime(endTime.toLocalDateTime());
+                    }
+
+                    // 3. Đóng gói vào DTO và ném vào List
+                    resultList.add(new AuctionItemDAO(item, auction));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi lọc sản phẩm của seller: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return resultList;
+    }
+    public List<Item> getApprovedItemsWithoutAuction(int sellerId, String keyword) {
+        List<Item> list = new ArrayList<>();
+
+        // LEFT JOIN auctions rồi kiểm tra auction_id IS NULL
+        // → Chỉ lấy item chưa từng có phiên đấu giá nào
+        String sql = "SELECT i.* " +
+            "FROM items i " +
+            "LEFT JOIN auctions a ON i.item_id = a.item_id " +
+            "WHERE i.seller_id = ? " +
+            //"  AND a.auction_status = 'NULL' " +
+            "  AND a.auction_id IS NULL " +       // Chưa có phiên nào
+            "  AND i.name ILIKE ? " +
+            "ORDER BY i.created_at DESC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, sellerId);
+            ps.setString(2, "%" + (keyword == null ? "" : keyword) + "%");
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(ItemFactory.createFromResultSet(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi getApprovedItemsWithoutAuction: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
     }
 }

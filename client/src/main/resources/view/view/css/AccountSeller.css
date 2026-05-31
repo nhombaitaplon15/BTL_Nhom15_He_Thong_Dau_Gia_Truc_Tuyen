@@ -1,0 +1,243 @@
+/* ==============================================================
+   GLOBAL SETTINGS
+============================================================== */
+.root {
+    -fx-font-family: "Times New Roman";
+}
+
+.main-container {
+    -fx-background-color: #F5F0E8;
+}
+
+/* ==============================================================
+   SIDEBAR
+============================================================== */
+.sidebar {
+    -fx-background-color: #1A2B4A;
+    -fx-min-width: 200;
+    -fx-pref-width: 200;
+    -fx-padding: 18 0 20 0;
+    -fx-spacing: 2;
+}
+
+.sidebar-title {
+    -fx-text-fill: #8BA8D4;
+    -fx-font-size: 9;
+    -fx-font-weight: bold;
+    -fx-padding: 0 16 12 16;
+}
+
+.sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 10 16 10 16;
+    -fx-cursor: hand;
+}
+
+.sidebar-btn-active {
+    -fx-background-color: rgba(215, 168, 89, 0.14);
+    -fx-border-color: transparent transparent transparent #D7A859;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 10 16 10 16;
+    -fx-cursor: hand;
+}
+
+.sidebar-text {
+    -fx-text-fill: #8BA8D4;
+    -fx-font-size: 12;
+}
+
+.sidebar-text-active {
+    -fx-text-fill: #FFD691;
+    -fx-font-size: 12;
+}
+
+.sidebar-separator {
+    -fx-padding: 4 16 4 16;
+    -fx-opacity: 0.2;
+}
+
+/* Icons Sidebar */
+.icon-gold { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #D7A859; -fx-background-radius: 99; }
+.icon-blue { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #4A90D9; -fx-background-radius: 99; }
+.icon-green { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #43A047; -fx-background-radius: 99; }
+.icon-red { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #E53935; -fx-background-radius: 99; }
+
+/* ==============================================================
+   CONTENT PANES & TABS
+============================================================== */
+.content-pane {
+    -fx-background-color: #F5F0E8;
+}
+
+.tab-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.tab-inner-vbox {
+    -fx-background-color: #F5F0E8;
+    -fx-padding: 22 26 28 26;
+}
+
+.tab-title {
+    -fx-font-size: 17;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.tab-subtitle {
+    -fx-font-size: 11.5;
+    -fx-text-fill: #6B5E4A;
+}
+
+.section-title {
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+/* ==============================================================
+   PROFILE
+============================================================== */
+.avatar-pane {
+    -fx-min-width: 72;
+    -fx-pref-width: 72;
+    -fx-min-height: 72;
+    -fx-pref-height: 72;
+    -fx-background-color: #D7A859;
+    -fx-background-radius: 99;
+    -fx-border-color: rgba(255,214,145,0.4);
+    -fx-border-width: 3;
+    -fx-border-radius: 99;
+}
+
+.avatar-letter {
+    -fx-font-size: 28;
+    -fx-font-weight: bold;
+    -fx-text-fill: #3A2408;
+}
+
+.profile-sub-text {
+    -fx-font-size: 11;
+    -fx-text-fill: #8BA8D4;
+}
+
+.profile-member-info {
+    -fx-font-size: 10.5;
+    -fx-text-fill: #8BA8D4;
+}
+
+/* ==============================================================
+   WALLET & TRANSACTIONS
+============================================================== */
+.wallet-icon-big {
+    -fx-font-size: 28;
+}
+
+.transaction-header {
+    -fx-padding: 0 0 12 0;
+}
+
+.transaction-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.empty-transactions-box {
+    -fx-padding: 28;
+}
+
+/* CSS được thêm vào cho ListView sinh ra từ Controller Java */
+.tx-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 2 0 2 0;
+}
+
+.tx-row {
+    -fx-padding: 8 16 8 16;
+    -fx-alignment: center-left;
+}
+
+.tx-icon-box {
+    -fx-background-radius: 8;
+    -fx-min-width: 32;
+    -fx-pref-width: 32;
+    -fx-min-height: 32;
+    -fx-pref-height: 32;
+}
+
+.tx-icon-box-income {
+    -fx-background-color: #E8F5E9;
+}
+
+.tx-icon-box-outcome {
+    -fx-background-color: #FFF3E0;
+}
+
+.tx-icon-label {
+    -fx-font-size: 14;
+}
+
+.tx-desc {
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.tx-time {
+    -fx-font-size: 10;
+    -fx-text-fill: #A08C6E;
+}
+
+.tx-amt-income {
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2E7D32;
+}
+
+.tx-amt-outcome {
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-text-fill: #E65100;
+}
+
+.tx-status {
+    -fx-font-size: 9.5;
+    -fx-text-fill: #A08C6E;
+}
+
+/* ==============================================================
+   LOGOUT PANE
+============================================================== */
+.logout-pane {
+    -fx-background-color: #F5F0E8;
+    -fx-padding: 40;
+}
+
+.logout-card {
+    -fx-padding: 40 60 40 60;
+    -fx-max-width: 460;
+}
+
+.logout-icon {
+    -fx-font-size: 44;
+}
+
+.logout-title {
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.logout-text {
+    -fx-font-size: 12;
+    -fx-text-fill: #6B5E4A;
+    -fx-alignment: CENTER;
+}
+
+.logout-buttons {
+    -fx-padding: 8 0 0 0;
+}

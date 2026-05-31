@@ -47,8 +47,12 @@ public class Art extends Item {
 
     @Override
     public String getDetailedSpecs() {
-        String cert = hasCertificate ? "Có chứng chỉ" : "Không chứng chỉ";
-        return String.format("Tác giả: %s | Năm: %d | Chất liệu: %s | [%s]",
-                artist, yearCreated, medium, cert);
+        return "";
     }
-}
+
+//    @Override
+//    public String getDetailedSpecs() {
+//        //String cert = hasCertificate ? "Có chứng chỉ" : "Không chứng chỉ";
+//        return String.format("Tác giả: %s | Năm: %d | Chất liệu: %s | [%s]",
+//                artist, yearCreated, medium, cert);
+    }

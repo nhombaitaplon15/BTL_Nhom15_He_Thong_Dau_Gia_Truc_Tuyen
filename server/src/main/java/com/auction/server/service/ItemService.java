@@ -47,8 +47,8 @@ public class ItemService {
                 // Truyền conn vào hàm insertItem mới, hứng về item_id tự tăng kiểu int
                 int generatedItemId = itemDAO.insertItem(conn, item);
 
-                // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ hiển thị mạng Socket
-                item.setItemId(generatedItemId);
+                // Nạp ID vừa nhận từ DB ngược lại vào Object trên RAM để đồng bộ
+                item.setId(generatedItemId);
 
                 conn.commit(); // Lưu vĩnh viễn dữ liệu xuống SQL
                 System.out.println("[SERVICE] Đã thêm sản phẩm thành công với ID tự tăng: " + generatedItemId);
