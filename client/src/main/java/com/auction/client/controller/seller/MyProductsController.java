@@ -1,6 +1,5 @@
 package com.auction.client.controller.seller;
 
-import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
@@ -24,7 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class MyProductsController1 {
+public class MyProductsController {
 
   // --- SỬA THÀNH ScrollPane ĐỂ ĐỒNG BỘ VỚI FXML TRÀN VIỀN ---
   @FXML private ScrollPane paneAuctioning;
@@ -68,7 +67,7 @@ public class MyProductsController1 {
   private final Consumer<Message> onAuctionSold = msg -> refreshAll();
 
   // THÊM MỚI: Biến giữ instance để có thể điều khiển từ xa
-  private static MyProductsController1 instance;
+  private static MyProductsController instance;
   public static boolean requestOpenInsertItem = false;
 
   // ================================================================

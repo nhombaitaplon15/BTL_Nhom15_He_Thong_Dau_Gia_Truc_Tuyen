@@ -1,6 +1,5 @@
 package com.auction.client.controller.seller;
 
-import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
@@ -64,7 +63,7 @@ public class HomeSellerController {
     }
 
     // 2. Ép MyProductsController mở form thêm sản phẩm ngay lập tức
-    MyProductsController1.openInsertFormDirectly();
+    MyProductsController.openInsertFormDirectly();
   }
 
   // ════════════════════════════════════════
