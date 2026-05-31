@@ -17,7 +17,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox; // THÊM IMPORT NÀY
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -27,10 +26,10 @@ import java.util.function.Consumer;
 
 public class MyProductsController1 {
 
-  // --- SỬA THÀNH VBox ĐỂ ĐỒNG BỘ VỚI FXML TRÀN VIỀN ---
-  @FXML private VBox paneAuctioning;
-  @FXML private VBox panePending;
-  @FXML private VBox paneSold;
+  // --- SỬA THÀNH ScrollPane ĐỂ ĐỒNG BỘ VỚI FXML TRÀN VIỀN ---
+  @FXML private ScrollPane paneAuctioning;
+  @FXML private ScrollPane panePending;
+  @FXML private ScrollPane paneSold;
 
   // --- ListView ---
   @FXML private ListView<AuctionItemDAO> listAuctioning;
@@ -340,8 +339,8 @@ public class MyProductsController1 {
   // TAB SWITCHING
   // ================================================================
 
-  // SỬA: Thay ScrollPane activePane thành VBox activePane
-  private void switchTab(HBox activeBtn, VBox activePane) {
+  // SỬA: Thay VBox activePane thành ScrollPane activePane
+  private void switchTab(HBox activeBtn, ScrollPane activePane) {
     paneAuctioning.setVisible(false); paneAuctioning.setManaged(false);
     panePending.setVisible(false); panePending.setManaged(false);
     paneSold.setVisible(false); paneSold.setManaged(false);
