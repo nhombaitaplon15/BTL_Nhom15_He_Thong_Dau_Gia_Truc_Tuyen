@@ -247,4 +247,9 @@ public class BiddingService {
     public List<BiddingHistory> getBiddingHistory(int bidderId) {
         return biddingHistoryDAO.getHistoryByBidderId(bidderId);
     }
+
+    /** Lấy lịch sử bid của một phiên đấu giá (để hiển thị trong phòng khi vào) */
+    public List<BiddingHistory> getAuctionBids(int auctionId) {
+        return auctionDAO.getBiddingHistoryByAuctionId(auctionId);
+    }
 }

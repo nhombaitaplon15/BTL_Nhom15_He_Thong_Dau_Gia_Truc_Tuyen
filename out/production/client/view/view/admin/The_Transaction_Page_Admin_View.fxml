@@ -18,41 +18,44 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxWidth="1280" maxHeight="800"
-            prefWidth="1100" prefHeight="700"
-            style="-fx-background-color: #F0F4FF;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.auction.client.controller.admin.The_Transaction_Page_Admin_View_Controller">
+<AnchorPane maxHeight="800" maxWidth="1280" prefHeight="700" prefWidth="1100" style="-fx-background-color: #F0F4FF;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.admin.The_Transaction_Page_Admin_View_Controller">
     <children>
         <VBox fillWidth="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
 
                 <!-- NAVBAR -->
-                <HBox alignment="CENTER_LEFT" minHeight="64.0" prefHeight="64.0" spacing="20.0"
-                      style="-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.12), 10, 0, 0, 2);">
+                <HBox alignment="CENTER_LEFT" minHeight="64.0" prefHeight="64.0" spacing="20.0" style="-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.12), 10, 0, 0, 2);">
                     <padding><Insets left="32.0" right="32.0" /></padding>
                     <children>
-                        <Label text="⬡" style="-fx-text-fill: #6C63FF; -fx-font-size: 22px;"/>
-                        <Button mnemonicParsing="false" onAction="#goToHomePage"
-                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;"
-                                text="Trang chủ">
+                        <Label style="-fx-text-fill: #6C63FF; -fx-font-size: 22px;" text="⬡" />
+                        <Button mnemonicParsing="false" onAction="#goToHomePage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;" text="Trang chủ">
                             <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#goToAuctionPage"
-                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;"
-                                text="Danh sách đấu giá">
+                        <Button mnemonicParsing="false" onAction="#goToAuctionPage" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #9CA3AF;" text="Danh sách đấu giá">
                             <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
-                        <Button mnemonicParsing="false"
-                                style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #6C63FF; -fx-border-color: #6C63FF; -fx-border-width: 0 0 3 0;"
-                                text="Quản lý giao dịch">
+                        <Button mnemonicParsing="false" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-text-fill: #6C63FF; -fx-border-color: #6C63FF; -fx-border-width: 0 0 3 0;" text="Quản lý giao dịch">
                             <font><Font name="Times New Roman Bold" size="15.0" /></font>
                         </Button>
-                        <Region HBox.hgrow="ALWAYS"/>
-                        <Button mnemonicParsing="false" onAction="#goToHomePage"
-                                style="-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand;"
-                                text="Admin"/>
+                        <Region HBox.hgrow="ALWAYS" />
+                  <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                     <children>
+                        <Label fx:id="lblAdminName" style="-fx-text-fill: #1E293B; -fx-font-weight: bold;" text="Admin">
+                           <font>
+                              <Font name="Times New Roman Bold" size="14.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="lblPendingCount1" style="-fx-text-fill: #F59E0B; -fx-font-size: 11px;" text="Chờ duyệt: 0" />
+                     </children>
+                  </VBox>
+                      <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: linear-gradient(to right, #EF4444, #F87171); -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 6 16 6 16; -fx-effect: dropshadow(gaussian, rgba(239,68,68,0.35), 8, 0, 0, 2);" text="Đăng xuất">
+                          <font>
+                        <Font name="Times New Roman Bold" size="13.0" />
+                     </font>
+                      </Button>
                     </children>
                 </HBox>
+                <VBox alignment="CENTER_RIGHT" spacing="2.0" />
 
                 <!-- PAGE CONTENT -->
                 <VBox fillWidth="true" spacing="20.0" VBox.vgrow="ALWAYS">
@@ -63,28 +66,20 @@
                         <HBox alignment="CENTER_LEFT" spacing="16.0">
                             <children>
                                 <VBox spacing="2">
-                                    <Label text="💳 Trung tâm Đối soát"
-                                           style="-fx-text-fill: #1E293B; -fx-font-size: 22px; -fx-font-weight: bold;"/>
-                                    <Label text="Quản lý và duyệt toàn bộ giao dịch trong hệ thống"
-                                           style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                    <Label style="-fx-text-fill: #1E293B; -fx-font-size: 22px; -fx-font-weight: bold;" text="💳 Trung tâm Đối soát" />
+                                    <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;" text="Quản lý và duyệt toàn bộ giao dịch trong hệ thống" />
                                 </VBox>
                                 <Region HBox.hgrow="ALWAYS" />
                                 <!-- KPI mini -->
                                 <HBox spacing="16.0">
                                     <children>
-                                        <VBox alignment="CENTER_RIGHT"
-                                              style="-fx-background-color: linear-gradient(to bottom-right, #ECFDF5, #D1FAE5); -fx-background-radius: 14; -fx-border-color: #6EE7B7; -fx-border-radius: 14; -fx-border-width: 1; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.15), 10, 0, 0, 3);">
-                                            <Label text="Tổng dòng tiền vào (Tháng)"
-                                                   style="-fx-text-fill: #065F46; -fx-font-size: 11px; -fx-font-weight: bold;"/>
-                                            <Label fx:id="lblTotalInflow" text="+0 đ"
-                                                   style="-fx-text-fill: #047857; -fx-font-size: 22px; -fx-font-weight: bold;"/>
+                                        <VBox alignment="CENTER_RIGHT" style="-fx-background-color: linear-gradient(to bottom-right, #ECFDF5, #D1FAE5); -fx-background-radius: 14; -fx-border-color: #6EE7B7; -fx-border-radius: 14; -fx-border-width: 1; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.15), 10, 0, 0, 3);">
+                                            <Label style="-fx-text-fill: #065F46; -fx-font-size: 11px; -fx-font-weight: bold;" text="Tổng dòng tiền vào (Tháng)" />
+                                            <Label fx:id="lblTotalInflow" style="-fx-text-fill: #047857; -fx-font-size: 22px; -fx-font-weight: bold;" text="+0 đ" />
                                         </VBox>
-                                        <VBox alignment="CENTER_RIGHT"
-                                              style="-fx-background-color: linear-gradient(to bottom-right, #FFFBEB, #FEF3C7); -fx-background-radius: 14; -fx-border-color: #FCD34D; -fx-border-radius: 14; -fx-border-width: 1; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(245,158,11,0.15), 10, 0, 0, 3);">
-                                            <Label text="Lệnh rút chờ xử lý"
-                                                   style="-fx-text-fill: #92400E; -fx-font-size: 11px; -fx-font-weight: bold;"/>
-                                            <Label fx:id="lblPendingCount" text="0 lệnh"
-                                                   style="-fx-text-fill: #B45309; -fx-font-size: 22px; -fx-font-weight: bold;"/>
+                                        <VBox alignment="CENTER_RIGHT" style="-fx-background-color: linear-gradient(to bottom-right, #FFFBEB, #FEF3C7); -fx-background-radius: 14; -fx-border-color: #FCD34D; -fx-border-radius: 14; -fx-border-width: 1; -fx-padding: 12 20 12 20; -fx-effect: dropshadow(gaussian, rgba(245,158,11,0.15), 10, 0, 0, 3);">
+                                            <Label style="-fx-text-fill: #92400E; -fx-font-size: 11px; -fx-font-weight: bold;" text="Lệnh rút chờ xử lý" />
+                                            <Label fx:id="lblPendingCount" style="-fx-text-fill: #B45309; -fx-font-size: 22px; -fx-font-weight: bold;" text="0 lệnh" />
                                         </VBox>
                                     </children>
                                 </HBox>
@@ -96,38 +91,27 @@
                             <children>
 
                                 <!-- LEFT: Table panel -->
-                                <VBox spacing="0" HBox.hgrow="ALWAYS"
-                                      style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);">
+                                <VBox spacing="0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);" HBox.hgrow="ALWAYS">
 
                                     <!-- Table header bar: Title + Search + Filter + Export -->
-                                    <HBox alignment="CENTER_LEFT" spacing="12.0"
-                                          style="-fx-background-color: linear-gradient(to right, #6C63FF, #48C6EF); -fx-background-radius: 20 20 0 0; -fx-padding: 14 20 14 20;">
+                                    <HBox alignment="CENTER_LEFT" spacing="12.0" style="-fx-background-color: linear-gradient(to right, #6C63FF, #48C6EF); -fx-background-radius: 20 20 0 0; -fx-padding: 14 20 14 20;">
                                         <children>
-                                            <Label text="📋 Giao dịch gần đây"
-                                                   style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+                                            <Label style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px;" text="📋 Giao dịch gần đây" />
                                             <Region HBox.hgrow="ALWAYS" />
 
                                             <!-- SEARCH - có fx:id để controller bind -->
-                                            <TextField fx:id="tfSearch" prefHeight="36.0" prefWidth="230.0"
-                                                       promptText="🔍 Tìm TxID, Username..."
-                                                       style="-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 10; -fx-border-color: transparent; -fx-border-radius: 10; -fx-padding: 5 12 5 12;">
+                                            <TextField fx:id="tfSearch" prefHeight="36.0" prefWidth="230.0" promptText="🔍 Tìm TxID, Username..." style="-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 10; -fx-border-color: transparent; -fx-border-radius: 10; -fx-padding: 5 12 5 12;">
                                                 <font><Font name="Times New Roman" size="13.0" /></font>
                                             </TextField>
 
                                             <!-- FILTER STATUS - có fx:id để controller bind -->
-                                            <ComboBox fx:id="cbTxStatus" prefHeight="36.0" prefWidth="140.0"
-                                                      promptText="Trạng thái"
-                                                      style="-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 10; -fx-border-color: transparent; -fx-border-radius: 10; -fx-cursor: hand;"/>
+                                            <ComboBox fx:id="cbTxStatus" prefHeight="36.0" prefWidth="140.0" promptText="Trạng thái" style="-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 10; -fx-border-color: transparent; -fx-border-radius: 10; -fx-cursor: hand;" />
 
                                             <!-- DATE FILTER -->
-                                            <DatePicker fx:id="dpFilter" prefHeight="36.0" prefWidth="150.0"
-                                                        promptText="Lọc Ngày"
-                                                        style="-fx-background-color: rgba(255,255,255,0.9); -fx-border-color: transparent; -fx-border-radius: 10;"/>
+                                            <DatePicker fx:id="dpFilter" prefHeight="36.0" prefWidth="150.0" promptText="Lọc Ngày" style="-fx-background-color: rgba(255,255,255,0.9); -fx-border-color: transparent; -fx-border-radius: 10;" />
 
                                             <!-- EXPORT -->
-                                            <Button mnemonicParsing="false" prefHeight="36.0"
-                                                    style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.5); -fx-border-radius: 10;"
-                                                    text="📥 Xuất báo cáo">
+                                            <Button mnemonicParsing="false" prefHeight="36.0" style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.5); -fx-border-radius: 10;" text="📥 Xuất báo cáo">
                                                 <font><Font name="Times New Roman Bold" size="13.0" /></font>
                                                 <padding><Insets left="14.0" right="14.0" /></padding>
                                             </Button>
@@ -135,16 +119,13 @@
                                     </HBox>
 
                                     <!-- THE TABLE - cùng style với AuctionPage -->
-                                    <TableView fx:id="transactionTable"
-                                               style="-fx-background-color: white;"
-                                               styleClass="my-table" stylesheets="@../css/style.css"
-                                               VBox.vgrow="ALWAYS">
+                                    <TableView fx:id="transactionTable" style="-fx-background-color: white;" styleClass="my-table" stylesheets="@../css/style.css" VBox.vgrow="ALWAYS">
                                         <columns>
-                                            <TableColumn fx:id="colTxId"      prefWidth="110.0" text="Mã GD" />
-                                            <TableColumn fx:id="colUserInfo"   prefWidth="200.0" text="Người dùng &amp; Loại" />
-                                            <TableColumn fx:id="colAmount"     prefWidth="160.0" text="Số Tiền" />
-                                            <TableColumn fx:id="colTxStatus"   prefWidth="150.0" text="Trạng thái" />
-                                            <TableColumn fx:id="colTxAction"   prefWidth="180.0" text="Thao tác" />
+                                            <TableColumn fx:id="colTxId" prefWidth="110.0" text="Mã GD" />
+                                            <TableColumn fx:id="colUserInfo" prefWidth="200.0" text="Người dùng &amp; Loại" />
+                                            <TableColumn fx:id="colAmount" prefWidth="160.0" text="Số Tiền" />
+                                            <TableColumn fx:id="colTxStatus" prefWidth="150.0" text="Trạng thái" />
+                                            <TableColumn fx:id="colTxAction" prefWidth="180.0" text="Thao tác" />
                                         </columns>
                                         <columnResizePolicy>
                                             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -158,18 +139,14 @@
                                     <children>
 
                                         <!-- Cashflow Chart -->
-                                        <VBox prefHeight="240.0"
-                                              style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);">
+                                        <VBox prefHeight="240.0" style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);">
                                             <padding><Insets bottom="14.0" left="16.0" right="16.0" top="16.0" /></padding>
                                             <children>
                                                 <HBox alignment="CENTER_LEFT" spacing="8">
-                                                    <Label text="📈"/>
-                                                    <Label text="Xu hướng dòng tiền (7 ngày)"
-                                                           style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+                                                    <Label text="📈" />
+                                                    <Label style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 14px;" text="Xu hướng dòng tiền (7 ngày)" />
                                                 </HBox>
-                                                <LineChart fx:id="cashflowChart" alternativeRowFillVisible="false"
-                                                           createSymbols="false" legendSide="BOTTOM" VBox.vgrow="ALWAYS"
-                                                           style="-fx-background-color: transparent;">
+                                                <LineChart fx:id="cashflowChart" alternativeRowFillVisible="false" createSymbols="false" legendSide="BOTTOM" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
                                                     <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
                                                     <yAxis><NumberAxis side="LEFT" /></yAxis>
                                                 </LineChart>
@@ -177,29 +154,24 @@
                                         </VBox>
 
                                         <!-- Pending Requests -->
-                                        <VBox style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);"
-                                              VBox.vgrow="ALWAYS">
+                                        <VBox style="-fx-background-color: white; -fx-background-radius: 20; -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 18, 0, 0, 5);" VBox.vgrow="ALWAYS">
                                             <padding><Insets bottom="18.0" left="18.0" right="18.0" top="18.0" /></padding>
                                             <children>
                                                 <HBox alignment="CENTER_LEFT">
                                                     <VBox.margin><Insets bottom="14.0" /></VBox.margin>
                                                     <children>
-                                                        <HBox spacing="8" alignment="CENTER_LEFT">
-                                                            <Label text="⏰"/>
-                                                            <Label text="Cần duyệt ngay"
-                                                                   style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;"/>
+                                                        <HBox alignment="CENTER_LEFT" spacing="8">
+                                                            <Label text="⏰" />
+                                                            <Label style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 15px;" text="Cần duyệt ngay" />
                                                         </HBox>
                                                         <Region HBox.hgrow="ALWAYS" />
-                                                        <Label fx:id="lblPendingBadge" text="0 lệnh"
-                                                               style="-fx-background-color: #FEF3C7; -fx-background-radius: 20; -fx-text-fill: #B45309; -fx-font-weight: bold; -fx-font-size: 11px;">
+                                                        <Label fx:id="lblPendingBadge" style="-fx-background-color: #FEF3C7; -fx-background-radius: 20; -fx-text-fill: #B45309; -fx-font-weight: bold; -fx-font-size: 11px;" text="0 lệnh">
                                                             <padding><Insets bottom="4.0" left="12.0" right="12.0" top="4.0" /></padding>
                                                         </Label>
                                                     </children>
                                                 </HBox>
 
-                                                <ScrollPane fitToWidth="true" hbarPolicy="NEVER"
-                                                            style="-fx-background-color: transparent; -fx-background: white;"
-                                                            vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+                                                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: white;" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
                                                     <content>
                                                         <VBox fx:id="pendingRequestsContainer" spacing="14.0" />
                                                     </content>
@@ -214,8 +186,7 @@
                         <!-- Status bar -->
                         <HBox alignment="CENTER_LEFT" prefHeight="22.0">
                             <children>
-                                <Label fx:id="lblStatusBar" text="Sẵn sàng."
-                                       style="-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-font-style: italic;"/>
+                                <Label fx:id="lblStatusBar" style="-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-font-style: italic;" text="Sẵn sàng." />
                             </children>
                         </HBox>
 

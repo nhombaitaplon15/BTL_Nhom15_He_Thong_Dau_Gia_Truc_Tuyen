@@ -30,6 +30,7 @@ public enum RequestCode {
     CHANGE_PASSWORD,    // Đổi mật khẩu (payload: String[] {oldPwd, newPwd})
     REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: String message)
     GET_WALLET_INFO,    // ✅ THÊM MỚI: Lấy thông tin ví & tiền tạm giữ realtime (payload: Integer userId)
+    FETCH_TRANSACTION_HISTORY, // Lấy lịch sử giao dịch của user (payload: null)
 
     // ===================== SELLER =====================
     SELLER_GET_MY_ITEMS,       // Lấy danh sách item của seller (payload: null)

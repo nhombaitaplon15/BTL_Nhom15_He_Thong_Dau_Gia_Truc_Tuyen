@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
@@ -19,82 +18,9 @@
         <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
 
-                <VBox fx:id="sidebarContainer" prefHeight="720.0" prefWidth="280.0" spacing="10.0" style="-fx-background-color: #2563EB; -fx-padding: 25 15 25 15;">
-                    <children>
-                        <HBox alignment="CENTER_LEFT" spacing="12.0" style="-fx-padding: 0 0 10 0;">
-                            <children>
-                                <Label style="-fx-background-color: #FFFFFF; -fx-background-radius: 8; -fx-padding: 6 12 6 12;" text="⚡" textFill="#2563EB">
-                                    <font><Font name="Times New Roman Bold" size="20.0" /></font>
-                                </Label>
-                                <Label text="HỆ THỐNG" textFill="WHITE">
-                                    <font><Font name="Times New Roman Bold" size="22.0" /></font>
-                                </Label>
-                            </children>
-                        </HBox>
-
-                        <Line endX="220.0" opacity="0.35" stroke="#FFFFFF" strokeWidth="1.5" />
-
-                        <VBox spacing="5.0" style="-fx-background-color: rgba(255, 255, 255, 0.15); -fx-background-radius: 12; -fx-padding: 15;">
-                            <VBox.margin><Insets bottom="15.0" top="10.0" /></VBox.margin>
-                            <children>
-                                <Label text="Tài khoản" textFill="#E0F2FE">
-                                    <font><Font name="Times New Roman" size="14.0" /></font>
-                                </Label>
-                                <Label fx:id="lblBidderName" text="Đang tải..." textFill="WHITE">
-                                    <font><Font name="Times New Roman Bold" size="18.0" /></font>
-                                </Label>
-                                <HBox alignment="BOTTOM_LEFT" spacing="5.0" style="-fx-padding: 6 0 0 0;">
-                                    <children>
-                                        <Label text="Số dư:" textFill="#E0F2FE">
-                                            <font><Font name="Times New Roman" size="14.0" /></font>
-                                        </Label>
-                                        <Label fx:id="lblBalance" text="0 đ" textFill="#FDE047">
-                                            <font><Font name="Times New Roman Bold" size="20.0" /></font>
-                                        </Label>
-                                    </children>
-                                </HBox>
-                                <HBox alignment="BOTTOM_LEFT" spacing="5.0" style="-fx-padding: 2 0 0 0;">
-                                    <children>
-                                        <Label fx:id="lblEscrowBalance" text="Tạm giữ: 0 đ" textFill="#E0F2FE" opacity="0.85">
-                                            <font><Font name="Times New Roman Italic" size="14.0" /></font>
-                                        </Label>
-                                    </children>
-                                </HBox>
-                            </children>
-                        </VBox>
-
-                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleNavDashboard" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: #FFFFFF; -fx-text-fill: #2563EB; -fx-background-radius: 8; -fx-cursor: hand;" text=" 🏛 Sàn Đấu Giá ">
-                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                        </Button>
-                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleNavBidHistory" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-background-radius: 8; -fx-cursor: hand;" text=" ⏱ Lịch Sử Đặt Giá">
-                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                        </Button>
-                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleNavTransactionHistory" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-background-radius: 8; -fx-cursor: hand;" text=" 💳 Lịch Sử Giao Dịch">
-                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                        </Button>
-                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleNavDepositWithdraw" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-background-radius: 8; -fx-cursor: hand;" text=" 💰 Nạp / Rút Tiền">
-                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                        </Button>
-                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleNavProfile" prefHeight="45.0" prefWidth="250.0" style="-fx-background-color: transparent; -fx-text-fill: #FFFFFF; -fx-background-radius: 8; -fx-cursor: hand;" text=" 👤 Hồ Sơ Cá Nhân">
-                            <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                        </Button>
-
-                        <VBox alignment="BOTTOM_CENTER" spacing="10.0" VBox.vgrow="ALWAYS">
-                            <children>
-                                <Button mnemonicParsing="false" onAction="#handleSwitchToSeller" prefHeight="42.0" prefWidth="250.0" style="-fx-background-color: #10B981; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;" text="🔄 Chuyển sang Người bán">
-                                    <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                                </Button>
-                                <Button alignment="CENTER" mnemonicParsing="false" onAction="#handleLogout" prefHeight="42.0" prefWidth="250.0" style="-fx-background-color: #EF4444; -fx-text-fill: WHITE; -fx-background-radius: 8; -fx-cursor: hand;" text="Đăng Xuất Hệ Thống">
-                                    <font><Font name="Times New Roman Bold" size="15.0" /></font>
-                                </Button>
-                            </children>
-                        </VBox>
-                    </children>
-                </VBox>
-
                 <VBox prefHeight="720.0" prefWidth="1000.0" HBox.hgrow="ALWAYS">
                     <children>
-                        <HBox alignment="CENTER_LEFT" prefHeight="80.0" style="-fx-background-color: #FFFFFF; -fx-padding: 0 30 0 30; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 2));" spacing="15.0">
+                        <HBox alignment="CENTER_LEFT" prefHeight="80.0" spacing="15.0" style="-fx-background-color: #FFFFFF; -fx-padding: 0 30 0 30; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 10, 0, 0, 2));">
                             <children>
                                 <Button mnemonicParsing="false" onAction="#handleToggleSidebar" style="-fx-background-color: #F1F5F9; -fx-background-radius: 8; -fx-cursor: hand; -fx-text-fill: #1E293B; -fx-padding: 8 12 8 12;" text="☰">
                                     <font><Font name="System Bold" size="16.0" /></font>
@@ -130,7 +56,7 @@
 
                                         <HBox alignment="CENTER" prefHeight="150.0" spacing="30.0" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomVehicle" prefWidth="300.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" spacing="8.0" HBox.hgrow="ALWAYS">
+                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomVehicle" prefWidth="300.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" HBox.hgrow="ALWAYS">
                                                     <children>
                                                         <Label style="-fx-font-size: 36.0;" text="🚗" />
                                                         <Label text="PHƯƠNG TIỆN" textFill="#1E293B">
@@ -142,7 +68,7 @@
                                                     </children>
                                                 </VBox>
 
-                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomArt" prefWidth="300.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" spacing="8.0" HBox.hgrow="ALWAYS">
+                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomArt" prefWidth="300.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" HBox.hgrow="ALWAYS">
                                                     <children>
                                                         <Label style="-fx-font-size: 36.0;" text="🎨" />
                                                         <Label text="NGHỆ THUẬT" textFill="#1E293B">
@@ -154,7 +80,7 @@
                                                     </children>
                                                 </VBox>
 
-                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomElectronics" prefWidth="300.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" spacing="8.0" HBox.hgrow="ALWAYS">
+                                                <VBox alignment="CENTER" onMouseClicked="#handleRoomElectronics" prefWidth="300.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12; -fx-border-color: #E2E8F0; -fx-border-radius: 12; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(37,99,235,0.06), 12, 0, 0, 4);" HBox.hgrow="ALWAYS">
                                                     <children>
                                                         <Label style="-fx-font-size: 36.0;" text="⚡" />
                                                         <Label text="ĐIỆN TỬ" textFill="#1E293B">

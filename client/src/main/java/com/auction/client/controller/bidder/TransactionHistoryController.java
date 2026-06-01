@@ -1,6 +1,13 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
+import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
-import com.auction.server.dao.TransactionDAO; // Dựa trên import từ TransactionService của em
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,11 +20,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.stage.Stage;
 
-public class TransactionHistoryController {
+import java.util.List;
 
-    // Gọi trực tiếp DAO giao dịch đang dùng trong TransactionService của em
-    private final TransactionDAO transDAO = new TransactionDAO();
-    private User currentUser;
+public class TransactionHistoryController {
 
     @FXML private TableView<TransactionModel> tableHistory;
     @FXML private TableColumn<TransactionModel, String> colId;
@@ -26,6 +31,8 @@ public class TransactionHistoryController {
     @FXML private TableColumn<TransactionModel, String> colTime;
     @FXML private TableColumn<TransactionModel, String> colStatus;
 
+    private User currentUser;
+
     @FXML
     public void initialize() {
         colId.setCellValueFactory(cellData -> cellData.getValue().idProperty());
@@ -33,50 +40,59 @@ public class TransactionHistoryController {
         colAmount.setCellValueFactory(cellData -> cellData.getValue().amountProperty());
         colTime.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
         colStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+
+        // Đăng ký lắng nghe kết quả từ Server qua Socket
+        MessageRouter.getInstance().register(ResponseCode.TRANSACTION_HISTORY_RESULT, this::handleTransactionResult);
     }
 
     @FXML
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
-        loadRealTransactionData();
+        // Gửi request lấy lịch sử giao dịch qua Socket
+        SocketClient.getInstance().sendRequest(RequestCode.FETCH_TRANSACTION_HISTORY, null);
     }
 
-    private void loadRealTransactionData() {
-        try {
+    private void handleTransactionResult(Message message) {
+        if (message == null || !(message.getPayload() instanceof List)) return;
+
+        @SuppressWarnings("unchecked")
+        List<TransactionRequest> txList = (List<TransactionRequest>) message.getPayload();
+
+        Platform.runLater(() -> {
             ObservableList<TransactionModel> dataList = FXCollections.observableArrayList();
-
-            // LƯU Ý: Nếu transDAO của em có hàm lấy danh sách (Ví dụ: getTransactionsByUserId), hãy mở comment này ra:
-            /*
-            var list = transDAO.getTransactionsByUserId(currentUser.getId());
-            if (list != null) {
-                for (var t : list) {
-                    dataList.add(new TransactionModel(
-                        String.valueOf(t.getId()),
-                        t.getType().equalsIgnoreCase("DEPOSIT") ? "Nạp Tiền" : "Rút Tiền",
-                        String.format("%,.0f đ", t.getAmount()),
-                        t.getCreatedAt() != null ? t.getCreatedAt().toString() : "Vừa xong",
-                        t.getStatus()
-                    ));
-                }
+            for (TransactionRequest tx : txList) {
+                String typeText = switch (tx.getType().toUpperCase()) {
+                    case "DEPOSIT", "DEPOSIT_REQUEST" -> "Nạp Tiền";
+                    case "WITHDRAW", "WITHDRAW_REQUEST" -> "Rút Tiền";
+                    default -> tx.getType().startsWith("BID_PLACED") ? "Đặt Giá" : tx.getType();
+                };
+                String statusText = switch (tx.getStatus().toUpperCase()) {
+                    case "APPROVED", "SUCCESS" -> "✅ Đã duyệt";
+                    case "REJECTED" -> "❌ Từ chối";
+                    case "PENDING" -> "⏳ Đang xử lý";
+                    default -> tx.getStatus();
+                };
+                dataList.add(new TransactionModel(
+                        String.valueOf(tx.getRequestId()),
+                        typeText,
+                        String.format("%,.0f đ", tx.getAmount()),
+                        tx.getRequestDate() != null ? tx.getRequestDate().toString().replace("T", " ").substring(0, Math.min(19, tx.getRequestDate().toString().length())) : "Vừa xong",
+                        statusText
+                ));
             }
-            */
-
             tableHistory.setItems(dataList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     @FXML
     void handleBackToHome(ActionEvent event) {
+        MessageRouter.getInstance().unregister(ResponseCode.TRANSACTION_HISTORY_RESULT);
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
-
             The_Home_Page_Bidder_View_Controller home = loader.getController();
             if (home != null) home.setUserData(this.currentUser);
-
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root, 1280, 720));
             stage.show();
@@ -86,11 +102,7 @@ public class TransactionHistoryController {
     }
 
     public static class TransactionModel {
-        private final SimpleStringProperty id;
-        private final SimpleStringProperty type;
-        private final SimpleStringProperty amount;
-        private final SimpleStringProperty time;
-        private final SimpleStringProperty status;
+        private final SimpleStringProperty id, type, amount, time, status;
 
         public TransactionModel(String id, String type, String amount, String time, String status) {
             this.id = new SimpleStringProperty(id);

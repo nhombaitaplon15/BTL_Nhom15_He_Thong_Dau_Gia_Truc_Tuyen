@@ -166,4 +166,56 @@ public class TransactionDAO {
         }
         return list;
     }
+
+    /**
+     * Lấy lịch sử giao dịch của một user cụ thể (nạp/rút tiền)
+     */
+    public List<TransactionRequest> getTransactionsByUserId(int userId) {
+        List<TransactionRequest> list = new ArrayList<>();
+        String sql = "SELECT * FROM public.transactions WHERE user_id = ? ORDER BY created_at DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User user = UserFactory.createUser(
+                            rs.getInt("user_id"), "", "", "", "", "", "USER", 0.0
+                    );
+                    TransactionRequest tx = new TransactionRequest(
+                            user,
+                            rs.getString("transaction_type"),
+                            rs.getDouble("amount"),
+                            "",
+                            rs.getString("status")
+                    );
+                    tx.setRequestId(rs.getInt("transaction_id"));
+                    tx.setRequestDate(rs.getTimestamp("created_at").toLocalDateTime());
+                    list.add(tx);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi getTransactionsByUserId: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Tính tổng tiền đang bị tạm giữ (escrow) của user
+     * = tổng bid đang dẫn đầu ở các phiên RUNNING
+     */
+    public double getUserEscrowAmount(int userId) {
+        String sql = "SELECT COALESCE(SUM(a.current_price), 0) as escrow " +
+                "FROM public.auctions a " +
+                "WHERE a.current_winner_id = ? AND a.auction_status = 'RUNNING'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getDouble("escrow");
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi getUserEscrowAmount: " + e.getMessage());
+        }
+        return 0.0;
+    }
 }

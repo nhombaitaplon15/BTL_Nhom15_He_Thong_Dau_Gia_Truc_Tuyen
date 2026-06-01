@@ -184,7 +184,8 @@ public class ItemCardController {
 
     public void stopTimer() {
         if (countdownTimeline != null) countdownTimeline.stop();
-        MessageRouter.getInstance().unregister(ResponseCode.AUCTION_ENDED);
+        // KHÔNG unregister AUCTION_ENDED vì các card khác vẫn cần nhận broadcast này.
+        // Handler đã filter theo auctionId nên không bị ảnh hưởng chéo.
     }
 
     @FXML

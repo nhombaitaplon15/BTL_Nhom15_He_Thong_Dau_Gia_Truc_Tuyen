@@ -144,8 +144,8 @@ public class AuctionRoom {
                 // --- BƯỚC 1: Fast-fail trên RAM (cực nhanh, không cần DB) ---
                 if (bidAmount <= currentPrice.get()) {
                     handler.sendMessage(new Message(ResponseCode.BID_FAILED,
-                        String.format("Giá bạn đặt (%.0f) không cao hơn giá hiện tại (%.0f)!",
-                            bidAmount, currentPrice.get()), null));
+                            String.format("Giá bạn đặt (%.0f) không cao hơn giá hiện tại (%.0f)!",
+                                    bidAmount, currentPrice.get()), null));
                     return;
                 }
 
@@ -172,8 +172,8 @@ public class AuctionRoom {
                 Object[] broadcastPayload = {auctionId, bidAmount, bidderName};
 
                 Message broadcastMsg = new Message(ResponseCode.NEW_BID_UPDATE,
-                    String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, bidderName),
-                    broadcastPayload);
+                        String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, bidderName),
+                        broadcastPayload);
                 broadcastToAll(broadcastMsg);
 
                 // --- BƯỚC 5b: Gửi thêm tới Admin đang online để LiveFeed cập nhật ---
@@ -181,7 +181,7 @@ public class AuctionRoom {
 
                 // --- BƯỚC 6: Riêng người thắng nhận BID_SUCCESS ---
                 handler.sendMessage(new Message(ResponseCode.BID_SUCCESS,
-                    String.format("✅ Bạn đang dẫn đầu với giá %,.0f đ!", bidAmount), bidAmount));
+                        String.format("✅ Bạn đang dẫn đầu với giá %,.0f đ!", bidAmount), bidAmount));
 
                 // --- BƯỚC 7: Kiểm tra anti-sniping - nếu end_time được gia hạn => broadcast ---
                 if (auction.getEndTime() != null) {
@@ -189,9 +189,9 @@ public class AuctionRoom {
                     Auction updatedAuction = biddingService.getManagerService().getAuction(auctionId);
                     if (updatedAuction != null && updatedAuction.getEndTime().isAfter(auction.getEndTime())) {
                         Message extendMsg = new Message(ResponseCode.AUCTION_TIME_EXTENDED,
-                            "⏱ Phiên được gia hạn thêm 30 giây! Kết thúc lúc: "
-                                + updatedAuction.getEndTime().toString(),
-                            updatedAuction.getEndTime());
+                                "⏱ Phiên được gia hạn thêm 30 giây! Kết thúc lúc: "
+                                        + updatedAuction.getEndTime().toString(),
+                                updatedAuction.getEndTime());
                         broadcastToAll(extendMsg);
                     }
                 }
@@ -202,7 +202,7 @@ public class AuctionRoom {
                 // BiddingService throws AuctionException với message mô tả lỗi
                 System.err.println("[ROOM-" + auctionId + "] Lỗi BID: " + e.getMessage());
                 handler.sendMessage(new Message(ResponseCode.BID_FAILED,
-                    e.getMessage() != null ? e.getMessage() : "Giao dịch thất bại, vui lòng thử lại!", null));
+                        e.getMessage() != null ? e.getMessage() : "Giao dịch thất bại, vui lòng thử lại!", null));
             }
         });
     }
@@ -221,10 +221,21 @@ public class AuctionRoom {
      */
     public void closeRoom(Integer winnerId, double finalPrice) {
         roomQueueProcessor.submit(() -> {
-            // Payload: Object[] {auctionId, finalPrice, winnerId}
-            Object[] endPayload = {auctionId, finalPrice, winnerId};
-            String endMessage = winnerId != null
-                    ? String.format("🏆 Phiên kết thúc! Người thắng: User#%d với giá %,.0f đ", winnerId, finalPrice)
+            // [ĐÃ SỬA] Payload: Object[] {auctionId, winnerUsername, finalPrice}
+            // Phải đúng thứ tự như AuctionRoomController.handleAuctionEnded và ItemCardController.handleAuctionEndedNotification mong đợi
+            String winnerUsername = null;
+            if (winnerId != null && winnerId > 0) {
+                try {
+                    User winner = userDAO.getUserById(winnerId);
+                    if (winner != null) winnerUsername = winner.getUsername();
+                } catch (Exception e) {
+                    winnerUsername = "User#" + winnerId;
+                }
+            }
+
+            Object[] endPayload = {auctionId, winnerUsername, finalPrice};
+            String endMessage = winnerUsername != null
+                    ? String.format("🏆 Phiên kết thúc! Người thắng: %s với giá %,.0f đ", winnerUsername, finalPrice)
                     : "⛔ Phiên kết thúc mà không có người thắng.";
             broadcastToAll(new Message(ResponseCode.AUCTION_ENDED, endMessage, endPayload));
             System.out.println("[ROOM-" + auctionId + "] Đã broadcast AUCTION_ENDED.");

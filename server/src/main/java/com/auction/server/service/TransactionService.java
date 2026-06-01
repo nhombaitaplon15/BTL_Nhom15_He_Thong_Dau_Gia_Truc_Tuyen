@@ -194,4 +194,21 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Từ chối giao dịch thất bại!");
         }
     }
+
+    /** Lấy danh sách lịch sử giao dịch của một user cụ thể */
+    public java.util.List<com.auction.common.model.TransactionRequest> getTransactionsByUser(int userId) {
+        return transDAO.getTransactionsByUserId(userId);
+    }
+
+    /**
+     * Tính tổng tiền đang bị tạm giữ (escrow) của user
+     * = tổng bid amount ở các phiên user đang dẫn đầu (RUNNING auctions)
+     */
+    public double getUserEscrowAmount(int userId) {
+        try {
+            return transDAO.getUserEscrowAmount(userId);
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
 }

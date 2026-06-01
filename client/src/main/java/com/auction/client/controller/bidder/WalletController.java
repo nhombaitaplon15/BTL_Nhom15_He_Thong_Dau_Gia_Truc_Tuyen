@@ -1,6 +1,8 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.User;
-import com.auction.server.service.TransactionService;
+import com.auction.common.network.RequestCode;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,15 +17,13 @@ import java.text.DecimalFormat;
 
 public class WalletController {
 
-    private final TransactionService transactionService = new TransactionService(null);
     private User currentUser;
+    private boolean isDeposit = true;
 
-    // 🌟 ĐÃ ĐỒNG BỘ CHÍNH XÁC ID THEO FILE FXML CỦA EM
-    @FXML private Button btnTabDeposit;   // Khớp hoàn toàn với fx:id="btnTabDeposit"
-    @FXML private Button btnTabWithdraw;  // Khớp hoàn toàn với fx:id="btnTabWithdraw"
-    @FXML private Button btnSubmit;       // Khớp hoàn toàn với fx:id="btnSubmit"
-    @FXML private Label lblLargeBalance;  // Khớp hoàn toàn với fx:id="lblLargeBalance"
-
+    @FXML private Button btnTabDeposit;
+    @FXML private Button btnTabWithdraw;
+    @FXML private Button btnSubmit;
+    @FXML private Label lblLargeBalance;
     @FXML private TextField txtAmount;
     @FXML private TextField txtNote;
 
@@ -103,35 +103,27 @@ public class WalletController {
             String actionTypeText = btnSubmit.getText();
 
             if (actionTypeText.contains("Nạp")) {
-                transactionService.handleDepositRequest(currentUser, amount);
+                // Gửi request nạp tiền qua Socket đến Server
+                SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu NẠP TIỀN đã được gửi, chờ Admin duyệt!");
                 txtAmount.clear();
                 if (txtNote != null) txtNote.clear();
-            }
-            else if (actionTypeText.contains("Rút")) {
-                // Kiểm tra số dư
+            } else if (actionTypeText.contains("Rút")) {
                 if (currentUser.getBalance() < amount) {
-
-                    showAlert(
-                            Alert.AlertType.ERROR,
-                            "Giao dịch thất bại",
-                            "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!"
-                    );
-
+                    showAlert(Alert.AlertType.ERROR, "Giao dịch thất bại", "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!");
                     return;
                 }
-                // Lấy thông tin ngân hàng từ ô ghi chú
-                String bankInfo = txtNote.getText().trim();
+                String bankInfo = (txtNote != null) ? txtNote.getText().trim() : "";
                 if (bankInfo.isEmpty()) {
                     showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập thông tin ngân hàng để rút tiền!");
                     return;
                 }
-                transactionService.handleWithdrawRequest(currentUser, amount, bankInfo);
+                // Gửi request rút tiền qua Socket đến Server
+                SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu RÚT TIỀN đã được gửi, chờ Admin duyệt!");
                 txtAmount.clear();
-                if (txtNote != null) {txtNote.clear();}
+                if (txtNote != null) txtNote.clear();
             }
-
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", "Số tiền nhập vào phải là số hợp lệ!");
         } catch (Exception e) {

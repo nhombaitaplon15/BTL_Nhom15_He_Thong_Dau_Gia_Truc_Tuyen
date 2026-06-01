@@ -2,6 +2,7 @@ package com.auction.server.core;
 
 import com.auction.common.exception.AuctionException;
 import com.auction.common.model.Auction;
+import com.auction.common.model.BiddingHistory;
 import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
@@ -67,6 +68,8 @@ public class RequestDispatcher {
                 case DEPOSIT_REQUEST:  handleDeposit(client, request);         break;
                 case WITHDRAW_REQUEST: handleWithdraw(client, request);        break;
                 case GET_PROFILE:      handleGetProfile(client);               break;
+                case GET_WALLET_INFO:  handleGetWalletInfo(client);            break;
+                case FETCH_TRANSACTION_HISTORY: handleFetchTransactionHistory(client); break;
                 case UPDATE_PROFILE:   handleUpdateProfile(client, request);   break;
                 case CHANGE_PASSWORD:  handleChangePassword(client, request);  break;
                 case REPORT_ISSUE:     handleReportIssue(client, request);     break;
@@ -160,9 +163,11 @@ public class RequestDispatcher {
     private void handleFetchItems(ClientHandler client, Message request) {
         try {
             String category = (String) request.getPayload();
-            List<Item> items = itemService.getItemsByType(category);
-            client.sendMessage(new Message(ResponseCode.FETCH_ITEMS_RESULT, "OK", items));
+            // Lấy các phiên đang RUNNING theo danh mục, kèm Item đã được nạp đầy đủ
+            List<Auction> auctions = managerService.getLiveAuctionsByCategory(category);
+            client.sendMessage(new Message(ResponseCode.FETCH_ITEMS_RESULT, "OK", (java.io.Serializable) auctions));
         } catch (Exception e) {
+            System.err.println("[DISPATCHER] Lỗi handleFetchItems: " + e.getMessage());
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách sản phẩm", null));
         }
     }
@@ -175,20 +180,35 @@ public class RequestDispatcher {
             AuctionRoom room = AuctionRoomManager.getInstance().getRoom(roomId);
 
             if (room != null) {
-                // 2. Client chính thức gia nhập danh sách nhận thông báo Real-time công khai
+                // 2. Client chính thức gia nhập danh sách nhận thông báo Real-time
                 room.joinRoom(client);
 
-                // 3. [TÂM ĐIỂM FIX]: Gọi ManagerService lấy Full thông tin Auction, Item và lịch sử đặt giá từ DB
+                // 3. Lấy Full thông tin Auction từ DB
                 Auction fullAuction = this.managerService.getAuctionOrThrow(roomId);
 
-                // Đồng bộ mức giá mới nhất từ RAM vào Object trước khi gửi về Client render giao diện
+                // 4. Load Item vào Auction (quan trọng để hiển thị tên, ảnh, thuộc tính sản phẩm)
+                try {
+                    com.auction.common.model.Item item = itemService.getItemById(fullAuction.getItemId());
+                    fullAuction.setItem(item);
+                } catch (Exception e) {
+                    System.err.println("[DISPATCHER] Không load được Item cho phiên #" + roomId);
+                }
+
+                // 5. Load lịch sử đặt giá (để hiển thị ngay khi vào phòng)
+                try {
+                    List<BiddingHistory> bids = biddingService.getAuctionBids(roomId);
+                    fullAuction.setBids(bids);
+                } catch (Exception e) {
+                    System.err.println("[DISPATCHER] Không load được lịch sử bid cho phiên #" + roomId);
+                }
+
+                // 6. Đồng bộ mức giá mới nhất từ RAM
                 fullAuction.setCurrentPrice(room.getCurrentPrice());
 
-                // 4. Gửi gói tin thành công kèm Payload là Object Auction đúng như Client mong đợi
+                // 7. Gửi gói tin thành công kèm full data
                 client.sendMessage(new Message(ResponseCode.ROOM_JOIN_SUCCESS, "Đã vào phòng thành công!", fullAuction));
-                System.out.println("[DISPATCHER] User#" + client.getLoggedInUserId() + " vào phòng #" + roomId + " thành công. Đã nạp đầy đủ dữ liệu.");
+                System.out.println("[DISPATCHER] User#" + client.getLoggedInUserId() + " vào phòng #" + roomId + " thành công.");
             } else {
-                // Phòng chưa được kích hoạt trên RAM hoặc đã kết thúc
                 client.sendMessage(new Message(ResponseCode.ROOM_JOIN_FAILED, "Phòng đấu giá hiện không tồn tại hoặc đã khép lại!", null));
             }
         } catch (Exception e) {
@@ -280,6 +300,38 @@ public class RequestDispatcher {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được thông tin", null));
         }
     }
+
+    private void handleGetWalletInfo(ClientHandler client) {
+        try {
+            Integer userId = client.getLoggedInUserId();
+            if (userId == null) return;
+            User user = userService.getUserById(userId);
+            if (user == null) return;
+
+            // Tính tổng tiền tạm giữ (escrow) của user = tổng các bid đang dẫn đầu
+            double escrow = transactionService.getUserEscrowAmount(userId);
+
+            java.util.HashMap<String, Double> walletData = new java.util.HashMap<>();
+            walletData.put("balance", user.getBalance());
+            walletData.put("escrow", escrow);
+
+            client.sendMessage(new Message(ResponseCode.WALLET_UPDATE_RESULT, "OK", walletData));
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi lấy ví: " + e.getMessage(), null));
+        }
+    }
+
+    private void handleFetchTransactionHistory(ClientHandler client) {
+        try {
+            Integer userId = client.getLoggedInUserId();
+            if (userId == null) return;
+            List<TransactionRequest> txList = transactionService.getTransactionsByUser(userId);
+            client.sendMessage(new Message(ResponseCode.TRANSACTION_HISTORY_RESULT, "OK", (java.io.Serializable) txList));
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi lấy lịch sử giao dịch: " + e.getMessage(), null));
+        }
+    }
+
 
     private void handleUpdateProfile(ClientHandler client, Message request) {
         try {

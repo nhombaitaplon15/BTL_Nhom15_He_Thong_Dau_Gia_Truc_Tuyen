@@ -123,7 +123,13 @@ public class AuctionRoomController {
         Platform.runLater(() -> {
             try {
                 Object[] payload = (Object[]) message.getPayload();
-                int auctionId = (Integer) payload[0];
+                // Payload: {auctionId, winnerUsername (String|null), finalPrice}
+                int auctionId;
+                if (payload[0] instanceof Integer) {
+                    auctionId = (Integer) payload[0];
+                } else {
+                    return;
+                }
                 if (currentAuction == null || currentAuction.getAuctionId() != auctionId) return;
 
                 if (countdownTimeline != null) countdownTimeline.stop();
@@ -131,8 +137,22 @@ public class AuctionRoomController {
                 lblCountdown.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 24px;");
                 btnPlaceBid.setDisable(true);
                 txtBidAmount.setDisable(true);
-                showAlert("Kết thúc", "Phiên đấu giá đã khép lại!", Alert.AlertType.INFORMATION);
-            } catch (Exception e) {}
+
+                String winnerUsername = payload.length > 1 && payload[1] != null ? (String) payload[1] : null;
+                double finalPrice = payload.length > 2 ? ((Number) payload[2]).doubleValue() : 0;
+
+                String msg;
+                if (winnerUsername != null && currentUser != null && winnerUsername.equals(currentUser.getUsername())) {
+                    msg = "🎉 CHÚC MỪNG! Bạn đã THẮNG phiên đấu giá với mức " + String.format("%,.0f UETệ", finalPrice);
+                } else if (winnerUsername != null) {
+                    msg = "Phiên đã kết thúc! Người thắng: " + winnerUsername + " với giá " + String.format("%,.0f UETệ", finalPrice);
+                } else {
+                    msg = "Phiên đấu giá đã kết thúc mà không có ai đặt giá.";
+                }
+                showAlert("Kết thúc", msg, Alert.AlertType.INFORMATION);
+            } catch (Exception e) {
+                System.err.println("[ROOM] Lỗi handleAuctionEnded: " + e.getMessage());
+            }
         });
     }
 
@@ -178,6 +198,7 @@ public class AuctionRoomController {
         router.unregister(ResponseCode.AUCTION_TIME_EXTENDED);
         router.unregister(ResponseCode.AUCTION_ENDED);
         router.unregister(ResponseCode.PROFILE_RESULT);
+        router.unregister(ResponseCode.ROOM_JOIN_FAILED);
 
         Stage stage = (Stage) lblProductName.getScene().getWindow();
         stage.close();

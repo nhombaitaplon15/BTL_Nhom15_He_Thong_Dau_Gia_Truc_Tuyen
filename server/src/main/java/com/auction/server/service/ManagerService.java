@@ -58,6 +58,24 @@ public class ManagerService {
         return auctionDAO.getAuctionsBySeller(sellerId);
     }
 
+    /**
+     * Lấy danh sách phiên đấu giá đang RUNNING theo danh mục, kèm Item đã được nạp đầy đủ.
+     * Dùng cho trang chủ Bidder - hiển thị thẻ sản phẩm.
+     */
+    public List<Auction> getLiveAuctionsByCategory(String category) {
+        List<Auction> auctions = auctionDAO.getLiveAuctionsByCategory(category);
+        // Nạp Item vào mỗi Auction để client không cần gọi thêm request
+        for (Auction auction : auctions) {
+            try {
+                com.auction.common.model.Item item = itemService.getItemById(auction.getItemId());
+                auction.setItem(item);
+            } catch (Exception e) {
+                System.err.println("[MANAGER] Không load được item cho auction #" + auction.getAuctionId());
+            }
+        }
+        return auctions;
+    }
+
 
     public Auction getAuctionOrThrow(int auctionId) {
         Auction auction = auctionDAO.getAuctionById(auctionId);
@@ -76,17 +94,17 @@ public class ManagerService {
 
         // ĐÃ FIX Ở ĐÂY: Sử dụng trực tiếp tham số 'itemId' thay vì gọi 'item.getId()' đang bị trả về 0
         Auction auction = new Auction(
-            0,
-            itemId,              // <-- Fix: Tránh được lỗi vi phạm khóa ngoại
-            item.getSellerId(),
-            "WAITING_FOR_ADMIN",
-            item.getStartingPrice(),
-            item.getStartingPrice(),
-            0,
-            null,
-            startTime,
-            endTime,
-            LocalDateTime.now()
+                0,
+                itemId,              // <-- Fix: Tránh được lỗi vi phạm khóa ngoại
+                item.getSellerId(),
+                "WAITING_FOR_ADMIN",
+                item.getStartingPrice(),
+                item.getStartingPrice(),
+                0,
+                null,
+                startTime,
+                endTime,
+                LocalDateTime.now()
         );
 
         if (!auctionDAO.insertAuction(auction)) {
@@ -121,7 +139,7 @@ public class ManagerService {
         Auction a = getAuctionOrThrow(id);
         if (!from.equals(a.getAuctionStatus())) {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
-                "Trạng thái hiện tại không hợp lệ. Cần: " + from);
+                    "Trạng thái hiện tại không hợp lệ. Cần: " + from);
         }
         auctionDAO.updateStatus(id, to);
     }
@@ -141,7 +159,7 @@ public class ManagerService {
                         if (!now.isBefore(auction.getStartTime())) {
                             auctionDAO.updateStatus(auction.getAuctionId(), "RUNNING");
                             AuctionRoomManager.getInstance().createRoom(
-                                auction.getAuctionId(), auction.getCurrentPrice());
+                                    auction.getAuctionId(), auction.getCurrentPrice());
                             System.out.println("[AUTO-BOT] Phiên " + auction.getAuctionId() + " -> RUNNING");
                         }
                     }
@@ -151,7 +169,7 @@ public class ManagerService {
                     for (Auction auction : activeAuctions) {
                         if (now.isAfter(auction.getEndTime())) {
                             String finalStatus = (auction.getCurrentWinnerId() != null
-                                && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
+                                    && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
                             auctionDAO.updateStatus(auction.getAuctionId(), finalStatus);
                             System.out.println("[AUTO-BOT] Hết giờ! Phiên " + auction.getAuctionId() + " -> " + finalStatus);
 
