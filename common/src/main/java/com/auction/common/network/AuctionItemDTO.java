@@ -1,4 +1,4 @@
-package com.auction.server.core;
+package com.auction.common.network;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;

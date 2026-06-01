@@ -554,7 +554,7 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
             else if (ctrl instanceof The_Home_Page_Admin_View_Controller c) c.setUserData(currentUser);
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setMaximized(true);
+            // KHÔNG setMaximized → giữ nguyên kích thước
             stage.show();
         } catch (Exception e) { e.printStackTrace(); }
     }

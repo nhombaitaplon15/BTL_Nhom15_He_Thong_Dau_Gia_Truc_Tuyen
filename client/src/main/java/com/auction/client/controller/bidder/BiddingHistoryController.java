@@ -214,7 +214,7 @@ public class BiddingHistoryController implements Initializable {
                 stage.setTitle("Elite Auction - Sàn Đấu Giá");
                 stage.show();
             } else {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
                 Parent root = loader.load();
                 The_Home_Page_Bidder_View_Controller homeController = loader.getController();
 
@@ -237,7 +237,7 @@ public class BiddingHistoryController implements Initializable {
             return;
         }
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ReportIssueView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ReportIssueView.fxml"));
             Parent root = loader.load();
             ReportIssueController dialogController = loader.getController();
             if (dialogController != null) dialogController.setIssueData(selected, this.currentUser);
@@ -257,7 +257,7 @@ public class BiddingHistoryController implements Initializable {
             return;
         }
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionDetailView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/AuctionDetailView.fxml"));
             Parent root = loader.load();
             AuctionDetailController detailController = loader.getController();
             if (detailController != null) {

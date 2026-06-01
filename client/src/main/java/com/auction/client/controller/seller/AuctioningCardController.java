@@ -2,7 +2,7 @@ package com.auction.client.controller.seller;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;

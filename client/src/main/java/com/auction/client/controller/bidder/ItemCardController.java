@@ -237,7 +237,7 @@ public class ItemCardController {
         }
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionRoomView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/AuctionRoomView.fxml"));
             Parent root = loader.load();
 
             AuctionRoomController roomController = loader.getController();

@@ -6,7 +6,7 @@ import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;

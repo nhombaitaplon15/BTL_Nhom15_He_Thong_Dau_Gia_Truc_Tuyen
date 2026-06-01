@@ -4,7 +4,7 @@ import com.auction.common.factory.ItemFactory;
 import com.auction.common.model.Auction;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.BiddingHistory;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 
 import java.sql.*;
 import java.time.LocalDateTime;

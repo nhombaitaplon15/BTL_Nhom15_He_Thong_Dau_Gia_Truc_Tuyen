@@ -439,7 +439,7 @@ public class The_Home_Page_Admin_View_Controller {
             else if (controller instanceof The_Transaction_Page_Admin_View_Controller c) c.setUserData(currentUser);
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setMaximized(true);
+            // KHÔNG setMaximized → giữ nguyên kích thước cửa sổ hiện tại
             stage.show();
         } catch (Exception e) {e.printStackTrace();}
     }

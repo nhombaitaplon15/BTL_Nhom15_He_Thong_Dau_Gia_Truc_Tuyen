@@ -7,7 +7,7 @@ import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 import com.auction.server.dao.BidDAO.BidRow;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;

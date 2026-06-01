@@ -49,7 +49,7 @@ public class ProfileController {
     @FXML
     void handleChangePassword(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/bidder/ChangePasswordView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ChangePasswordView.fxml"));
             Parent root = loader.load();
 
             ChangePasswordController controller = loader.getController();
@@ -68,7 +68,7 @@ public class ProfileController {
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 
             The_Home_Page_Bidder_View_Controller home = loader.getController();

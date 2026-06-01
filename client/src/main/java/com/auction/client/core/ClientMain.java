@@ -30,8 +30,12 @@ public class ClientMain extends Application {
 
             Scene scene = new Scene(root, 1280, 720);
             primaryStage.setTitle("Elite Auction - Hệ Thống Đấu Giá Trực Tuyến");
+            primaryStage.setMinWidth(1000);
+            primaryStage.setMinHeight(680);
+            primaryStage.setWidth(1280);
+            primaryStage.setHeight(720);
+            primaryStage.centerOnScreen();
             primaryStage.setScene(scene);
-            primaryStage.setMaximized(true);
 
             // 3. Ngắt kết nối Socket khi đóng app (Graceful shutdown)
             primaryStage.setOnCloseRequest(e -> {

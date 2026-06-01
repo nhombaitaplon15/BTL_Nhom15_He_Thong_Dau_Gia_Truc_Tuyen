@@ -112,10 +112,10 @@ public class AdminService {
         }
         String status = auction.getAuctionStatus();
         // Chỉ cho phép block phiên đang OPEN hoặc RUNNING
-        if (!"OPEN".equals(status) && !"RUNNING".equals(status) && !"WAITING_FOR_ADMIN".equals(status)) {
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status)) {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
                     "Không thể chặn phiên ở trạng thái: " + status
-                            + ". Chỉ có thể chặn phiên đang WAITING_FOR_ADMIN, OPEN hoặc RUNNING.");
+                            + ". Chỉ có thể chặn phiên đang OPEN hoặc RUNNING.");
         }
         try {
             auctionDAO.updateStatus(auctionId, "BLOCKED");

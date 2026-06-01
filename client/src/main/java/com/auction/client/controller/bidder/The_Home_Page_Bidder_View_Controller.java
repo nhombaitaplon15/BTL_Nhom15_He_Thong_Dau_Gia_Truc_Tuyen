@@ -124,14 +124,14 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML
     void handleNavTransactionHistory(ActionEvent event) {
         clearActiveTimers();
-        switchSceneWithUser(event, "/view/bidder/TransactionHistoryView.fxml", "Elite Auction - Lịch Sử Giao Dịch", 1);
+        switchSceneWithUser(event, "/view/view/bidder/TransactionHistoryView.fxml", "Elite Auction - Lịch Sử Giao Dịch", 1);
     }
 
     @FXML
     void handleNavDepositWithdraw(ActionEvent event) {
         clearActiveTimers();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/bidder/DepositWithdrawView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/DepositWithdrawView.fxml"));
             Parent root = loader.load();
             WalletController walletController = loader.getController();
             if (walletController != null) {
@@ -146,7 +146,7 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML
     void handleNavProfile(ActionEvent event) {
         clearActiveTimers();
-        switchSceneWithUser(event, "/view/bidder/ProfileView.fxml", "Elite Auction - Hồ Sơ Cá Nhân", 3);
+        switchSceneWithUser(event, "/view/view/bidder/ProfileView.fxml", "Elite Auction - Hồ Sơ Cá Nhân", 3);
     }
 
     @FXML
@@ -159,7 +159,7 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML
     void handleNavBidHistory(ActionEvent event) {
         clearActiveTimers();
-        switchSceneWithUser(event, "/view/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5);
+        switchSceneWithUser(event, "/view/view/bidder/BiddingHistoryView.fxml", "Elite Auction - Lịch Sử Đặt Giá", 5);
     }
 
     @FXML void handleSearch(ActionEvent event) { System.out.println("Tìm kiếm"); }
@@ -169,7 +169,7 @@ public class The_Home_Page_Bidder_View_Controller {
     void handleLogout(ActionEvent event) {
         clearActiveTimers();
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/LoginView.fxml"));
+            Parent root = FXMLLoader.load(getClass().getResource("/view/view/bidder/LoginView.fxml"));
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.show();
@@ -266,7 +266,7 @@ public class The_Home_Page_Bidder_View_Controller {
                                 if (item != null) {
                                     hasItems = true;
 
-                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/ItemCard.fxml"));
+                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ItemCard.fxml"));
                                     Parent itemCard = loader.load();
 
                                     ItemCardController cardController = loader.getController();

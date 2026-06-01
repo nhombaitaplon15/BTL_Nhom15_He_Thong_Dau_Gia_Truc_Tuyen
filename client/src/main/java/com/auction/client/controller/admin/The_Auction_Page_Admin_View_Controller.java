@@ -154,19 +154,36 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         MessageRouter.getInstance().register(ResponseCode.ADMIN_REJECT_SUCCESS,  msg -> onActionSuccess(msg, "từ chối"));
         MessageRouter.getInstance().register(ResponseCode.ADMIN_REJECT_FAILED,   msg -> onActionFailed(msg));
 
-        // [SỬA] BLOCK_SUCCESS → xóa row khỏi bảng ngay lập tức (realtime)
+        // [SỬA] BLOCK_SUCCESS → đổi trạng thái thành BLOCKED ngay trên UI,
+        //        KHÔNG xóa khỏi bảng. Server sẽ schedule xóa sau 5 phút.
         MessageRouter.getInstance().register(ResponseCode.ADMIN_BLOCK_SUCCESS, msg -> {
             Platform.runLater(() -> {
                 Object payload = msg.getPayload();
                 if (payload instanceof Integer blockedId) {
-                    // Xóa khỏi allAuctionList và cập nhật trạng thái nếu cần
-                    allAuctionList.removeIf(ac -> ac.getAuctionId() == blockedId);
-                    applyFilter(); // refresh filtered list
-                    setStatus("🚫 Đã chặn phiên #" + blockedId + " — đã xóa khỏi bảng ngay lập tức.");
+                    // Cập nhật trạng thái thành BLOCKED trong danh sách (không xóa)
+                    allAuctionList.stream()
+                            .filter(ac -> ac.getAuctionId() == blockedId)
+                            .findFirst()
+                            .ifPresent(ac -> ac.setAuctionStatus("BLOCKED"));
+                    applyFilter(); // refresh để badge BLOCKED hiển thị
+                    auctionTable.refresh(); // force redraw cells
+                    setStatus("🚫 Phiên #" + blockedId + " đã bị CHẶN — sẽ tự xóa khỏi bảng sau 5 phút.");
                 } else {
-                    // Fallback: reload toàn bộ nếu không parse được ID
                     loadAuctions();
                     setStatus("🚫 Chặn phiên thành công!");
+                }
+            });
+        });
+
+        // [THÊM] ADMIN_DELETE_BLOCKED_SUCCESS → xóa row khỏi bảng sau khi server
+        //        đã xóa DB (gửi về sau 5 phút kể từ lúc block)
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS, msg -> {
+            Platform.runLater(() -> {
+                Object payload = msg.getPayload();
+                if (payload instanceof Integer deletedId) {
+                    allAuctionList.removeIf(ac -> ac.getAuctionId() == deletedId);
+                    applyFilter();
+                    setStatus("🗑 Phiên #" + deletedId + " đã được xóa hoàn toàn khỏi hệ thống.");
                 }
             });
         });
@@ -359,21 +376,21 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                     });
                 });
 
-                // [SỬA] btnBlock → gửi request BLOCK, sau khi nhận ADMIN_BLOCK_SUCCESS
-                //        row sẽ bị xóa khỏi bảng ngay lập tức (xử lý trong registerRealtimeHandlers)
+                // [SỬA] btnBlock → đổi trạng thái thành BLOCKED ngay trên UI (optimistic),
+                //        server sẽ schedule xóa DB sau 5 phút rồi broadcast ADMIN_DELETE_BLOCKED_SUCCESS
                 btnBlock.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                             "🚫 CHẶN KHẨN CẤP phiên #" + ac.getAuctionId()
-                                    + "?\nHành động này sẽ đóng phiên và xóa khỏi bảng ngay lập tức!",
+                                    + "?\nPhiên sẽ bị đánh dấu BLOCKED ngay lập tức.\nSau 5 phút sẽ tự động xóa hoàn toàn khỏi hệ thống.",
                             ButtonType.YES, ButtonType.NO);
                     confirm.setTitle("Xác nhận Chặn");
                     confirm.showAndWait().ifPresent(btn -> {
                         if (btn == ButtonType.YES) {
-                            // Xóa khỏi local list ngay lập tức (optimistic update)
-                            allAuctionList.remove(ac);
-                            applyFilter();
+                            // Optimistic update: đổi trạng thái BLOCKED ngay trên RAM (không xóa)
+                            ac.setAuctionStatus("BLOCKED");
+                            auctionTable.refresh();
                             setStatus("⏳ Đang chặn phiên #" + ac.getAuctionId() + "...");
                             SocketClient.getInstance().sendRequest(RequestCode.ADMIN_BLOCK_AUCTION, ac.getAuctionId());
                         }
@@ -411,11 +428,14 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 container.getChildren().clear();
                 container.getChildren().add(btnInfo);
                 switch (status != null ? status : "") {
-                    case "WAITING_FOR_ADMIN" -> container.getChildren().addAll(btnApprove, btnReject, btnBlock);
+                    // WAITING_FOR_ADMIN: chỉ Duyệt + Từ chối (KHÔNG có Chặn)
+                    case "WAITING_FOR_ADMIN" -> container.getChildren().addAll(btnApprove, btnReject);
+                    // OPEN: chỉ Chặn
                     case "OPEN"              -> container.getChildren().add(btnBlock);
+                    // RUNNING: Chặn + Giao dịch
                     case "RUNNING"           -> container.getChildren().addAll(btnBlock, btnTransaction);
                     case "CLOSED", "FINISHED", "SOLD", "ENDED" -> container.getChildren().add(btnTransaction);
-                    // BLOCKED, REJECTED: chỉ hiện Xem
+                    // BLOCKED, REJECTED: chỉ hiện Xem (không có action nào thêm)
                 }
                 setGraphic(container);
             }

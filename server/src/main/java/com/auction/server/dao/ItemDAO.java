@@ -2,7 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.common.model.*;
 import com.auction.common.factory.ItemFactory;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 
 import java.sql.*;
 import java.util.ArrayList;

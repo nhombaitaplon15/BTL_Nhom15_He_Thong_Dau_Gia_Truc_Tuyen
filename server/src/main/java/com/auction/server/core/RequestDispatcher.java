@@ -6,6 +6,7 @@ import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.*;
+import com.auction.common.network.AuctionItemDTO;
 import com.auction.server.service.AdminService;
 import com.auction.server.service.BiddingService;
 import com.auction.server.service.ItemService;
@@ -13,6 +14,8 @@ import com.auction.server.service.ManagerService;
 import com.auction.server.service.SellerService;
 import com.auction.server.service.TransactionService;
 import com.auction.server.service.UserService;
+import com.auction.server.core.ClientHandler;
+import com.auction.server.core.AuctionRoomManager;
 
 import java.util.List;
 
@@ -338,7 +341,7 @@ public class RequestDispatcher {
         }
     }
 
-//    private void handleSellerGetMyAuctions(ClientHandler client) {
+    //    private void handleSellerGetMyAuctions(ClientHandler client) {
 //        try {
 //            Integer sellerId = client.getLoggedInUserId();
 //            List<Auction> auctions = managerService.getAuctionsBySeller(sellerId);
@@ -353,7 +356,7 @@ public class RequestDispatcher {
 
             // ĐÃ SỬA: Dùng hàm getAuctionItemsBySeller mới viết để lấy List kết hợp
             List<AuctionItemDTO> combinedAuctions =
-                managerService.getAuctionItemsBySeller(sellerId);
+                    managerService.getAuctionItemsBySeller(sellerId);
 
             // Gửi cục data mới này về cho Client
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", combinedAuctions));
@@ -484,13 +487,42 @@ public class RequestDispatcher {
             } else {
                 auctionId = (Integer) payload;
             }
-            boolean success = adminService.blockAuction(auctionId, reason);
+            final int finalAuctionId = auctionId;
+            final String finalReason = reason;
+
+            boolean success = adminService.blockAuction(finalAuctionId, finalReason);
             if (success) {
+                // 1. Phản hồi ngay cho Admin: BLOCK_SUCCESS
                 client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_SUCCESS,
-                        "Đã phong tỏa phiên #" + auctionId + (reason.isEmpty() ? "" : " | Lý do: " + reason),
-                        auctionId));
-                // Đóng phòng đấu giá, broadcast kết thúc tới tất cả viewer
-                AuctionRoomManager.getInstance().closeRoom(auctionId);
+                        "Đã phong tỏa phiên #" + finalAuctionId
+                                + (finalReason.isEmpty() ? "" : " | Lý do: " + finalReason),
+                        finalAuctionId));
+
+                // 2. Đóng phòng realtime (kick bidder ra)
+                AuctionRoomManager.getInstance().closeRoom(finalAuctionId);
+
+                // 3. Schedule xóa DB sau 5 phút (300_000 ms), sau đó broadcast xóa tới tất cả Admin
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+                    try {
+                        boolean deleted = adminService.deleteBlockedAuction(finalAuctionId);
+                        if (deleted) {
+                            // Broadcast tới tất cả Admin: xóa row khỏi UI
+                            Message deleteMsg = new Message(
+                                    ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS,
+                                    "Phiên BLOCKED #" + finalAuctionId + " đã bị xóa hoàn toàn sau 5 phút.",
+                                    finalAuctionId
+                            );
+                            SessionManager.getInstance().broadcastToAdmins(deleteMsg);
+                            System.out.println("[DISPATCHER] ✅ Đã xóa phiên BLOCKED #" + finalAuctionId
+                                    + " sau 5 phút và broadcast tới Admin.");
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("[DISPATCHER] Lỗi khi xóa phiên BLOCKED theo schedule: " + ex.getMessage());
+                    }
+                }, 5, java.util.concurrent.TimeUnit.MINUTES);
+
+                System.out.println("[DISPATCHER] Phiên #" + finalAuctionId
+                        + " đã bị BLOCK. Đã lên lịch xóa DB sau 5 phút.");
             } else {
                 client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_FAILED, "Không thể phong tỏa", null));
             }

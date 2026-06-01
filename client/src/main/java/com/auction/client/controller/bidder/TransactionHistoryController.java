@@ -71,7 +71,7 @@ public class TransactionHistoryController {
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 
             The_Home_Page_Bidder_View_Controller home = loader.getController();

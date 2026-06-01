@@ -8,7 +8,7 @@ import com.auction.common.exception.ErrorCode ;
 import com.auction.server.core.AuctionRoom;
 import com.auction.server.core.AuctionRoomManager;
 import com.auction.server.dao.AuctionDAO ;
-import com.auction.server.core.AuctionItemDTO;
+import com.auction.common.network.AuctionItemDTO;
 import com.auction.server.dao.UserDAO ;
 
 import java.time.LocalDateTime;
