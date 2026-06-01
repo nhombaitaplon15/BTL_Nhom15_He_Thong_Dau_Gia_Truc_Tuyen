@@ -24,25 +24,17 @@ public class MainContainerController implements Initializable {
     @FXML private Button btnMenuLive;
     @FXML private Button btnMenuHistory;
 
-    // 🔥 THÊM: Biến lưu trữ thông tin User toàn cục cho toàn bộ các màn hình con
     private User currentUser;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // XÓA DÒNG setPage Ở ĐÂY.
-        // Chúng ta sẽ nạp trang Sàn Đấu Giá SAU KHI nhận được thông tin User từ màn hình Login.
         if (lblAccountName != null) lblAccountName.setText("Đang tải...");
         if (lblBalance != null) lblBalance.setText("0 đ");
     }
 
-    /**
-     * 🔥 HÀM MỚI: Bơm dữ liệu User từ màn hình Login sang đây.
-     * Cập nhật thông tin lên Sidebar màu xanh, sau đó mới nạp giao diện con.
-     */
     public void setUserData(User user) {
         this.currentUser = user;
 
-        // Render thông tin lên Sidebar
         if (lblAccountName != null) {
             String displayName = (user.getUsername() != null && !user.getUsername().trim().isEmpty())
                     ? user.getUsername()
@@ -54,13 +46,9 @@ public class MainContainerController implements Initializable {
             lblBalance.setText(String.format("%,.0f đ", user.getBalance()));
         }
 
-        // BÂY GIỜ mới tự động hiển thị trang Sàn Đấu Giá
         setPage("/view/view/bidder/The_Home_Page_Bidder_View.fxml");
     }
 
-    /**
-     * 🔥 HÀM MỚI: Gọi hàm này từ các controller con khi User nạp tiền, rút tiền hoặc bị trừ tiền cọc.
-     */
     public void updateBalance(double newBalance) {
         if (this.currentUser != null) {
             this.currentUser.setBalance(newBalance);
@@ -77,13 +65,16 @@ public class MainContainerController implements Initializable {
 
             Object childController = loader.getController();
 
-            // Ép kiểu và truyền dữ liệu cho controller con
             if (childController instanceof BiddingHistoryController) {
-                ((BiddingHistoryController) childController).setMainContainer(this);
+                BiddingHistoryController historyCtrl = (BiddingHistoryController) childController;
+                historyCtrl.setMainContainer(this);
+                // FIX: Truyền user xuống để controller gửi request FETCH_BID_HISTORY lên server
+                if (this.currentUser != null) {
+                    historyCtrl.setUserData(this.currentUser);
+                }
             } else if (childController instanceof The_Home_Page_Bidder_View_Controller) {
                 The_Home_Page_Bidder_View_Controller homeCtrl = (The_Home_Page_Bidder_View_Controller) childController;
                 homeCtrl.setMainContainer(this);
-                // Truyền tiếp User xuống trang con để trang con còn gọi API
                 if (this.currentUser != null) {
                     homeCtrl.setUserData(this.currentUser);
                 }
@@ -127,27 +118,23 @@ public class MainContainerController implements Initializable {
         btnMenuHistory.setStyle("-fx-background-color: #FFFFFF; -fx-text-fill: #2563EB; -fx-background-radius: 8;");
         setPage("/view/view/bidder/BiddingHistoryView.fxml");
     }
-    // 1. Khai báo thêm 3 nút mới (Nếu em muốn làm hiệu ứng đổi màu khi click)
+
     @FXML private Button btnMenuTransaction;
     @FXML private Button btnMenuWallet;
     @FXML private Button btnMenuProfile;
 
-    // 2. Thêm 3 hàm xử lý sự kiện chuyển trang
     @FXML
     void onTransactionMenuClick(ActionEvent event) {
-        // Nạp trang Lịch Sử Giao Dịch
         setPage("/view/view/bidder/TransactionHistoryView.fxml");
     }
 
     @FXML
     void onWalletMenuClick(ActionEvent event) {
-        // Nạp trang Nạp / Rút Tiền
         setPage("/view/view/bidder/DepositWithdrawView.fxml");
     }
 
     @FXML
     void onProfileMenuClick(ActionEvent event) {
-        // Nạp trang Hồ Sơ Cá Nhân
         setPage("/view/view/bidder/ProfileView.fxml");
     }
 }
