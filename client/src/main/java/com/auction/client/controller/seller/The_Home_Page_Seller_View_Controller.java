@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.core.ClientSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +14,7 @@ public class The_Home_Page_Seller_View_Controller {
 
     @FXML
     private StackPane mainContent;
+
 
     @FXML
     public void initialize() {

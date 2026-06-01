@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
@@ -70,6 +71,7 @@ public class MyProductsController {
   private static MyProductsController instance;
   public static boolean requestOpenInsertItem = false;
 
+  int myId = ClientSession.getInstance().getUserId();
   // ================================================================
   // INITIALIZE
   // ================================================================
@@ -139,7 +141,7 @@ public class MyProductsController {
   // GỬI REQUEST LÊN SERVER
   // ================================================================
   private void refreshAll() {
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
   }
 
   // ================================================================

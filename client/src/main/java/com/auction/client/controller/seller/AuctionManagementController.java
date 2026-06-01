@@ -87,6 +87,8 @@ public class AuctionManagementController {
   private final Consumer<Message> onAuctionRejected = msg -> refreshAllData();
   private final Consumer<Message> onAuctionSold = msg -> refreshAllData();
 
+  int myId = ClientSession.getInstance().getUserId();
+
   // ════════════════════════════════════════════════════
   // INITIALIZE
   // ════════════════════════════════════════════════════
@@ -146,8 +148,8 @@ public class AuctionManagementController {
   private void refreshAllData() {
     isItemsLoaded = false;
     isAuctionsLoaded = false;
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_ITEMS, null);
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_ITEMS, myId);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
   }
 
   // ════════════════════════════════════════════════════

@@ -3,8 +3,9 @@ package com.auction.service;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.AuctionDAO;
+import com.auction.server.dao.DBConnection;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.service.AuctionService;
@@ -134,12 +135,12 @@ class AuctionServiceTest {
         void bid_validInput_failsAtDB() {
             User bidder = makeUser(2, "BIDDER", 2_000_000, 99);
             Auction auction = activeAuction(1, 99, 500_000);
-            auction.setEndTime(java.time.LocalDateTime.now().plusDays(1));
+            auction.setEndTime(LocalDateTime.now().plusDays(1));
 
-            try (org.mockito.MockedStatic<com.auction.server.dao.DatabaseConnection> mockedConnection =
-                         org.mockito.Mockito.mockStatic(com.auction.server.dao.DatabaseConnection.class)) {
+            try (MockedStatic<DBConnection> mockedConnection =
+                         org.mockito.Mockito.mockStatic(DBConnection.class)) {
 
-                mockedConnection.when(com.auction.server.dao.DatabaseConnection::connect)
+                mockedConnection.when(DBConnection::getConnection)
                         .thenThrow(new java.sql.SQLException("Cố tình làm lỗi kết nối database để test"));
 
                 AuctionException ex = assertThrows(AuctionException.class,

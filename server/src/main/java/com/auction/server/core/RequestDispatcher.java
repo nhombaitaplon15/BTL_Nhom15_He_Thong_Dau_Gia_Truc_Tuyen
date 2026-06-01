@@ -70,9 +70,9 @@ public class RequestDispatcher {
                 case REPORT_ISSUE:     handleReportIssue(client, request);     break;
 
                 // --- SELLER ---
-                case SELLER_GET_MY_ITEMS:     handleSellerGetMyItems(client);              break;
+                case SELLER_GET_MY_ITEMS:     handleSellerGetMyItems(client, request);              break;
                 case SELLER_CREATE_AUCTION:   handleSellerCreateAuction(client, request); break;
-                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client);          break;
+                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client, request);          break;
                 case SELLER_CANCEL_AUCTION:   handleSellerCancelAuction(client, request); break;
                 case SELLER_CONFIRM_SALE:     handleSellerConfirmSale(client, request);   break;
                 case SELLER_ADD_ITEM:         handleSellerAddItem(client, request); break;
@@ -297,10 +297,11 @@ public class RequestDispatcher {
     // SELLER HANDLERS
     // =========================================================
 
-    private void handleSellerGetMyItems(ClientHandler client) {
+    private void handleSellerGetMyItems(ClientHandler client,Message request) {
         try {
-            Integer userId = client.getLoggedInUserId();
-            List<Item> items = itemService.getItemsBySeller(userId);
+            //Integer userId = client.getLoggedInUserId();
+            Integer sellerId = (Integer) request.getPayload();
+            List<Item> items = itemService.getItemsBySeller(sellerId);
             client.sendMessage(new Message(ResponseCode.SELLER_ITEMS_RESULT, "OK", items));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách sản phẩm", null));
@@ -347,10 +348,10 @@ public class RequestDispatcher {
 //            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
 //        }
 //    }
-    private void handleSellerGetMyAuctions(ClientHandler client) {
+    private void handleSellerGetMyAuctions(ClientHandler client, Message request) {
         try {
-            Integer sellerId = client.getLoggedInUserId();
-
+            //Integer sellerId = client.getLoggedInUserId();
+            Integer sellerId = (Integer) request.getPayload();
             // ĐÃ SỬA: Dùng hàm getAuctionItemsBySeller mới viết để lấy List kết hợp
             List<AuctionItemDAO> combinedAuctions =
                 managerService.getAuctionItemsBySeller(sellerId);
@@ -358,6 +359,7 @@ public class RequestDispatcher {
             // Gửi cục data mới này về cho Client
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", combinedAuctions));
         } catch (Exception e) {
+            e.printStackTrace();
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
         }
     }
@@ -388,12 +390,23 @@ public class RequestDispatcher {
 
     private void handleSellerAddItem(ClientHandler client, Message request) {
         try {
+            Integer currentUserId = client.getLoggedInUserId();
+
+            // 1. Chặn lỗi ngay từ cửa nếu User chưa đăng nhập hoặc mất session
+            if (currentUserId == null) {
+                client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE,
+                    "Phiên đăng nhập đã hết hạn. Vui lòng tắt ứng dụng và đăng nhập lại!", null));
+                return; // Dừng lại luôn, không chạy code phía dưới nữa
+            }
+
+            // 2. Nếu đã có ID thì mới cho thêm sản phẩm
             Item item = (Item) request.getPayload();
-            item.setSellerId(client.getLoggedInUserId()); // Bảo mật: override sellerId
+            item.setSellerId(currentUserId);
             itemService.addItem(item);
             client.sendMessage(new Message(ResponseCode.SELLER_ITEMS_RESULT, "OK", null));
         } catch (Exception e) {
-            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, e.getMessage(), null));
+            e.printStackTrace();
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE,"Lỗi Server: " + e.getMessage(), null));
         }
     }
     private void handleSellerEditAuction(ClientHandler client, Message request) {

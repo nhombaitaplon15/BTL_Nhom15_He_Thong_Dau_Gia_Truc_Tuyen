@@ -72,6 +72,7 @@
             <!-- primaryButton: "Chi tiết" / "Sửa" / "Xem lại" — style set động -->
             <Button fx:id="primaryButton" prefHeight="35.0" prefWidth="70.0" text="" />
             <!-- deleteButton: chỉ hiện với PENDING -->
+            <Button fx:id="deleteButton" managed="false" prefHeight="35.0" prefWidth="60.0" style="-fx-background-color: #ffeef0; -fx-text-fill: #ff4d4d;                            -fx-border-color: #ffcccc; -fx-border-radius: 5;" text="Xoá" visible="false" />
         </HBox>
     </children>
 </HBox>

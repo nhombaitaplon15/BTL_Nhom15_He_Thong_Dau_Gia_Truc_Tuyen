@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
@@ -43,13 +44,15 @@ public class HomeSellerController {
   private final java.util.function.Consumer<Message> onAuctionEnded    = this::handleAuctionEnded;
   private final java.util.function.Consumer<Message> onTimeExtended    = this::handleTimeExtended;
 
+  int myId = ClientSession.getInstance().getUserId();
+
   @FXML
   public void initialize() {
     setupTableColumns();
     registerNetworkHandlers();
 
     // Lấy dữ liệu ban đầu
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
   }
 
   // ════════════════════════════════════════
@@ -165,7 +168,7 @@ public class HomeSellerController {
     Integer auctionId = (Integer) message.getPayload();
     addFeedItem("🟢 Admin vừa duyệt và mở phiên #" + auctionId);
     incrementLabel(lblActiveAuctions, 1);
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
   }
 
   private void handleAuctionSold(Message message) {

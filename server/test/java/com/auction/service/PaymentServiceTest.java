@@ -1,6 +1,6 @@
 package com.auction.service;
 
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.service.PaymentService;

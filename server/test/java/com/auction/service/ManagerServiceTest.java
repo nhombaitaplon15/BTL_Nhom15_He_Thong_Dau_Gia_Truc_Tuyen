@@ -3,7 +3,7 @@ package com.auction.service;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.service.ItemService;

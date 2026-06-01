@@ -4,7 +4,7 @@ import com.auction.common.model.Auction;
 import com.auction.common.model.Bidder;
 import com.auction.common.model.Seller;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.service.ManagerService;
 import com.auction.server.service.SellerService;

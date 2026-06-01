@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
@@ -48,6 +49,7 @@ public class ProductsTabController implements Initializable {
   private final Consumer<Message> onRejected = msg -> requestData();
   private final Consumer<Message> onSold     = msg -> requestData();
 
+  int myId = ClientSession.getInstance().getUserId();
   @Override
   public void initialize(URL location, ResourceBundle resources) {
     // init() được gọi sau khi load
@@ -96,7 +98,7 @@ public class ProductsTabController implements Initializable {
 
   private void requestData() {
     showLoading();
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
   }
 
   @SuppressWarnings("unchecked")

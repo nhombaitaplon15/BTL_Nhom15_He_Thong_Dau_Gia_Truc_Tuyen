@@ -26,13 +26,11 @@ public class AccountController {
   @FXML private HBox btnProfile;
   @FXML private HBox btnSecurity;
   @FXML private HBox btnWallet;
-  @FXML private HBox btnNotif;
   @FXML private HBox btnLogout;
 
   @FXML private ScrollPane paneProfile;
   @FXML private ScrollPane paneSecurity;
   @FXML private ScrollPane paneWallet;
-  @FXML private ScrollPane paneNotif;
   @FXML private VBox paneLogout;
 
   @FXML private Label lblAvatarInitial;
@@ -48,7 +46,6 @@ public class AccountController {
   @FXML private TextField txtEmail;
   @FXML private TextField txtPhone;
   @FXML private TextField txtRole;
-  @FXML private TextField txtStatus;
 
   @FXML private PasswordField txtCurrentPass;
   @FXML private PasswordField txtNewPass;
@@ -61,6 +58,8 @@ public class AccountController {
 
   @FXML private Button btnConfirmLogout;
   @FXML private Button btnStay;
+
+  int myId = ClientSession.getInstance().getUserId();
 
   private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -116,11 +115,11 @@ public class AccountController {
   }
 
   private void requestProfile() {
-    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
+    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
   }
 
   private void requestWalletData() {
-    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
+    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
   }
 
   @SuppressWarnings("unchecked")
@@ -180,7 +179,6 @@ public class AccountController {
     set(txtEmail, nvl(user.getEmail(), ""));
     set(txtPhone, nvl(user.getPhone(), ""));
     set(txtRole, nvl(user.getRole(), ""));
-    set(txtStatus, nvl(user.getStatus(), ""));
   }
 
   private void loadWalletUI(User user) {
@@ -285,7 +283,7 @@ public class AccountController {
   }
 
   private void switchTab(HBox activeBtn, ScrollPane activeScroll, VBox activeVBox) {
-    for (ScrollPane p : new ScrollPane[]{paneProfile, paneSecurity, paneWallet, paneNotif}) {
+    for (ScrollPane p : new ScrollPane[]{paneProfile, paneSecurity, paneWallet}) {
       if (p != null) { p.setVisible(false); p.setManaged(false); }
     }
     if (paneLogout != null) { paneLogout.setVisible(false); paneLogout.setManaged(false); }
@@ -293,7 +291,7 @@ public class AccountController {
     if (activeScroll != null) { activeScroll.setVisible(true); activeScroll.setManaged(true); }
     if (activeVBox != null) { activeVBox.setVisible(true); activeVBox.setManaged(true); }
 
-    for (HBox btn : new HBox[]{btnProfile, btnSecurity, btnWallet, btnNotif, btnLogout}) {
+    for (HBox btn : new HBox[]{btnProfile, btnSecurity, btnWallet, btnLogout}) {
       if (btn != null) {
         btn.getStyleClass().removeAll("sidebar-btn", "sidebar-btn-active");
         if (btn == activeBtn) {

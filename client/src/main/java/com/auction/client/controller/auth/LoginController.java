@@ -1,7 +1,11 @@
 package com.auction.client.controller.auth;
 
 import com.auction.client.controller.bidder.The_Home_Page_Bidder_View_Controller;
+import com.auction.client.core.ClientSession;
+import com.auction.client.core.SocketClient; // Bổ sung import SocketClient
 import com.auction.common.model.User;
+import com.auction.common.network.LoginDTO; // Bổ sung import LoginDTO
+import com.auction.common.network.RequestCode; // Bổ sung import RequestCode
 import com.auction.server.service.UserService;
 
 import javafx.event.ActionEvent;
@@ -55,6 +59,19 @@ public class LoginController {
 
             if (user != null) {
                 System.out.println("🎉 Đăng nhập thành công! Quyền: " + user.getRole());
+
+                // --- ĐOẠN CODE BỔ SUNG: BÁO CHO SERVER BIẾT BẠN ĐÃ ĐĂNG NHẬP ---
+                LoginDTO loginData = new LoginDTO(username, password);
+                SocketClient.getInstance().sendRequest(RequestCode.LOGIN, loginData);
+
+                // Tạm dừng 100 mili-giây để Server kịp lưu ID của bạn vào Session
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
+                }
+                // ----------------------------------------------------------------
+
                 // Chuyển vào container tổng của ứng dụng
                 chuyenTrangChu(event, user.getRole(), user);
             } else {
@@ -81,6 +98,7 @@ public class LoginController {
             showAlert(Alert.AlertType.ERROR, "Lỗi đồ họa", "Không thể nạp giao diện đăng ký: " + e.getMessage());
         }
     }
+
     private void chuyenTrangChu(ActionEvent event, String role, User user) {
         String fxmlFile;
         try {
@@ -89,6 +107,7 @@ public class LoginController {
                 fxmlFile = "/view/view/The_Home_Page_Admin_View.fxml";
             } else {
                 fxmlFile = "/view/view/The_Home_Page_Bidder_View.fxml";
+                ClientSession.getInstance().setCurrentUser(user);
             }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
@@ -113,6 +132,7 @@ public class LoginController {
             showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Không thể tải giao diện trang chủ! Chi tiết: " + e.getMessage());
         }
     }
+
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
         alert.setTitle(title);

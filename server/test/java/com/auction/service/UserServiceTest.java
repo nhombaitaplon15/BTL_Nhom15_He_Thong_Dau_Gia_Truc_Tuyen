@@ -2,7 +2,7 @@ package com.auction.service;
 
 import com.auction.common.model.Bidder;
 import com.auction.common.model.User;
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.service.UserService;
 import org.junit.jupiter.api.*;
@@ -32,9 +32,8 @@ class UserServiceTest {
     }
 
     // Tạo nhanh đối tượng người dùng để test
-    private User makeBidder(int id, String username, String password, String phone,
-                            String status, double balance) {
-        return new Bidder(id, username, username + "@mail.com", password, phone, status, balance);
+    private User makeBidder( String username, String password,String email, String phone) {
+        return new Bidder(0, username, email, password, phone, "ACTIVE", 0);
     }
 
     @Nested @DisplayName("handleRegister")
@@ -43,27 +42,27 @@ class UserServiceTest {
         // Test: Đăng ký thành công khi mọi thông tin hợp lệ
         @Test @DisplayName("Đăng ký thành công với dữ liệu hợp lệ")
         void register_success() {
-            User req = makeBidder(0, "newuser", "pass1234", "0901234567", "ACTIVE", 0);
+            User req = makeBidder( "newuser", "pass1234","123@gmail.com", "0901234567");
             when(userDAO.isFieldExists("username", "newuser")).thenReturn(false);
-            when(userDAO.isFieldExists(eq("email"), anyString())).thenReturn(false);
+            when(userDAO.isFieldExists("email","123@gmail.com")).thenReturn(false);
             when(userDAO.isFieldExists("phone", "0901234567")).thenReturn(false);
             when(userDAO.register(any())).thenReturn(true);
 
-            assertTrue(userService.handleRegister(req));
+            assertTrue(userService.handleRegister("newuser", "pass1234","123@gmail.com", "0901234567"));
         }
 
         // Test: Số điện thoại thiếu chữ số phải bị loại ngay từ tầng validate
         @Test @DisplayName("Ném lỗi khi SĐT không đủ 10 số — không gọi DAO")
         void register_invalidPhone() {
-            User req = makeBidder(0, "user1", "pass1234", "090123", "ACTIVE", 0);
-            assertThrows(AuctionException.class, () -> userService.handleRegister(req));
+            User req = makeBidder( "user1", "pass1234", "123@gmail.com","090123");
+            assertThrows(AuctionException.class, () -> userService.handleRegister("user1", "pass1234", "123@gmail.com","090123"));
             verifyNoInteractions(userDAO);
         }
 
         // Test: Mật khẩu quá ngắn phải bị loại ngay từ tầng validate
         @Test @DisplayName("Ném lỗi khi mật khẩu dưới 8 ký tự — không gọi DAO")
         void register_shortPassword() {
-            User req = makeBidder(0, "user1", "abc", "0901234567", "ACTIVE", 0);
+            User req = makeBidder( "user1", "abc", "123@gmail.com","0901234567");
             assertThrows(AuctionException.class, () -> userService.handleRegister(req));
             verifyNoInteractions(userDAO);
         }

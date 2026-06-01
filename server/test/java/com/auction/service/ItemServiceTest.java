@@ -2,7 +2,7 @@ package com.auction.service;
 
 import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
-import com.auction.exception.AuctionException;
+import com.auction.common.exception.AuctionException;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.service.ItemService;
 import org.junit.jupiter.api.*;
