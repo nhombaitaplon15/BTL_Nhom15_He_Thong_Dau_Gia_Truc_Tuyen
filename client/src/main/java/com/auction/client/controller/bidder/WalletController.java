@@ -1,6 +1,13 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.User;
-import com.auction.server.service.TransactionService;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,33 +19,50 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import java.text.DecimalFormat;
+import java.util.function.Consumer;
 
 public class WalletController {
 
-    private final TransactionService transactionService = new TransactionService(null);
     private User currentUser;
 
-    // 🌟 ĐÃ ĐỒNG BỘ CHÍNH XÁC ID THEO FILE FXML CỦA EM
-    @FXML private Button btnTabDeposit;   // Khớp hoàn toàn với fx:id="btnTabDeposit"
-    @FXML private Button btnTabWithdraw;  // Khớp hoàn toàn với fx:id="btnTabWithdraw"
-    @FXML private Button btnSubmit;       // Khớp hoàn toàn với fx:id="btnSubmit"
-    @FXML private Label lblLargeBalance;  // Khớp hoàn toàn với fx:id="lblLargeBalance"
+    @FXML private Button btnTabDeposit;
+    @FXML private Button btnTabWithdraw;
+    @FXML private Button btnSubmit;
+    @FXML private Label lblLargeBalance;
 
     @FXML private TextField txtAmount;
     @FXML private TextField txtNote;
 
-    // Mã màu CSS chuẩn UI của em: Xanh đậm (#2563EB) và Xám nhạt (#F1F5F9)
     private final String BLUE_STYLE = "-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 8 0 0 8; -fx-cursor: hand; -fx-font-weight: bold;";
     private final String GRAY_STYLE = "-fx-background-color: #F1F5F9; -fx-text-fill: #64748B; -fx-background-radius: 0 8 8 0; -fx-cursor: hand; -fx-font-weight: bold;";
 
+    // Các biến lắng nghe phản hồi từ Server
+    private final Consumer<Message> onDepositSuccess = this::handleDepositSuccess;
+    private final Consumer<Message> onDepositFailed = this::handleDepositFailed;
+    private final Consumer<Message> onWithdrawSuccess = this::handleWithdrawSuccess;
+    private final Consumer<Message> onWithdrawFailed = this::handleWithdrawFailed;
+
     @FXML
     public void initialize() {
-        // Vừa mở màn hình lên, ép giao diện sáng nút Nạp Tiền trước
         highlightDepositTab();
+        registerHandlers();
         System.out.println(">>> [OK] Màn hình Giao dịch tài chính đã khởi tạo thành công!");
     }
 
-    // ĐỒNG BỘ SỐ DƯ TỪ HỆ THỐNG KHI CHUYỂN MÀN HÌNH
+    private void registerHandlers() {
+        MessageRouter.getInstance().register(ResponseCode.DEPOSIT_SUCCESS, onDepositSuccess);
+        MessageRouter.getInstance().register(ResponseCode.DEPOSIT_FAILED, onDepositFailed);
+        MessageRouter.getInstance().register(ResponseCode.WITHDRAW_SUCCESS, onWithdrawSuccess);
+        MessageRouter.getInstance().register(ResponseCode.WITHDRAW_FAILED, onWithdrawFailed);
+    }
+
+    private void unregisterHandlers() {
+        MessageRouter.getInstance().unregister(ResponseCode.DEPOSIT_SUCCESS);
+        MessageRouter.getInstance().unregister(ResponseCode.DEPOSIT_FAILED);
+        MessageRouter.getInstance().unregister(ResponseCode.WITHDRAW_SUCCESS);
+        MessageRouter.getInstance().unregister(ResponseCode.WITHDRAW_FAILED);
+    }
+
     public void setUserData(User user) {
         if (user == null) {
             System.out.println(">>> [LỖI] Dữ liệu User truyền sang bị NULL!");
@@ -46,7 +70,6 @@ public class WalletController {
         }
         this.currentUser = user;
 
-        // Đổ số dư thực tế vào nhãn lớn (Ví dụ: 50,000,000 đ)
         if (lblLargeBalance != null) {
             DecimalFormat formatter = new DecimalFormat("#,###");
             lblLargeBalance.setText(formatter.format(currentUser.getBalance()) + " đ");
@@ -54,35 +77,28 @@ public class WalletController {
         }
     }
 
-    // KHI BẤM NÚT NẠP TIỀN
     @FXML
     void handleSwitchToDeposit(ActionEvent event) {
-        System.out.println(">>> Clicked: Tab Nạp Tiền");
         highlightDepositTab();
     }
 
     private void highlightDepositTab() {
         if (btnTabDeposit != null && btnTabWithdraw != null && btnSubmit != null) {
-            // Sửa lại bán kính bo góc (radius) cho đúng thiết kế ban đầu của em
             btnTabDeposit.setStyle("-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 8 0 0 8;");
             btnTabWithdraw.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #64748B; -fx-background-radius: 0 8 8 0;");
             btnSubmit.setText("Xác Nhận Nạp Tiền");
         }
     }
 
-    // KHI BẤM NÚT RÚT TIỀN
     @FXML
     void handleSwitchToWithdraw(ActionEvent event) {
-        System.out.println(">>> Clicked: Tab Rút Tiền");
         if (btnTabDeposit != null && btnTabWithdraw != null && btnSubmit != null) {
-            // Đảo ngược màu sắc: Rút biến thành xanh, Nạp thành xám
             btnTabDeposit.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: #64748B; -fx-background-radius: 8 0 0 8;");
             btnTabWithdraw.setStyle("-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 0 8 8 0;");
             btnSubmit.setText("Xác Nhận Rút Tiền");
         }
     }
 
-    // XỬ LÝ KHI NHẤN NÚT XÁC NHẬN TO Ở DƯỚI CÙNG
     @FXML
     void handleSubmitTransaction(ActionEvent event) {
         String amountStr = txtAmount.getText().trim();
@@ -102,47 +118,65 @@ public class WalletController {
 
             String actionTypeText = btnSubmit.getText();
 
+            // Gửi dữ liệu lên Server qua SocketClient thay vì xử lý trực tiếp
             if (actionTypeText.contains("Nạp")) {
-                transactionService.handleDepositRequest(currentUser, amount);
-                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu NẠP TIỀN đã được gửi, chờ Admin duyệt!");
-                txtAmount.clear();
-                if (txtNote != null) txtNote.clear();
+                SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
             }
             else if (actionTypeText.contains("Rút")) {
-                // Kiểm tra số dư
                 if (currentUser.getBalance() < amount) {
-
-                    showAlert(
-                            Alert.AlertType.ERROR,
-                            "Giao dịch thất bại",
-                            "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!"
-                    );
-
+                    showAlert(Alert.AlertType.ERROR, "Giao dịch thất bại", "Số dư tài khoản không đủ để thực hiện yêu cầu rút tiền này!");
                     return;
                 }
-                // Lấy thông tin ngân hàng từ ô ghi chú
+
                 String bankInfo = txtNote.getText().trim();
                 if (bankInfo.isEmpty()) {
                     showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập thông tin ngân hàng để rút tiền!");
                     return;
                 }
-                transactionService.handleWithdrawRequest(currentUser, amount, bankInfo);
-                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu RÚT TIỀN đã được gửi, chờ Admin duyệt!");
-                txtAmount.clear();
-                if (txtNote != null) {txtNote.clear();}
+
+                // Gửi request rút tiền. Ghi chú: Hiện Server của bạn đang nhận Double amount.
+                SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
             }
 
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", "Số tiền nhập vào phải là số hợp lệ!");
-        } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Thất bại", e.getMessage());
         }
     }
 
-    // XỬ LÝ QUAY LẠI TRANG CHỦ
+    // --- Các hàm xử lý phản hồi từ Server (Chạy trên UI Thread) ---
+
+    private void handleDepositSuccess(Message msg) {
+        Platform.runLater(() -> {
+            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu NẠP TIỀN đã được gửi, chờ Admin duyệt!");
+            txtAmount.clear();
+            if (txtNote != null) txtNote.clear();
+        });
+    }
+
+    private void handleDepositFailed(Message msg) {
+        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Nạp tiền thất bại", msg.getMessage()));
+    }
+
+    private void handleWithdrawSuccess(Message msg) {
+        Platform.runLater(() -> {
+            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Yêu cầu RÚT TIỀN đã được gửi, chờ Admin duyệt!");
+            txtAmount.clear();
+            if (txtNote != null) txtNote.clear();
+        });
+    }
+
+    private void handleWithdrawFailed(Message msg) {
+        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Rút tiền thất bại", msg.getMessage()));
+    }
+
+    // --------------------------------------------------------------
+
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
+            // Hủy lắng nghe dữ liệu để dọn dẹp bộ nhớ trước khi chuyển trang
+            unregisterHandlers();
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 

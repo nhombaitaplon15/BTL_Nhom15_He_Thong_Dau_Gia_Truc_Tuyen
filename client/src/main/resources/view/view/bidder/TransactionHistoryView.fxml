@@ -55,7 +55,7 @@
                                     </graphic>
                                 </TableColumn>
 
-                                <TableColumn fx:id="colAmount" prefWidth="240.0" style="-fx-alignment: CENTER; -fx-text-fill: #2563EB; -fx-font-weight: bold; -fx-background-color: #2563EB;">
+                                <TableColumn fx:id="colAmount" prefWidth="240.0" style="-fx-alignment: CENTER; -fx-font-weight: bold; -fx-background-color: #2563EB;">
                                     <graphic>
                                         <Label style="-fx-font-weight: bold; -fx-font-size: 18px;" text="Số Tiền" textFill="WHITE" />
                                     </graphic>

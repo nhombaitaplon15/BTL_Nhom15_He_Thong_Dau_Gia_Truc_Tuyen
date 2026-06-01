@@ -1,6 +1,14 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
+import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
-import com.auction.server.dao.TransactionDAO; // Dựa trên import từ TransactionService của em
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,10 +21,12 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.stage.Stage;
 
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.function.Consumer;
+
 public class TransactionHistoryController {
 
-    // Gọi trực tiếp DAO giao dịch đang dùng trong TransactionService của em
-    private final TransactionDAO transDAO = new TransactionDAO();
     private User currentUser;
 
     @FXML private TableView<TransactionModel> tableHistory;
@@ -26,6 +36,11 @@ public class TransactionHistoryController {
     @FXML private TableColumn<TransactionModel, String> colTime;
     @FXML private TableColumn<TransactionModel, String> colStatus;
 
+    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    // Lắng nghe dữ liệu trả về từ Server
+    private final Consumer<Message> onTransactionsResult = this::handleTransactionsResult;
+
     @FXML
     public void initialize() {
         colId.setCellValueFactory(cellData -> cellData.getValue().idProperty());
@@ -33,6 +48,9 @@ public class TransactionHistoryController {
         colAmount.setCellValueFactory(cellData -> cellData.getValue().amountProperty());
         colTime.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
         colStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
+
+        // Đăng ký nhận kết quả giao dịch
+        MessageRouter.getInstance().register(ResponseCode.TRANSACTIONS_RESULT, onTransactionsResult);
     }
 
     @FXML
@@ -43,34 +61,61 @@ public class TransactionHistoryController {
     }
 
     private void loadRealTransactionData() {
-        try {
-            ObservableList<TransactionModel> dataList = FXCollections.observableArrayList();
+        // Gửi yêu cầu qua Socket thay vì gọi thẳng DAO
+        SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, currentUser.getId());
+    }
 
-            // LƯU Ý: Nếu transDAO của em có hàm lấy danh sách (Ví dụ: getTransactionsByUserId), hãy mở comment này ra:
-            /*
-            var list = transDAO.getTransactionsByUserId(currentUser.getId());
-            if (list != null) {
-                for (var t : list) {
+    @SuppressWarnings("unchecked")
+    private void handleTransactionsResult(Message msg) {
+        Object payload = msg.getPayload();
+        if (payload instanceof List) {
+            List<TransactionRequest> list = (List<TransactionRequest>) payload;
+
+            Platform.runLater(() -> {
+                ObservableList<TransactionModel> dataList = FXCollections.observableArrayList();
+                for (TransactionRequest t : list) {
                     dataList.add(new TransactionModel(
-                        String.valueOf(t.getId()),
-                        t.getType().equalsIgnoreCase("DEPOSIT") ? "Nạp Tiền" : "Rút Tiền",
+                        String.valueOf(t.getRequestId()),
+                        formatTxType(t.getType()),
                         String.format("%,.0f đ", t.getAmount()),
-                        t.getCreatedAt() != null ? t.getCreatedAt().toString() : "Vừa xong",
-                        t.getStatus()
+                        t.getRequestDate() != null ? t.getRequestDate().format(DT_FMT) : "Vừa xong",
+                        formatStatus(t.getTransactionStatus())
                     ));
                 }
-            }
-            */
-
-            tableHistory.setItems(dataList);
-        } catch (Exception e) {
-            e.printStackTrace();
+                tableHistory.setItems(dataList);
+            });
         }
+    }
+
+    private String formatTxType(String type) {
+        if (type == null) return "Giao dịch";
+        if (type.startsWith("DEPOSIT")) return "Nạp tiền";
+        if (type.startsWith("WITHDRAW")) return "Rút tiền";
+        if (type.startsWith("HOLD_AUCTION_")) return "Đặt cọc phiên";
+        if (type.startsWith("RELEASE_AUCTION_")) return "Nhận tiền phiên";
+        if (type.startsWith("REFUND_AUCTION_")) return "Hoàn tiền phiên";
+        if (type.startsWith("BID_AUCTION_")) return "Đặt giá phiên";
+        if (type.startsWith("PROFIT_AUCTION_")) return "Phí hoa hồng";
+        return type;
+    }
+
+    private String formatStatus(String s) {
+        if (s == null) return "";
+        return switch (s) {
+            case "SUCCESS" -> "Thành công";
+            case "PENDING" -> "Chờ duyệt";
+            case "APPROVED" -> "Đã duyệt";
+            case "REJECTED" -> "Từ chối";
+            default -> s;
+        };
     }
 
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
+            // Huỷ đăng ký router để tránh rò rỉ bộ nhớ khi rời trang
+            MessageRouter.getInstance().unregister(ResponseCode.TRANSACTIONS_RESULT);
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 

@@ -4,9 +4,14 @@ import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.exception.AuctionException;
 import com.auction.common.exception.ErrorCode;
-import com.auction.server.dao.TransactionDAO ;
-import com.auction.server.dao.PaymentDAO ;
-import com.auction.server.dao.DBConnection ;
+import com.auction.server.dao.TransactionDAO;
+import com.auction.server.dao.PaymentDAO;
+import com.auction.server.dao.DBConnection;
+
+// Thêm các thư viện này để Server bắn tín hiệu Realtime về Client
+import com.auction.server.core.SessionManager;
+import com.auction.common.network.Message;
+import com.auction.common.network.ResponseCode;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,7 +20,7 @@ import java.util.List;
 public class TransactionService {
     private final TransactionDAO transDAO = new TransactionDAO();
     private final PaymentDAO paymentDAO = new PaymentDAO();
-    private final ManagerService managerService; // Điều phối đồng bộ User gốc trên RAM Server
+    private final ManagerService managerService;
 
     public TransactionService(ManagerService managerService) {
         this.managerService = managerService;
@@ -23,15 +28,12 @@ public class TransactionService {
 
     // --- 1. NGƯỜI DÙNG ĐĂNG KÝ YÊU CẦU (NẠP / RÚT) ---
 
-    /** Người dùng gửi yêu cầu nạp tiền (Chờ duyệt) */
     public void handleDepositRequest(User currentUser, double amount) {
         if (amount <= 0) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Số tiền nạp phải lớn hơn 0");
         }
-
         try {
-            // Lưu xuống DB với trạng thái ban đầu bắt buộc là "PENDING"
-            boolean success = transDAO.createTransaction(currentUser.getId(), amount, "DEPOSIT", "PENDING");
+            boolean success = transDAO.createTransaction(currentUser.getId(), amount, "DEPOSIT", "PENDING", "Nạp tiền vào tài khoản");
 
             if (!success) {
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể gửi yêu cầu nạp tiền!");
@@ -42,7 +44,6 @@ public class TransactionService {
         }
     }
 
-    /** Người dùng gửi yêu cầu rút tiền (Chờ duyệt) - Bản nâng cấp bảo mật chặn Spam số dư */
     public void handleWithdrawRequest(User user, double amount, String bankInfo) {
         if (user == null) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Người dùng không hợp lệ!");
@@ -55,11 +56,11 @@ public class TransactionService {
         }
 
         String description = (bankInfo == null || bankInfo.isBlank())
-            ? "WITHDRAW"
-            : "WITHDRAW - Ngân hàng: " + bankInfo;
+            ? "Rút tiền về tài khoản"
+            : "Rút tiền - Ngân hàng: " + bankInfo;
 
         try {
-            boolean success = transDAO.createTransaction(user.getId(), amount, description, "PENDING");
+            boolean success = transDAO.createTransaction(user.getId(), amount, "WITHDRAW", "PENDING", description);
             if (!success) {
                 throw new AuctionException(ErrorCode.TRANSACTION_FAILED.name(), "Không thể tạo yêu cầu rút tiền!");
             }
@@ -69,14 +70,12 @@ public class TransactionService {
         }
     }
 
-    /** Overload hàm rút tiền 2 tham số để tránh làm lỗi các module cũ của bạn bạn */
     public void handleWithdrawRequest(User currentUser, double amount) {
         handleWithdrawRequest(currentUser, amount, "Khác");
     }
 
     // --- 2. HÓA ĐƠN TỰ ĐỘNG TỪ HỆ THỐNG ---
 
-    /** Tạo hóa đơn thanh toán tự động khi chốt phiên đấu giá thành công */
     public void createTransactionFromAuction(int auctionId, int winnerId, double amount) {
         if (winnerId <= 0) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "ID người thắng không hợp lệ!");
@@ -84,7 +83,7 @@ public class TransactionService {
 
         try {
             String description = "Thanh toán phiên đấu giá #" + auctionId;
-            boolean success = transDAO.createTransaction(winnerId, amount, description, "PENDING");
+            boolean success = transDAO.createTransaction(winnerId, amount, "AUCTION_PAY", "PENDING", description);
 
             if (!success) {
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Không thể tạo hóa đơn giao dịch đấu giá!");
@@ -98,13 +97,11 @@ public class TransactionService {
 
     // --- 3. ĐIỀU KHIỂN & PHÊ DUYỆT TỪ ADMIN ---
 
-    /** Admin phê duyệt trực tiếp dòng tiền (Bọc Transaction nguyên tử an toàn tuyệt đối) */
     public void handleApproveTransaction(User adminUser, int transId, int targetUserId, double amount, String type) {
         if (!adminUser.isAdmin()) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Bạn không có quyền duyệt giao dịch này!");
         }
 
-        // Lấy Object User gốc chạy trên RAM ra để đồng bộ dữ liệu Realtime
         User liveUser = managerService.getUserById(targetUserId);
         if (liveUser == null) {
             throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Không tìm thấy người dùng này trên hệ thống RAM Server!");
@@ -117,20 +114,17 @@ public class TransactionService {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // Bước A: Cập nhật số dư ví dưới Database SQL
                 String operator = type.equalsIgnoreCase("DEPOSIT") ? "+" : "-";
                 if (!paymentDAO.updateBalance(conn, targetUserId, amount, operator)) {
                     throw new SQLException("Cập nhật số dư tài khoản thất bại!");
                 }
 
-                // Bước B: Đổi trạng thái lịch sử giao dịch thành 'SUCCESS'
                 if (!transDAO.updateTransactionStatus(conn, transId, "SUCCESS")) {
                     throw new SQLException("Không thể cập nhật trạng thái giao dịch sang SUCCESS!");
                 }
 
-                conn.commit(); // Chốt giao dịch DB hoàn tất
+                conn.commit();
 
-                // Bước C: Đồng bộ tức thời lên RAM để Client nhận diện thay đổi qua Socket
                 double newBalance = type.equalsIgnoreCase("DEPOSIT")
                     ? liveUser.getBalance() + amount
                     : liveUser.getBalance() - amount;
@@ -139,7 +133,7 @@ public class TransactionService {
                 System.out.println(">>> [DUYỆT THÀNH CÔNG] " + type + " số tiền " + amount + " cho tài khoản " + liveUser.getUsername());
 
             } catch (SQLException e) {
-                conn.rollback(); // Hoàn tác lập tức nếu xảy ra xung đột dữ liệu
+                conn.rollback();
                 throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi xử lý dòng tiền: " + e.getMessage());
             }
         } catch (SQLException e) {
@@ -147,17 +141,16 @@ public class TransactionService {
         }
     }
 
-    /** Lấy toàn bộ danh sách giao dịch hiển thị cho trang quản trị Admin */
     public List<TransactionRequest> getAllTransactions() {
         return transDAO.getAllTransactions();
     }
 
-    /** Lấy danh sách giao dịch hiển thị cho MỘT USER (Lịch sử cá nhân) */
     public List<TransactionRequest> getTransactionsByUserId(int userId) {
         return transDAO.getTransactionsByUserId(userId);
     }
 
-    /** Phê duyệt giao dịch thông qua đối tượng yêu cầu (TransactionRequest Mapping) */
+    /** * HÀM NÀY ĐÃ ĐƯỢC SỬA: Đồng bộ RAM và báo Realtime về Client
+     */
     public void approveTransaction(Integer txId) {
         if (txId == null) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Transaction ID không hợp lệ!");
@@ -175,6 +168,7 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.TRANSACTION_FAILED.name(), "Không tìm thấy giao dịch yêu cầu!");
         }
 
+        // 1. Cập nhật dưới Database SQL
         boolean success = transDAO.processApproval(
             target.getRequestId(),
             target.getUser().getId(),
@@ -185,9 +179,29 @@ public class TransactionService {
         if (!success) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Duyệt giao dịch thất bại!");
         }
+
+        // 2. ĐỒNG BỘ TRỰC TIẾP LÊN BỘ NHỚ RAM CỦA SERVER
+        User liveUser = managerService.getUserById(target.getUser().getId());
+        if (liveUser != null) {
+            double amount = target.getAmount();
+            if (target.getType().equalsIgnoreCase("DEPOSIT")) {
+                liveUser.setBalance(liveUser.getBalance() + amount);
+            } else if (target.getType().equalsIgnoreCase("WITHDRAW")) {
+                liveUser.setBalance(liveUser.getBalance() - amount);
+            }
+
+            System.out.println(">>> [ĐỒNG BỘ RAM] Cập nhật số dư mới cho User#" + liveUser.getId() + ": " + liveUser.getBalance());
+
+            // 3. PUSH REALTIME: Ép Server gửi thông báo cập nhật UI cho người dùng (nếu họ đang mở app)
+            try {
+                SessionManager.getInstance().sendToUserIfOnline(
+                    liveUser.getId(),
+                    new Message(ResponseCode.PROFILE_RESULT, "Cập nhật số dư", liveUser)
+                );
+            } catch (Exception ignored) {}
+        }
     }
 
-    /** Từ chối phê duyệt yêu cầu nạp/rút tiền */
     public void rejectTransaction(Integer txId) {
         if (txId == null) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Transaction ID không hợp lệ!");
