@@ -53,15 +53,31 @@ public class SessionManager {
     // =========================================================
 
     /**
-     * Chống Double-Login: 1 tài khoản chỉ được đăng nhập 1 nơi.
-     * Dùng putIfAbsent để thread-safe.
+     * FIX: Tự động kick session cũ (zombie/stale) thay vì từ chối login.
+     *
+     * Lỗi cũ: Client đóng app đột ngột -> socket chết nhưng server chưa kịp
+     * gọi cleanUp() -> session cũ còn treo trong Map -> lần login kế tiếp bị
+     * từ chối với "Tài khoản đang đăng nhập ở nơi khác".
+     *
+     * Chiến lược mới (Optimistic/Replace): Session mới luôn thắng.
+     * Session cũ được đóng socket sạch để tránh memory leak.
      */
     public boolean loginUser(int userId, ClientHandler handler) {
-        ClientHandler existing = loggedInUsers.putIfAbsent(userId, handler);
-        if (existing != null) {
-            // Từ chối login mới (chiến lược Pessimistic - giữ session cũ)
-            return false;
+        // Thay thế atomically — nếu có session cũ thì kick nó ra
+        ClientHandler oldHandler = loggedInUsers.put(userId, handler);
+
+        if (oldHandler != null && oldHandler != handler) {
+            // Session cũ còn zombie — thông báo và đóng socket
+            try {
+                oldHandler.sendMessage(new Message(
+                        com.auction.common.network.ResponseCode.ERROR_MESSAGE,
+                        "Tài khoản của bạn vừa đăng nhập từ thiết bị khác.", null));
+            } catch (Exception ignored) {}
+            try { oldHandler.cleanUp(); } catch (Exception ignored) {}
+            System.out.println("[SESSION] User#" + userId
+                    + " — Đã kick session cũ (zombie), cho phép đăng nhập mới.");
         }
+
         handler.setLoggedInUserId(userId);
         System.out.println("[SESSION] User#" + userId + " đã đăng nhập.");
         return true;

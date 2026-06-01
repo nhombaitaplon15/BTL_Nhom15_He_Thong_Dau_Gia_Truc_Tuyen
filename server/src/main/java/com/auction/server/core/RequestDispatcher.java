@@ -61,6 +61,8 @@ public class RequestDispatcher {
                 case PLACE_BID:        handlePlaceBid(client, request);        break;
                 case CHAT_MESSAGE:     handleChat(client, request);            break;
                 case FETCH_BID_HISTORY:handleFetchBidHistory(client);          break;
+                case GET_AUCTION_DETAIL: handleGetAuctionDetail(client, request); break; // ✅ FIX: Đã thêm
+                case REJECT_WIN:       handleRejectWin(client, request);       break; // ✅ FIX: Đã thêm
                 case DEPOSIT_REQUEST:  handleDeposit(client, request);         break;
                 case WITHDRAW_REQUEST: handleWithdraw(client, request);        break;
                 case GET_PROFILE:      handleGetProfile(client);               break;
@@ -417,7 +419,76 @@ public class RequestDispatcher {
             } catch (Throwable ignored) {}
         }
     }
+    private void handleGetAuctionDetail(ClientHandler client, Message request) {
+        try {
+            Integer auctionId = (Integer) request.getPayload();
+            if (auctionId == null) {
+                client.sendMessage(new Message(ResponseCode.AUCTION_DETAIL_FAILED,
+                        "Thiếu mã phiên đấu giá!", null));
+                return;
+            }
 
+            Auction auction = managerService.getAuctionOrThrow(auctionId);
+
+            // Load Item đầy đủ vào Auction
+            try {
+                com.auction.common.model.Item item = itemService.getItemById(auction.getItemId());
+                auction.setItem(item);
+            } catch (Exception e) {
+                System.err.println("[DISPATCHER] Không load được Item cho phiên #" + auctionId);
+            }
+
+            // Đồng bộ giá hiện tại từ RAM (nếu phiên đang chạy)
+            try {
+                AuctionRoom room = AuctionRoomManager.getInstance().getRoom(auctionId);
+                if (room != null) auction.setCurrentPrice(room.getCurrentPrice());
+            } catch (Exception ignored) {}
+
+            client.sendMessage(new Message(ResponseCode.AUCTION_DETAIL_RESULT, "OK", auction));
+            System.out.println("[DISPATCHER] Đã gửi chi tiết phiên #" + auctionId
+                    + " cho User#" + client.getLoggedInUserId());
+        } catch (Exception e) {
+            System.err.println("[DISPATCHER] Lỗi GET_AUCTION_DETAIL: " + e.getMessage());
+            client.sendMessage(new Message(ResponseCode.AUCTION_DETAIL_FAILED,
+                    "Không tìm thấy phiên: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * FIX: Xử lý REJECT_WIN — người thắng hủy kèo, phạt cọc 7%, hoàn 93%.
+     * Client gửi payload: Integer auctionId
+     * Server lấy userId từ session, gọi BiddingService.rejectWin()
+     */
+    private void handleRejectWin(ClientHandler client, Message request) {
+        try {
+            Integer auctionId = (Integer) request.getPayload();
+            Integer userId = client.getLoggedInUserId();
+
+            if (auctionId == null || userId == null) {
+                client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED,
+                        "Thiếu thông tin yêu cầu hủy kèo!", null));
+                return;
+            }
+
+            User winner = userService.getUserById(userId);
+            if (winner == null) {
+                client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED,
+                        "Không tìm thấy tài khoản người dùng!", null));
+                return;
+            }
+
+            biddingService.rejectWin(winner, auctionId);
+            client.sendMessage(new Message(ResponseCode.REJECT_WIN_SUCCESS,
+                    "Hủy kèo thành công! Đã hoàn tiền (trừ 7% phạt cọc).", null));
+            System.out.println("[DISPATCHER] User#" + userId + " đã hủy kèo phiên #" + auctionId);
+        } catch (com.auction.common.exception.AuctionException ae) {
+            client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED, ae.getMessage(), null));
+        } catch (Exception e) {
+            System.err.println("[DISPATCHER] Lỗi REJECT_WIN: " + e.getMessage());
+            client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED,
+                    "Lỗi hệ thống khi hủy kèo: " + e.getMessage(), null));
+        }
+    }
     // =========================================================
     // SELLER HANDLERS
     // =========================================================

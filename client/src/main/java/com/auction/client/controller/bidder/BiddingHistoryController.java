@@ -24,6 +24,16 @@ import javafx.stage.Stage;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * BiddingHistoryController — ĐÃ SỬA CÁC LỖI:
+ *
+ * BUG (handleReportIssue): Mở ReportIssueController nhưng KHÔNG gọi
+ *   setIssueData(selected, currentUser) → controller không biết phiên nào
+ *   và user là ai → txtSessionId trống → parseInt crash / báo cáo sai.
+ *   → FIX: Gọi detailCtrl.setIssueData(selected, currentUser) sau khi load FXML
+ *
+ * Các phần còn lại (BiddingHistory, AuctionDetail) giữ nguyên vì đã đúng.
+ */
 public class BiddingHistoryController {
 
     @FXML private Button btnToggleMenu;
@@ -51,14 +61,12 @@ public class BiddingHistoryController {
         System.out.println("⏱ Khởi tạo màn hình Lịch sử đặt giá.");
         setupTable();
         setupSearch();
-        // Đăng ký listener ngay khi initialize — sẽ được re-register khi setUserData() gọi
         registerListeners();
     }
 
     // ─── ĐĂNG KÝ / HỦY LISTENER ─────────────────────────────────────────────
 
     private void registerListeners() {
-        // Unregister trước để tránh đăng ký trùng khi navigate lại trang này
         MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
         MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, this::handleBidHistoryResult);
     }
@@ -153,18 +161,10 @@ public class BiddingHistoryController {
 
     // ─── DATA LOADING ────────────────────────────────────────────────────────
 
-    /**
-     * Được MainContainerController gọi khi điều hướng sang trang Lịch sử.
-     * Re-register listener để tránh trường hợp đã bị unregister khi rời trang trước đó.
-     */
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
-
-        // Đảm bảo listener luôn được đăng ký trước khi gửi request
         registerListeners();
-
-        // Server tự lấy userId từ session — không cần truyền payload
         SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, null);
     }
 
@@ -241,13 +241,23 @@ public class BiddingHistoryController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ReportIssueView.fxml"));
             Parent root = loader.load();
+
+            // FIX BUG: Truyền dữ liệu phiên + user vào ReportIssueController
+            ReportIssueController reportCtrl = loader.getController();
+            if (reportCtrl != null) {
+                reportCtrl.setIssueData(selected, currentUser);
+            }
+
             Stage stage = new Stage();
             stage.setScene(new Scene(root));
             stage.setTitle("Báo Cáo Sự Cố - Phiên #" + selected.getAuctionId());
             stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner((Stage) ((Node) event.getSource()).getScene().getWindow());
+            stage.setResizable(false);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
+            showWarning("Không thể mở cửa sổ báo cáo: " + e.getMessage());
         }
     }
 
