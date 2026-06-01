@@ -7,4 +7,8 @@ public class Bidder extends User {
     public Bidder(String username, String password) {
         super(0, username, "", password, "","", "BIDDER", 0.0);
     }
+
+  public Bidder() {
+
+  }
 }

@@ -1,4 +1,4 @@
-package com.auction.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Auction;
 import com.auction.common.exception.AuctionException;

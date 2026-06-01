@@ -104,7 +104,7 @@ public class LoginController {
         try {
             // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
             if ("ADMIN".equalsIgnoreCase(role)) {
-                fxmlFile = "/view/view/The_Home_Page_Admin_View.fxml";
+                fxmlFile = "/view/view/admin/The_Home_Page_Admin_View.fxml";
             } else {
                 fxmlFile = "/view/view/The_Home_Page_Bidder_View.fxml";
                 ClientSession.getInstance().setCurrentUser(user);

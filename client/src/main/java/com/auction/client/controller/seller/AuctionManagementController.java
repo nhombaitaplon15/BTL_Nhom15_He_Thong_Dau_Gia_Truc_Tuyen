@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Item;

@@ -1,4 +1,4 @@
-package com.auction.service;
+package com.auction.server.service;
 
 import com.auction.common.model.Bidder;
 import com.auction.common.model.User;

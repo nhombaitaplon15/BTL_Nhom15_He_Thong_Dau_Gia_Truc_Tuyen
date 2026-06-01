@@ -123,9 +123,9 @@ public class Auction implements Serializable {
     }
 
     // Các hàm bổ trợ cho logic chặn
-    public boolean isWaitingForAdmin() {
-        return "WAITING_FOR_ADMIN".equalsIgnoreCase(this.auctionStatus);
-    }
+//    public boolean isWaitingForAdmin() {
+//        return "WAITING_FOR_ADMIN".equalsIgnoreCase(this.auctionStatus);
+//    }
 
     public void setItem(Item itemData) {
         this.item = itemData;

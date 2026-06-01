@@ -5,7 +5,7 @@
 
 <AnchorPane prefHeight="680.0" prefWidth="1100.0" stylesheets="@../css/product_management.css, @../css/MyProducts.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.MyProductsController">
 
-    <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" styleClass="main-content">
+    <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" >
 
         <VBox styleClass="sidebar" prefWidth="260.0" minWidth="260.0" maxWidth="260.0">
             <Label styleClass="sidebar-title" text="QUẢN LÝ SẢN PHẨM" />

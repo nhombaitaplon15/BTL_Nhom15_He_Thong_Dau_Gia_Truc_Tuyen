@@ -3,11 +3,6 @@ package com.auction.common.network;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * DTO dùng khi Seller gửi yêu cầu tạo phiên đấu giá mới.
- *
- * ĐẶT TẠI: common/src/main/java/com/auction/common/network/CreateAuctionDTO.java
- */
 public class CreateAuctionDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -19,19 +14,21 @@ public class CreateAuctionDTO implements Serializable {
 
     public CreateAuctionDTO() {}
 
-    public CreateAuctionDTO(int itemId, double startingPrice, LocalDateTime startTime, LocalDateTime endTime) {
+    // ĐÃ FIX: Thêm tham số sellerId vào constructor
+    public CreateAuctionDTO(int sellerId, int itemId, double startingPrice, LocalDateTime startTime, LocalDateTime endTime) {
+        this.sellerId = sellerId;
         this.itemId = itemId;
         this.startingPrice = startingPrice;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.sellerId = sellerId ;
     }
 
     public int getItemId() { return itemId; }
     public void setItemId(int itemId) { this.itemId = itemId; }
 
-    public int getSellerId() {return sellerId;}
-    public void setSellerId(int sellerId) { this.sellerId = itemId; }
+    public int getSellerId() { return sellerId; }
+    // ĐÃ FIX: Gán đúng sellerId thay vì itemId
+    public void setSellerId(int sellerId) { this.sellerId = sellerId; }
 
     public double getStartingPrice() { return startingPrice; }
     public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
@@ -41,9 +38,4 @@ public class CreateAuctionDTO implements Serializable {
 
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-
-    @Override
-    public String toString() {
-        return "CreateAuctionDTO{itemId=" + itemId + ", startingPrice=" + startingPrice + "}";
-    }
 }
