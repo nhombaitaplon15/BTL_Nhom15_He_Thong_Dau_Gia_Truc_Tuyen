@@ -1,6 +1,7 @@
 package com.auction.client.controller.auth;
 
 import com.auction.client.controller.bidder.MainContainerController;
+import com.auction.client.controller.bidder.The_Home_Page_Bidder_View_Controller;
 import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
@@ -121,9 +122,16 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
             Parent root = loader.load();
 
-            if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
-                MainContainerController mainController = loader.getController();
-                if (mainController != null) mainController.setUserData(user);
+            // SỬA: Lấy đúng kiểu controller tương ứng với từng role
+            if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+                // Admin không cần truyền user qua setUserData ở đây
+            } else {
+                Object controller = loader.getController();
+                if (controller instanceof MainContainerController) {
+                    ((MainContainerController) controller).setUserData(user);
+                } else if (controller instanceof The_Home_Page_Bidder_View_Controller) {
+                    ((The_Home_Page_Bidder_View_Controller) controller).setUserData(user);
+                }
             }
 
             Stage stage = (Stage) txtUsername.getScene().getWindow();
@@ -140,7 +148,6 @@ public class LoginController {
                     "Không thể tải giao diện trang chủ! Chi tiết: " + e.getMessage());
         }
     }
-
     @FXML
     void handleForgotPassword(ActionEvent event) {
         try {
