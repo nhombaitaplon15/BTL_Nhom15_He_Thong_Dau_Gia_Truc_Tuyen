@@ -163,7 +163,27 @@ public class The_Home_Page_Bidder_View_Controller {
     }
 
     @FXML void handleSearch(ActionEvent event) { System.out.println("Tìm kiếm"); }
-    @FXML void handleSwitchToSeller(ActionEvent event) { System.out.println("Chuyển người bán"); }
+    @FXML void handleSwitchToSeller(ActionEvent event ) {
+        try {
+            // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/seller/The_Home_Page_Seller_View.fxml"));
+            Parent root = loader.load();
+
+            // Ép kiểu controller để truyền dữ liệu User vừa lấy từ Database Railway sang trang chủ
+//            The_Home_Page_Seller_View_Controller homeController = loader.getController();
+//            homeController.setUserData(this.currentUser);
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+
+            stage.setScene(scene);
+            stage.setTitle("Elite Auction - Trang chủ hệ thống");
+            stage.setMaximized(true); // Giữ tính năng phóng to toàn màn hình cho đẹp
+            stage.centerOnScreen();
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Chuyển người bán"); }
 
     @FXML
     void handleLogout(ActionEvent event) {

@@ -4,11 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane prefHeight="680" prefWidth="1100" styleClass="main-container"
-            stylesheets="@../css/product_management.css, @../css/AccountSeller.css"
-            xmlns="http://javafx.com/javafx/17.0.12"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.auction.client.controller.seller.AccountController">
+<BorderPane prefHeight="680" prefWidth="1100" styleClass="main-container" stylesheets="@../css/product_management.css, @../css/AccountSeller.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.AccountController">
     <center>
         <HBox>
             <VBox styleClass="sidebar">
@@ -114,13 +110,13 @@
                                 </VBox>
                                 <VBox prefHeight="0.0" prefWidth="394.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                     <children>
-                                        <Button mnemonicParsing="false" prefHeight="34.0" prefWidth="250.0" styleClass="btn-gold" text="Chuyển đổi vai trò sang Bidder" />
+                                        <Button mnemonicParsing="false" onAction="#handleSwitchToBidder" prefHeight="34.0" prefWidth="250.0" styleClass="btn-gold" text="Chuyển đổi vai trò sang Bidder" />
                                     </children>
                                     <GridPane.margin>
                                         <Insets />
                                     </GridPane.margin>
                                     <padding>
-                                        <Insets bottom="7.0" left="70.0" top="7.0" />
+                                        <Insets bottom="7.0" left="70.0" top="20.0" />
                                     </padding>
                                 </VBox>
                                 <rowConstraints>

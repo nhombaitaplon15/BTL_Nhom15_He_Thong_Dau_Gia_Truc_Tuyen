@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.controller.bidder.The_Home_Page_Bidder_View_Controller;
 import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
@@ -9,15 +10,21 @@ import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -72,6 +79,9 @@ public class AccountController {
   private final Consumer<Message> onWithdrawSuccess = this::handleWithdrawSuccess;
   private final Consumer<Message> onWithdrawFailed = msg -> showError("Rút tiền thất bại: " + msg.getMessage());
 
+  // THÊM MỚI: Consumer xử lý kết quả lịch sử giao dịch
+  private final Consumer<Message> onTransactionsResult = this::handleTransactionsResult;
+
   @FXML
   public void initialize() {
     setupTransactionCellFactory();
@@ -100,6 +110,9 @@ public class AccountController {
     router.register(ResponseCode.DEPOSIT_FAILED, onDepositFailed);
     router.register(ResponseCode.WITHDRAW_SUCCESS, onWithdrawSuccess);
     router.register(ResponseCode.WITHDRAW_FAILED, onWithdrawFailed);
+
+    // THÊM MỚI: Đăng ký lắng nghe sự kiện trả về danh sách giao dịch
+    router.register(ResponseCode.TRANSACTIONS_RESULT, onTransactionsResult);
   }
 
   public void cleanupHandlers() {
@@ -112,6 +125,9 @@ public class AccountController {
     router.unregister(ResponseCode.DEPOSIT_FAILED);
     router.unregister(ResponseCode.WITHDRAW_SUCCESS);
     router.unregister(ResponseCode.WITHDRAW_FAILED);
+
+    // THÊM MỚI: Hủy đăng ký lắng nghe
+    router.unregister(ResponseCode.TRANSACTIONS_RESULT);
   }
 
   private void requestProfile() {
@@ -119,7 +135,11 @@ public class AccountController {
   }
 
   private void requestWalletData() {
+    // Vẫn lấy profile để cập nhật số dư
     SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
+
+    // THÊM MỚI: Gửi request lấy lịch sử giao dịch của user
+    SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, myId);
   }
 
   @SuppressWarnings("unchecked")
@@ -130,6 +150,40 @@ public class AccountController {
       Platform.runLater(() -> {
         loadProfileUI(user);
         loadWalletUI(user);
+      });
+    }
+  }
+
+  // THÊM MỚI: Xử lý dữ liệu giao dịch trả về
+  @SuppressWarnings("unchecked")
+  private void handleTransactionsResult(Message msg) {
+    Object payload = msg.getPayload();
+    if (payload instanceof List) {
+      List<TransactionRequest> transactions = (List<TransactionRequest>) payload;
+
+      Platform.runLater(() -> {
+        if (transactions == null || transactions.isEmpty()) {
+          // Trống -> Hiện Empty Box, ẩn List
+          if (emptyTransactions != null) {
+            emptyTransactions.setVisible(true);
+            emptyTransactions.setManaged(true);
+          }
+          if (listTransactions != null) {
+            listTransactions.setVisible(false);
+            listTransactions.setManaged(false);
+          }
+        } else {
+          // Có dữ liệu -> Ẩn Empty Box, hiện List và đổ dữ liệu
+          if (emptyTransactions != null) {
+            emptyTransactions.setVisible(false);
+            emptyTransactions.setManaged(false);
+          }
+          if (listTransactions != null) {
+            listTransactions.setVisible(true);
+            listTransactions.setManaged(true);
+            listTransactions.getItems().setAll(transactions);
+          }
+        }
       });
     }
   }
@@ -156,6 +210,7 @@ public class AccountController {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu nạp tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
       requestProfile();
+      requestWalletData(); // Refresh lại ví sau khi gửi yêu cầu nạp
     });
   }
 
@@ -163,6 +218,7 @@ public class AccountController {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu rút tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
       requestProfile();
+      requestWalletData(); // Refresh lại ví sau khi gửi yêu cầu rút
     });
   }
 
@@ -186,14 +242,7 @@ public class AccountController {
     set(lblBalance, formatMoney(balance) + " UETệ");
     set(lblBalanceUpdated, "Cập nhật vừa xong");
 
-    if (emptyTransactions != null) {
-      emptyTransactions.setVisible(true);
-      emptyTransactions.setManaged(true);
-    }
-    if (listTransactions != null) {
-      listTransactions.setVisible(false);
-      listTransactions.setManaged(false);
-    }
+    // Đã xóa phần ẩn cứng listTransactions ở đây, do handleTransactionsResult đã đảm nhận việc đó
   }
 
   @FXML
@@ -275,6 +324,27 @@ public class AccountController {
       showError("Không thể chuyển trang: " + e.getMessage());
     }
   }
+  @FXML void handleSwitchToBidder(ActionEvent event ) {
+    try {
+      // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
+      FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
+      Parent root = loader.load();
+
+      //Ép kiểu controller để truyền dữ liệu User vừa lấy từ Database Railway sang trang chủ
+      The_Home_Page_Bidder_View_Controller homeController = loader.getController();
+      homeController.setUserData(ClientSession.getInstance().getCurrentUser());
+      Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+      Scene scene = new Scene(root, 1280, 720);
+
+      stage.setScene(scene);
+      stage.setTitle("Elite Auction - Trang chủ hệ thống");
+      stage.setMaximized(true); // Giữ tính năng phóng to toàn màn hình cho đẹp
+      stage.centerOnScreen();
+      stage.show();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    System.out.println("Chuyển người mua"); }
 
   private void clearPasswordFields() {
     if (txtCurrentPass != null) txtCurrentPass.clear();

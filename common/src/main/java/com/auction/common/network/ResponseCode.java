@@ -38,6 +38,7 @@ public enum ResponseCode {
     PASSWORD_CHANGED,           // payload: null
     PASSWORD_CHANGE_FAILED,     // payload: null
     REPORT_SENT,                // payload: null
+    TRANSACTIONS_RESULT,        // THÊM MỚI: payload: List<TransactionRequest> (Lịch sử giao dịch cá nhân)
 
     // ===================== SELLER =====================
     SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)
@@ -52,6 +53,8 @@ public enum ResponseCode {
     SELLER_AUCTION_APPROVED,    // (Push) payload: Integer auctionId
     SELLER_AUCTION_REJECTED,    // (Push) payload: Object[] {auctionId, reason}
     SELLER_AUCTION_SOLD,        // (Push) payload: Object[] {auctionId, finalPrice, buyerName}
+    SELLER_EDIT_SUCCESS,
+    SELLER_EDIT_FAILED,
 
     // ===================== ADMIN =====================
     ADMIN_ALL_AUCTIONS_RESULT,  // payload: List<Auction>
@@ -69,10 +72,11 @@ public enum ResponseCode {
     ADMIN_USERS_RESULT,             // payload: List<User>
     ADMIN_BAN_SUCCESS,              // payload: Integer userId
     ADMIN_UNBAN_SUCCESS,            // payload: Integer userId
-    // Broadcast tới tất cả Admin đang online khi có phiên mới cần duyệt
     ADMIN_NEW_PENDING_AUCTION,      // (Broadcast to Admin) payload: Auction
+    ADMIN_AUCTION_APPROVED,
+    ADMIN_AUCTION_REJECTED,
+    ADMIN_DELETE_BLOCKED_SUCCESS,   // payload: Integer auctionId (đã xóa)
 
-    ADMIN_AUCTION_APPROVED, // ===================== ERROR =====================
-    ADMIN_AUCTION_REJECTED, ERROR_MESSAGE,              // payload: String errorDetail
-    SELLER_EDIT_SUCCESS, SELLER_EDIT_FAILED, ADMIN_DELETE_BLOCKED_SUCCESS                        // payload: Integer auctionId (đã xóa)
+    // ===================== ERROR =====================
+    ERROR_MESSAGE                   // payload: String errorDetail
 }

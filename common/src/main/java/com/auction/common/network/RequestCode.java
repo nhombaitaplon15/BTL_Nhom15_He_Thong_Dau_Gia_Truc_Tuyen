@@ -15,7 +15,7 @@ public enum RequestCode {
     LOGIN,              // Đăng nhập (payload: LoginDTO)
     REGISTER,           // Đăng ký (payload: LoginDTO)
 
-    // ===================== BIDDER =====================
+    // ===================== BIDDER / SHARED USER =====================
     FETCH_ROOMS,        // Lấy danh sách phòng đấu giá đang mở
     FETCH_ITEMS,        // Lấy items theo danh mục phòng (payload: String category)
     JOIN_ROOM,          // Vào phòng (payload: Integer auctionId)
@@ -29,6 +29,7 @@ public enum RequestCode {
     UPDATE_PROFILE,     // Cập nhật thông tin cá nhân (payload: User)
     CHANGE_PASSWORD,    // Đổi mật khẩu (payload: String[] {oldPwd, newPwd})
     REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: String message)
+    GET_USER_TRANSACTIONS, // THÊM MỚI: Lấy lịch sử giao dịch cá nhân (payload: Integer userId)
 
     // ===================== SELLER =====================
     SELLER_GET_MY_ITEMS,       // Lấy danh sách item của seller (payload: null)
@@ -36,6 +37,8 @@ public enum RequestCode {
     SELLER_GET_MY_AUCTIONS,    // Lấy danh sách phiên đấu giá của seller (payload: null)
     SELLER_CANCEL_AUCTION,     // Yêu cầu hủy phiên (payload: Integer auctionId)
     SELLER_CONFIRM_SALE,       // Xác nhận bán sau khi phiên kết thúc (payload: Integer auctionId)
+    SELLER_ADD_ITEM,
+    SELLER_EDIT_AUCTION,
 
     // ===================== ADMIN =====================
     ADMIN_GET_ALL_AUCTIONS,    // Lấy tất cả phiên đấu giá (payload: null)
@@ -49,5 +52,5 @@ public enum RequestCode {
     ADMIN_GET_ALL_USERS,       // Lấy danh sách users (payload: null)
     ADMIN_BAN_USER,            // Ban user (payload: Integer userId)
     ADMIN_UNBAN_USER,          // Unban user (payload: Integer userId)
-    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
+    ADMIN_DELETE_BLOCKED_AUCTION // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
 }

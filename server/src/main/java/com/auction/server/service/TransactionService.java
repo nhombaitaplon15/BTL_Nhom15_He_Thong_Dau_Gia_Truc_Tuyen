@@ -55,8 +55,8 @@ public class TransactionService {
         }
 
         String description = (bankInfo == null || bankInfo.isBlank())
-                ? "WITHDRAW"
-                : "WITHDRAW - Ngân hàng: " + bankInfo;
+            ? "WITHDRAW"
+            : "WITHDRAW - Ngân hàng: " + bankInfo;
 
         try {
             boolean success = transDAO.createTransaction(user.getId(), amount, description, "PENDING");
@@ -132,8 +132,8 @@ public class TransactionService {
 
                 // Bước C: Đồng bộ tức thời lên RAM để Client nhận diện thay đổi qua Socket
                 double newBalance = type.equalsIgnoreCase("DEPOSIT")
-                        ? liveUser.getBalance() + amount
-                        : liveUser.getBalance() - amount;
+                    ? liveUser.getBalance() + amount
+                    : liveUser.getBalance() - amount;
                 liveUser.setBalance(newBalance);
 
                 System.out.println(">>> [DUYỆT THÀNH CÔNG] " + type + " số tiền " + amount + " cho tài khoản " + liveUser.getUsername());
@@ -150,6 +150,11 @@ public class TransactionService {
     /** Lấy toàn bộ danh sách giao dịch hiển thị cho trang quản trị Admin */
     public List<TransactionRequest> getAllTransactions() {
         return transDAO.getAllTransactions();
+    }
+
+    /** Lấy danh sách giao dịch hiển thị cho MỘT USER (Lịch sử cá nhân) */
+    public List<TransactionRequest> getTransactionsByUserId(int userId) {
+        return transDAO.getTransactionsByUserId(userId);
     }
 
     /** Phê duyệt giao dịch thông qua đối tượng yêu cầu (TransactionRequest Mapping) */
@@ -171,10 +176,10 @@ public class TransactionService {
         }
 
         boolean success = transDAO.processApproval(
-                target.getRequestId(),
-                target.getUser().getId(),
-                target.getAmount(),
-                target.getType()
+            target.getRequestId(),
+            target.getUser().getId(),
+            target.getAmount(),
+            target.getType()
         );
 
         if (!success) {

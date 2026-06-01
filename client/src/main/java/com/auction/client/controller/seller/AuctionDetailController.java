@@ -487,25 +487,7 @@ public class AuctionDetailController {
     AlertUtils.info("Mở kênh liên hệ với người thắng #" + currentAuction.getCurrentWinnerId());
   }
 
-  // ── NAV ──
-  @FXML private void onNavHome()     { navigateTo("/view/The_Home_Page_Seller_View.fxml"); }
-  @FXML private void onNavProducts() { navigateTo("/view/MyProductsView.fxml"); }
-  @FXML private void onNavAuction()  { onBack(); }
-  @FXML private void onNavAccount()  { navigateTo("/view/AccountView.fxml"); }
 
-  private void navigateTo(String fxmlPath) {
-    stopTimer();
-    cleanupHandlers();
-    try {
-      javafx.fxml.FXMLLoader loader =
-          new javafx.fxml.FXMLLoader(getClass().getResource(fxmlPath));
-      javafx.scene.Parent root = loader.load();
-      ((javafx.stage.Stage) lblAuctionTitle.getScene().getWindow())
-          .setScene(new javafx.scene.Scene(root));
-    } catch (Exception e) {
-      AlertUtils.error("Không thể chuyển trang: " + e.getMessage());
-    }
-  }
 
   // ════════════════════════════════════════
   // STATUS PILL

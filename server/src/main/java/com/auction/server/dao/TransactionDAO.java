@@ -132,29 +132,28 @@ public class TransactionDAO {
         String sql = "SELECT * FROM public.transactions ORDER BY created_at DESC";
 
         try (
-                Connection conn = DBConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()
+            Connection conn = DBConnection.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()
         ) {
             while (rs.next()) {
-                // Sử dụng UserFactory dựng thực thể User rỗng tạm thời để bọc dữ liệu cho Model hiển thị
                 User user = UserFactory.createUser(
-                        rs.getInt("user_id"),
-                        "", // username
-                        "", // email
-                        "", // password
-                        "", // phone
-                        "", // status
-                        "USER", // role tạm thời
-                        0.0 // balance
+                    rs.getInt("user_id"),
+                    "", // username
+                    "", // email
+                    "", // password
+                    "", // phone
+                    "", // status
+                    "USER", // role tạm thời
+                    0.0 // balance
                 );
 
                 TransactionRequest tx = new TransactionRequest(
-                        user,
-                        rs.getString("transaction_type"),
-                        rs.getDouble("amount"),
-                        "",
-                        rs.getString("status")
+                    user,
+                    rs.getString("transaction_type"),
+                    rs.getDouble("amount"),
+                    "",
+                    rs.getString("status")
                 );
                 tx.setRequestId(rs.getInt("transaction_id"));
                 tx.setRequestDate(rs.getTimestamp("created_at").toLocalDateTime());
@@ -162,6 +161,45 @@ public class TransactionDAO {
             }
         } catch (SQLException e) {
             System.err.println("❌ Lỗi hàm getAllTransactions: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * 🎯 Lấy danh sách lịch sử yêu cầu giao dịch của MỘT USER CỤ THỂ
+     * Phục vụ chức năng hiển thị lịch sử ví UETệ trên Client
+     */
+    public List<TransactionRequest> getTransactionsByUserId(int userId) {
+        List<TransactionRequest> list = new ArrayList<>();
+        String sql = "SELECT * FROM public.transactions WHERE user_id = ? ORDER BY created_at DESC";
+
+        try (
+            Connection conn = DBConnection.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User user = UserFactory.createUser(
+                        rs.getInt("user_id"),
+                        "", "", "", "", "", "USER", 0.0
+                    );
+
+                    TransactionRequest tx = new TransactionRequest(
+                        user,
+                        rs.getString("transaction_type"),
+                        rs.getDouble("amount"),
+                        "",
+                        rs.getString("status")
+                    );
+                    tx.setRequestId(rs.getInt("transaction_id"));
+                    tx.setRequestDate(rs.getTimestamp("created_at").toLocalDateTime());
+                    list.add(tx);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Lỗi hàm getTransactionsByUserId: " + e.getMessage());
             e.printStackTrace();
         }
         return list;

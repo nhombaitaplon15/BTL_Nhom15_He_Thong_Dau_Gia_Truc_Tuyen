@@ -6,7 +6,6 @@ import com.auction.common.model.Item;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.*;
-import com.auction.common.network.AuctionItemDTO;
 import com.auction.server.service.AdminService;
 import com.auction.server.service.BiddingService;
 import com.auction.server.service.ItemService;
@@ -14,25 +13,15 @@ import com.auction.server.service.ManagerService;
 import com.auction.server.service.SellerService;
 import com.auction.server.service.TransactionService;
 import com.auction.server.service.UserService;
-import com.auction.server.core.ClientHandler;
-import com.auction.server.core.AuctionRoomManager;
 
 import java.util.List;
 
 /**
  * RequestDispatcher - Bộ điều phối trung tâm phía Server.
- *
- * PHIÊN BẢN ĐẦY ĐỦ: Xử lý tất cả request từ Bidder, Seller, Admin.
- *
- * Luồng: ClientHandler nhận Message -> dispatch() -> handler tương ứng
- *        -> Service/DAO -> gửi Response về client (và broadcast nếu cần)
- *
- * ĐẶT TẠI: server/src/main/java/com/auction/server/core/RequestDispatcher.java
  */
 public class RequestDispatcher {
     private static final RequestDispatcher instance = new RequestDispatcher();
 
-    // === Services khởi tạo một lần (Singleton-like, thread-safe qua synchronized method) ===
     private final UserService userService = new UserService();
     private final ItemService itemService = new ItemService();
     private final ManagerService managerService = new ManagerService(itemService);
@@ -44,10 +33,6 @@ public class RequestDispatcher {
     private RequestDispatcher() {}
     public static RequestDispatcher getInstance() { return instance; }
 
-    // =========================================================
-    // ENTRY POINT
-    // =========================================================
-
     public void dispatch(ClientHandler client, Message request) {
         if (request == null || request.getRequestCode() == null) return;
         try {
@@ -56,7 +41,7 @@ public class RequestDispatcher {
                 case LOGIN:            handleLogin(client, request);           break;
                 case REGISTER:         handleRegister(client, request);        break;
 
-                // --- BIDDER ---
+                // --- BIDDER / SHARED ---
                 case FETCH_ROOMS:      handleFetchRooms(client);               break;
                 case FETCH_ITEMS:      handleFetchItems(client, request);      break;
                 case JOIN_ROOM:        handleJoinRoom(client, request);        break;
@@ -71,13 +56,16 @@ public class RequestDispatcher {
                 case CHANGE_PASSWORD:  handleChangePassword(client, request);  break;
                 case REPORT_ISSUE:     handleReportIssue(client, request);     break;
 
+                // THÊM MỚI Ở ĐÂY: Xử lý lấy lịch sử giao dịch cá nhân
+                case GET_USER_TRANSACTIONS: handleGetUserTransactions(client, request); break;
+
                 // --- SELLER ---
-                case SELLER_GET_MY_ITEMS:     handleSellerGetMyItems(client, request);              break;
+                case SELLER_GET_MY_ITEMS:     handleSellerGetMyItems(client, request);    break;
                 case SELLER_CREATE_AUCTION:   handleSellerCreateAuction(client, request); break;
-                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client, request);          break;
+                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client, request); break;
                 case SELLER_CANCEL_AUCTION:   handleSellerCancelAuction(client, request); break;
                 case SELLER_CONFIRM_SALE:     handleSellerConfirmSale(client, request);   break;
-                case SELLER_ADD_ITEM:         handleSellerAddItem(client, request); break;
+                case SELLER_ADD_ITEM:         handleSellerAddItem(client, request);       break;
                 case SELLER_EDIT_AUCTION:     handleSellerEditAuction(client, request);   break;
 
                 // --- ADMIN ---
@@ -100,6 +88,27 @@ public class RequestDispatcher {
         } catch (Exception e) {
             System.err.println("[DISPATCHER ERROR] " + request.getRequestCode() + ": " + e.getMessage());
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi máy chủ: " + e.getMessage(), null));
+        }
+    }
+
+    // =========================================================
+    // HÀM MỚI: Xử lý Request lấy giao dịch cá nhân
+    // =========================================================
+    private void handleGetUserTransactions(ClientHandler client, Message request) {
+        try {
+            // Ưu tiên lấy từ Session của socket, nếu null thì lấy từ payload do client gửi
+            Integer userId = client.getLoggedInUserId();
+            if (userId == null) {
+                userId = (Integer) request.getPayload();
+            }
+            if (userId == null) return;
+
+            // Gọi TransactionService lấy danh sách (Hãy đảm bảo TransactionService có hàm này)
+            List<TransactionRequest> transactions = transactionService.getTransactionsByUserId(userId);
+
+            client.sendMessage(new Message(ResponseCode.TRANSACTIONS_RESULT, "OK", transactions));
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được lịch sử giao dịch", null));
         }
     }
 
@@ -205,7 +214,6 @@ public class RequestDispatcher {
             String msg = (String) request.getPayload();
             Integer userId = client.getLoggedInUserId();
             if (userId == null || msg == null || msg.trim().isEmpty()) return;
-            // Broadcast tới tất cả client trong cùng phòng thông qua AuctionRoomManager
             String fullMsg = "User#" + userId + ": " + msg.trim();
             AuctionRoomManager.getInstance().broadcastChatToUserRooms(userId, fullMsg, client);
         } catch (Exception e) {
@@ -241,7 +249,6 @@ public class RequestDispatcher {
             Double amount = (Double) request.getPayload();
             Integer userId = client.getLoggedInUserId();
             User user = userService.getUserById(userId);
-            // Tạm thời hard-code thông tin ngân hàng
             String bankInfo = "PENDING_BANK_INFO";
             transactionService.handleWithdrawRequest(user, amount, bankInfo);
             client.sendMessage(new Message(ResponseCode.WITHDRAW_SUCCESS, "Yêu cầu rút tiền đã gửi", null));
@@ -288,7 +295,6 @@ public class RequestDispatcher {
         try {
             String issueContent = (String) request.getPayload();
             Integer userId = client.getLoggedInUserId();
-            // Lưu vào DB (IssueDAO tồn tại trong project)
             System.out.println("[REPORT] User#" + userId + ": " + issueContent);
             client.sendMessage(new Message(ResponseCode.REPORT_SENT, "Báo cáo đã được gửi", null));
         } catch (Exception e) {
@@ -302,7 +308,6 @@ public class RequestDispatcher {
 
     private void handleSellerGetMyItems(ClientHandler client,Message request) {
         try {
-            //Integer userId = client.getLoggedInUserId();
             Integer sellerId = (Integer) request.getPayload();
             List<Item> items = itemService.getItemsBySeller(sellerId);
             client.sendMessage(new Message(ResponseCode.SELLER_ITEMS_RESULT, "OK", items));
@@ -317,49 +322,34 @@ public class RequestDispatcher {
             Integer sellerId = client.getLoggedInUserId();
             User seller = userService.getUserById(sellerId);
 
-            // Gọi SellerService để tạo phiên (trạng thái = WAITING_FOR_ADMIN)
             sellerService.requestCreateAuction(seller, dto.getItemId(), dto.getStartTime(), dto.getEndTime());
 
-            // Lấy auctionId vừa tạo để báo lại client
             List<Auction> myAuctions = managerService.getAuctionsBySeller(sellerId);
             int newAuctionId = myAuctions.isEmpty() ? -1 : myAuctions.get(myAuctions.size() - 1).getAuctionId();
 
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTION_CREATED,
-                    "Phiên đã gửi lên Admin để duyệt!", newAuctionId));
+                "Phiên đã gửi lên Admin để duyệt!", newAuctionId));
 
-            // Broadcast tới tất cả Admin đang online: có phiên mới cần duyệt
             Auction newAuction = myAuctions.isEmpty() ? null : myAuctions.get(myAuctions.size() - 1);
             if (newAuction != null) {
                 SessionManager.getInstance().broadcastToAdmins(
-                        new Message(ResponseCode.ADMIN_NEW_PENDING_AUCTION, "Phiên mới cần duyệt!", newAuction),
-                        userService
+                    new Message(ResponseCode.ADMIN_NEW_PENDING_AUCTION, "Phiên mới cần duyệt!", newAuction),
+                    userService
                 );
             }
             System.out.println("[SELLER] User#" + sellerId + " tạo phiên cho item#" + dto.getItemId());
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTION_CREATE_FAILED,
-                    "Tạo phiên thất bại: " + e.getMessage(), null));
+                "Tạo phiên thất bại: " + e.getMessage(), null));
         }
     }
 
-    //    private void handleSellerGetMyAuctions(ClientHandler client) {
-//        try {
-//            Integer sellerId = client.getLoggedInUserId();
-//            List<Auction> auctions = managerService.getAuctionsBySeller(sellerId);
-//            client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", auctions));
-//        } catch (Exception e) {
-//            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
-//        }
-//    }
     private void handleSellerGetMyAuctions(ClientHandler client, Message request) {
         try {
-            //Integer sellerId = client.getLoggedInUserId();
             Integer sellerId = (Integer) request.getPayload();
-            // ĐÃ SỬA: Dùng hàm getAuctionItemsBySeller mới viết để lấy List kết hợp
             List<AuctionItemDTO> combinedAuctions =
-                    managerService.getAuctionItemsBySeller(sellerId);
+                managerService.getAuctionItemsBySeller(sellerId);
 
-            // Gửi cục data mới này về cho Client
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", combinedAuctions));
         } catch (Exception e) {
             e.printStackTrace();
@@ -394,15 +384,12 @@ public class RequestDispatcher {
     private void handleSellerAddItem(ClientHandler client, Message request) {
         try {
             Integer currentUserId = client.getLoggedInUserId();
-
-            // 1. Chặn lỗi ngay từ cửa nếu User chưa đăng nhập hoặc mất session
             if (currentUserId == null) {
                 client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE,
                     "Phiên đăng nhập đã hết hạn. Vui lòng tắt ứng dụng và đăng nhập lại!", null));
-                return; // Dừng lại luôn, không chạy code phía dưới nữa
+                return;
             }
 
-            // 2. Nếu đã có ID thì mới cho thêm sản phẩm
             Item item = (Item) request.getPayload();
             item.setSellerId(currentUserId);
             itemService.addItem(item);
@@ -418,7 +405,6 @@ public class RequestDispatcher {
             Integer sellerId = client.getLoggedInUserId();
             User seller = userService.getUserById(sellerId);
 
-            // Gọi SellerService để xử lý logic sửa
             sellerService.editAuction(seller, updatedAuction);
 
             client.sendMessage(new Message(ResponseCode.SELLER_EDIT_SUCCESS, "Cập nhật thành công!", null));
@@ -427,6 +413,7 @@ public class RequestDispatcher {
             client.sendMessage(new Message(ResponseCode.SELLER_EDIT_FAILED, e.getMessage(), null));
         }
     }
+
     // =========================================================
     // ADMIN HANDLERS
     // =========================================================
@@ -446,19 +433,16 @@ public class RequestDispatcher {
             boolean success = adminService.approveAuction(auctionId);
             if (success) {
                 Auction updatedAuction = managerService.getAuctionOrThrow(auctionId);
-
                 client.sendMessage(new Message(
-                        ResponseCode.ADMIN_APPROVE_SUCCESS,
-                        "Đã duyệt phiên #" + auctionId,
-                        updatedAuction
+                    ResponseCode.ADMIN_APPROVE_SUCCESS,
+                    "Đã duyệt phiên #" + auctionId,
+                    updatedAuction
                 ));
 
-                // Push thông báo tới Seller chủ phiên
                 Auction auction = managerService.getAuctionOrThrow(auctionId);
                 SessionManager.getInstance().sendToUserIfOnline(auction.getSellerId(),
-                        new Message(ResponseCode.SELLER_AUCTION_APPROVED, "Phiên của bạn đã được duyệt!", auctionId));
+                    new Message(ResponseCode.SELLER_AUCTION_APPROVED, "Phiên của bạn đã được duyệt!", auctionId));
 
-                // Kích hoạt phòng đấu giá realtime
                 AuctionRoomManager.getInstance().openRoom(auction);
                 System.out.println("[ADMIN] Đã duyệt + mở phòng cho phiên #" + auctionId);
             } else {
@@ -471,18 +455,17 @@ public class RequestDispatcher {
 
     private void handleAdminRejectAuction(ClientHandler client, Message request) {
         try {
-            Object[] payload = (Object[]) request.getPayload(); // {auctionId, reason}
+            Object[] payload = (Object[]) request.getPayload();
             int auctionId = (int) payload[0];
             String reason = (String) payload[1];
             adminService.rejectAuction(auctionId, reason);
             client.sendMessage(new Message(ResponseCode.ADMIN_REJECT_SUCCESS,
-                    "Đã từ chối phiên #" + auctionId, auctionId));
+                "Đã từ chối phiên #" + auctionId, auctionId));
 
-            // Push thông báo tới Seller
             Auction auction = managerService.getAuctionOrThrow(auctionId);
             SessionManager.getInstance().sendToUserIfOnline(auction.getSellerId(),
-                    new Message(ResponseCode.SELLER_AUCTION_REJECTED,
-                            "Phiên của bạn bị từ chối!", new Object[]{auctionId, reason}));
+                new Message(ResponseCode.SELLER_AUCTION_REJECTED,
+                    "Phiên của bạn bị từ chối!", new Object[]{auctionId, reason}));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ADMIN_REJECT_FAILED, e.getMessage(), null));
         }
@@ -493,7 +476,6 @@ public class RequestDispatcher {
             int auctionId;
             String reason = "";
             Object payload = request.getPayload();
-            // Hỗ trợ 2 dạng payload: Integer (cũ) hoặc Object[]{auctionId, reason} (mới)
             if (payload instanceof Object[] arr) {
                 auctionId = (int) arr[0];
                 reason    = arr.length > 1 && arr[1] != null ? (String) arr[1] : "";
@@ -505,29 +487,25 @@ public class RequestDispatcher {
 
             boolean success = adminService.blockAuction(finalAuctionId, finalReason);
             if (success) {
-                // 1. Phản hồi ngay cho Admin: BLOCK_SUCCESS
                 client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_SUCCESS,
-                        "Đã phong tỏa phiên #" + finalAuctionId
-                                + (finalReason.isEmpty() ? "" : " | Lý do: " + finalReason),
-                        finalAuctionId));
+                    "Đã phong tỏa phiên #" + finalAuctionId
+                        + (finalReason.isEmpty() ? "" : " | Lý do: " + finalReason),
+                    finalAuctionId));
 
-                // 2. Đóng phòng realtime (kick bidder ra)
                 AuctionRoomManager.getInstance().closeRoom(finalAuctionId);
 
-                // 3. Schedule xóa DB sau 5 phút (300_000 ms), sau đó broadcast xóa tới tất cả Admin
                 java.util.concurrent.Executors.newSingleThreadScheduledExecutor().schedule(() -> {
                     try {
                         boolean deleted = adminService.deleteBlockedAuction(finalAuctionId);
                         if (deleted) {
-                            // Broadcast tới tất cả Admin: xóa row khỏi UI
                             Message deleteMsg = new Message(
-                                    ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS,
-                                    "Phiên BLOCKED #" + finalAuctionId + " đã bị xóa hoàn toàn sau 5 phút.",
-                                    finalAuctionId
+                                ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS,
+                                "Phiên BLOCKED #" + finalAuctionId + " đã bị xóa hoàn toàn sau 5 phút.",
+                                finalAuctionId
                             );
                             SessionManager.getInstance().broadcastToAdmins(deleteMsg);
                             System.out.println("[DISPATCHER] ✅ Đã xóa phiên BLOCKED #" + finalAuctionId
-                                    + " sau 5 phút và broadcast tới Admin.");
+                                + " sau 5 phút và broadcast tới Admin.");
                         }
                     } catch (Exception ex) {
                         System.err.println("[DISPATCHER] Lỗi khi xóa phiên BLOCKED theo schedule: " + ex.getMessage());
@@ -535,7 +513,7 @@ public class RequestDispatcher {
                 }, 5, java.util.concurrent.TimeUnit.MINUTES);
 
                 System.out.println("[DISPATCHER] Phiên #" + finalAuctionId
-                        + " đã bị BLOCK. Đã lên lịch xóa DB sau 5 phút.");
+                    + " đã bị BLOCK. Đã lên lịch xóa DB sau 5 phút.");
             } else {
                 client.sendMessage(new Message(ResponseCode.ADMIN_BLOCK_FAILED, "Không thể phong tỏa", null));
             }
@@ -550,11 +528,11 @@ public class RequestDispatcher {
             boolean deleted = adminService.deleteBlockedAuction(auctionId);
             if (deleted) {
                 client.sendMessage(new Message(ResponseCode.ADMIN_DELETE_BLOCKED_SUCCESS,
-                        "Đã xóa phiên BLOCKED #" + auctionId, auctionId));
+                    "Đã xóa phiên BLOCKED #" + auctionId, auctionId));
                 System.out.println("[DISPATCHER] Xóa thành công phiên BLOCKED #" + auctionId);
             } else {
                 System.out.println("[DISPATCHER] Không xóa phiên #" + auctionId
-                        + " (có thể không tồn tại hoặc không ở BLOCKED).");
+                    + " (có thể không tồn tại hoặc không ở BLOCKED).");
             }
         } catch (Exception e) {
             System.err.println("[DISPATCHER] Lỗi xóa phiên BLOCKED: " + e.getMessage());
@@ -592,7 +570,7 @@ public class RequestDispatcher {
 
     private void handleAdminCreateTransaction(ClientHandler client, Message request) {
         try {
-            Object[] payload = (Object[]) request.getPayload(); // {auctionId, winnerId, price}
+            Object[] payload = (Object[]) request.getPayload();
             int auctionId  = (int)    payload[0];
             int winnerId   = (int)    payload[1];
             double price   = (double) payload[2];
@@ -616,7 +594,6 @@ public class RequestDispatcher {
         try {
             Integer userId = (Integer) request.getPayload();
             userService.banUser(userId);
-            // Kick user ra nếu đang online
             SessionManager.getInstance().forceLogout(userId);
             client.sendMessage(new Message(ResponseCode.ADMIN_BAN_SUCCESS, "Đã ban user#" + userId, userId));
         } catch (Exception e) {

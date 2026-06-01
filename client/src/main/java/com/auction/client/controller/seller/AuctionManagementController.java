@@ -189,7 +189,7 @@ public class AuctionManagementController {
   }
 
   private void handleAuctionCreated(Message msg) {
-    refreshAllData();
+    Platform.runLater(this::refreshAllData);
   }
 
   // ════════════════════════════════════════════════════
@@ -409,7 +409,14 @@ public class AuctionManagementController {
       dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
       dialog.setTitle("Tạo phiên đấu giá — " + item.getName());
       dialog.setScene(new javafx.scene.Scene(root));
+
+      // Hàm showAndWait() sẽ tạm dừng luồng chạy tại đây cho đến khi cửa sổ dialog đóng lại.
       dialog.showAndWait();
+
+      // FIX: Ngay sau khi dialog đóng (dù người dùng tạo thành công hay ấn huỷ bỏ),
+      // hệ thống sẽ gọi lấy lại toàn bộ danh sách phiên và sản phẩm tự động!
+      refreshAllData();
+
     } catch (IOException e) {
       AlertUtils.error("Không thể mở dialog tạo phiên: " + e.getMessage());
     }

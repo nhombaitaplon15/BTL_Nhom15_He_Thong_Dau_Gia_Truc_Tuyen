@@ -106,7 +106,7 @@ public class LoginController {
             if ("ADMIN".equalsIgnoreCase(role)) {
                 fxmlFile = "/view/view/admin/The_Home_Page_Admin_View.fxml";
             } else {
-                fxmlFile = "/view/view/The_Home_Page_Bidder_View.fxml";
+                fxmlFile = "/view/view/bidder/The_Home_Page_Bidder_View.fxml";
                 ClientSession.getInstance().setCurrentUser(user);
             }
 
