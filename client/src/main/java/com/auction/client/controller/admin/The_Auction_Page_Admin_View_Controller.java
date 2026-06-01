@@ -3,6 +3,7 @@ package com.auction.client.controller.admin;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
+import com.auction.common.model.IssueRecord;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
@@ -20,6 +21,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -62,6 +64,9 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     private final ObservableList<Auction> allAuctionList      = FXCollections.observableArrayList();
     /** Data sau filter — cái này gán vào table */
     private final ObservableList<Auction> filteredAuctionList = FXCollections.observableArrayList();
+    /** Set các auctionId đang có báo cáo — dùng để tô màu hàng và hiển thị nút Báo cáo */
+    private final java.util.Set<Integer> reportedAuctionIds   =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
     // ===================== LIFECYCLE =======================
 
@@ -71,6 +76,8 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         setupSearchAndFilter();   // [THÊM]
         registerRealtimeHandlers();
         loadAuctions();
+        // Tải danh sách báo cáo để tô màu hàng ngay khi mở trang
+        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_ISSUES, null);
     }
 
     public void setUserData(User user) {
@@ -197,6 +204,32 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 loadAuctions();
             });
         });
+        // [THÊM] Nhận danh sách issues để đánh dấu hàng báo cáo
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_ISSUES_RESULT, msg -> {
+            Platform.runLater(() -> {
+                @SuppressWarnings("unchecked")
+                java.util.List<IssueRecord> issues =
+                        (java.util.List<IssueRecord>) msg.getPayload();
+                reportedAuctionIds.clear();
+                if (issues != null) {
+                    issues.forEach(r -> reportedAuctionIds.add(r.getAuctionId()));
+                }
+                auctionTable.refresh(); // Vẽ lại để tô màu đúng
+                applyFilter();
+            });
+        });
+        // [THÊM] Khi có báo cáo mới → đánh dấu auction đó ngay lập tức
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_NEW_ISSUE, msg -> {
+            Platform.runLater(() -> {
+                IssueRecord issue = (IssueRecord) msg.getPayload();
+                if (issue != null) {
+                    reportedAuctionIds.add(issue.getAuctionId());
+                    auctionTable.refresh();
+                    setStatus("⚠ Báo cáo mới tại phiên #" + issue.getAuctionId()
+                            + " | " + issue.getIssueType());
+                }
+            });
+        });
     }
 
     private void loadAuctions() {
@@ -321,6 +354,8 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
             private final Button btnReject      = new Button("Từ chối");
             private final Button btnBlock       = new Button("Chặn");
             private final Button btnTransaction = new Button("Giao dịch");
+            // [THÊM] Nút Báo cáo — hiện khi auction có issue
+            private final Button btnReport      = new Button("⚠ Báo cáo");
             private final HBox   container      = new HBox(6);
 
             {
@@ -331,12 +366,15 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 btnReject.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-font-size: 11px;");
                 btnBlock.setStyle("-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-font-size: 11px;");
                 btnTransaction.setStyle("-fx-background-color: #EDE9FE; -fx-text-fill: #7C3AED; -fx-border-color: #C4B5FD; -fx-border-radius: 8; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-font-size: 11px;");
+                // [THÊM] Style nút Báo cáo — màu đỏ nhạt
+                btnReport.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #DC2626; -fx-border-color: #FCA5A5; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 11px;");
 
                 btnInfo.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
                 btnApprove.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
                 btnReject.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
                 btnBlock.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
                 btnTransaction.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
+                btnReport.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
 
                 btnInfo.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
@@ -376,8 +414,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                     });
                 });
 
-                // [SỬA] btnBlock → đổi trạng thái thành BLOCKED ngay trên UI (optimistic),
-                //        server sẽ schedule xóa DB sau 5 phút rồi broadcast ADMIN_DELETE_BLOCKED_SUCCESS
                 btnBlock.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
@@ -388,7 +424,6 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                     confirm.setTitle("Xác nhận Chặn");
                     confirm.showAndWait().ifPresent(btn -> {
                         if (btn == ButtonType.YES) {
-                            // Optimistic update: đổi trạng thái BLOCKED ngay trên RAM (không xóa)
                             ac.setAuctionStatus("BLOCKED");
                             auctionTable.refresh();
                             setStatus("⏳ Đang chặn phiên #" + ac.getAuctionId() + "...");
@@ -415,27 +450,42 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                         }
                     });
                 });
+
+                // [THÊM] Nút Báo cáo → mở dialog xem toàn bộ báo cáo
+                btnReport.setOnAction(e -> {
+                    Auction ac = (Auction) getTableRow().getItem();
+                    if (ac == null) return;
+                    showReportDialog(ac.getAuctionId());
+                });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
+                    setGraphic(null);
+                    if (getTableRow() != null) getTableRow().setStyle("");
+                    return;
                 }
                 Auction ac = (Auction) getTableRow().getItem();
                 String status = ac.getAuctionStatus();
+
+                // [THÊM] Tô màu hàng đỏ nhạt nếu auction có báo cáo
+                boolean hasReport = reportedAuctionIds.contains(ac.getAuctionId());
+                getTableRow().setStyle(hasReport ? "-fx-background-color: #FFF0F0;" : "");
+
                 container.getChildren().clear();
                 container.getChildren().add(btnInfo);
                 switch (status != null ? status : "") {
-                    // WAITING_FOR_ADMIN: chỉ Duyệt + Từ chối (KHÔNG có Chặn)
                     case "WAITING_FOR_ADMIN" -> container.getChildren().addAll(btnApprove, btnReject);
-                    // OPEN: chỉ Chặn
                     case "OPEN"              -> container.getChildren().add(btnBlock);
-                    // RUNNING: Chặn + Giao dịch
                     case "RUNNING"           -> container.getChildren().addAll(btnBlock, btnTransaction);
                     case "CLOSED", "FINISHED", "SOLD", "ENDED" -> container.getChildren().add(btnTransaction);
                     // BLOCKED, REJECTED: chỉ hiện Xem (không có action nào thêm)
+                }
+                // [THÊM] Hiển thị nút Báo cáo nếu auction có report
+                if (hasReport) {
+                    container.getChildren().add(btnReport);
                 }
                 setGraphic(container);
             }
@@ -443,6 +493,120 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
 
         // Gán filteredAuctionList vào table
         auctionTable.setItems(filteredAuctionList);
+    }
+
+    /**
+     * [THÊM] Hiển thị dialog xem toàn bộ báo cáo của một phiên.
+     * Gửi request lấy issues theo auctionId và hiển thị trong một Stage mới.
+     */
+    private void showReportDialog(int auctionId) {
+        // Gửi request lấy danh sách issues — dùng ADMIN_GET_ALL_ISSUES rồi filter
+        // (không có endpoint riêng, lọc ở client side)
+        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_ISSUES, null);
+
+        // Đăng ký handler tạm thời để nhận kết quả rồi hiển thị dialog
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_ISSUES_RESULT, msg -> {
+            // Hủy ngay sau khi nhận để không chiếm handler
+            MessageRouter.getInstance().unregister(ResponseCode.ADMIN_ISSUES_RESULT);
+            Platform.runLater(() -> {
+                @SuppressWarnings("unchecked")
+                java.util.List<IssueRecord> allIssues =
+                        (java.util.List<IssueRecord>) msg.getPayload();
+                // Cập nhật reportedAuctionIds luôn
+                reportedAuctionIds.clear();
+                if (allIssues != null)
+                    allIssues.forEach(r -> reportedAuctionIds.add(r.getAuctionId()));
+                auctionTable.refresh();
+
+                // Lọc issues của phiên được chọn
+                java.util.List<IssueRecord> filtered = (allIssues == null)
+                        ? java.util.Collections.emptyList()
+                        : allIssues.stream()
+                        .filter(r -> r.getAuctionId() == auctionId)
+                        .collect(java.util.stream.Collectors.toList());
+
+                buildAndShowIssueStage(auctionId, filtered);
+            });
+        });
+    }
+
+    /** [THÊM] Xây dựng Stage hiển thị danh sách báo cáo của 1 phiên */
+    private void buildAndShowIssueStage(int auctionId, java.util.List<IssueRecord> issues) {
+        Stage stage = new Stage();
+        stage.setTitle("⚠ Báo cáo sự cố — Phiên #" + auctionId);
+
+        VBox root = new VBox(10);
+        root.setStyle("-fx-background-color: #FAFAFA; -fx-padding: 20;");
+
+        // Tiêu đề
+        Label title = new Label("⚠  Báo Cáo Sự Cố — Phiên #" + auctionId);
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #DC2626;");
+        Label subtitle = new Label("Tổng: " + issues.size() + " báo cáo");
+        subtitle.setStyle("-fx-font-size: 12px; -fx-text-fill: #6B7280;");
+
+        VBox issueList = new VBox(8);
+        issueList.setStyle("-fx-padding: 5 0 0 0;");
+
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+        if (issues.isEmpty()) {
+            Label empty = new Label("Không có báo cáo nào cho phiên này.");
+            empty.setStyle("-fx-text-fill: #9CA3AF; -fx-font-style: italic;");
+            issueList.getChildren().add(empty);
+        } else {
+            for (IssueRecord r : issues) {
+                VBox card = new VBox(4);
+                card.setStyle("-fx-background-color: white; -fx-border-color: #FCA5A5; "
+                        + "-fx-border-radius: 8; -fx-background-radius: 8; "
+                        + "-fx-padding: 10 14 10 14; -fx-border-width: 1.5;");
+
+                HBox header = new HBox(10);
+                header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+                Label lblBadge = new Label("⚠");
+                lblBadge.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 14px;");
+
+                Label lblType = new Label(r.getIssueType() != null ? r.getIssueType() : "Sự cố");
+                lblType.setStyle("-fx-font-weight: bold; -fx-text-fill: #DC2626; -fx-font-size: 13px;");
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+
+                Label lblMeta = new Label("User #" + r.getUserId()
+                        + (r.getCreatedAt() != null ? " · " + r.getCreatedAt().format(fmt) : ""));
+                lblMeta.setStyle("-fx-text-fill: #9CA3AF; -fx-font-size: 11px;");
+
+                header.getChildren().addAll(lblBadge, lblType, spacer, lblMeta);
+
+                Label lblDesc = new Label(r.getDescription() != null ? r.getDescription() : "(Không có mô tả)");
+                lblDesc.setWrapText(true);
+                lblDesc.setStyle("-fx-text-fill: #374151; -fx-font-size: 12px;");
+
+                card.getChildren().addAll(header, lblDesc);
+                issueList.getChildren().add(card);
+            }
+        }
+
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(issueList);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: #FAFAFA; -fx-background-color: #FAFAFA;");
+        scrollPane.setPrefHeight(400);
+
+        Button btnClose = new Button("Đóng");
+        btnClose.setStyle("-fx-background-color: #DC2626; -fx-text-fill: white; "
+                + "-fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 6 20 6 20;");
+        btnClose.setOnAction(e -> stage.close());
+
+        HBox footer = new HBox();
+        footer.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        footer.getChildren().add(btnClose);
+
+        root.getChildren().addAll(title, subtitle,
+                new javafx.scene.control.Separator(), scrollPane, footer);
+
+        stage.setScene(new Scene(root, 580, 520));
+        stage.setResizable(true);
+        stage.show();
     }
 
     // ===================== NAVIGATION =====================

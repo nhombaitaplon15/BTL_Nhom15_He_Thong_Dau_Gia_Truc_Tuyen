@@ -74,5 +74,11 @@ public enum ResponseCode {
 
     ADMIN_AUCTION_APPROVED, // ===================== ERROR =====================
     ADMIN_AUCTION_REJECTED, ERROR_MESSAGE,              // payload: String errorDetail
-    SELLER_EDIT_SUCCESS, SELLER_EDIT_FAILED, ADMIN_DELETE_BLOCKED_SUCCESS                        // payload: Integer auctionId (đã xóa)
+    SELLER_EDIT_SUCCESS, SELLER_EDIT_FAILED, ADMIN_DELETE_BLOCKED_SUCCESS,       // payload: Integer auctionId (đã xóa)
+
+    // ===================== ISSUES / REPORTS =====================
+    REPORT_ISSUE_SUCCESS,       // Bidder gửi báo cáo thành công (payload: null)
+    REPORT_ISSUE_FAILED,        // Báo cáo thất bại (payload: String reason)
+    ADMIN_ISSUES_RESULT,        // Admin nhận danh sách báo cáo (payload: List<IssueRecord>)
+    ADMIN_NEW_ISSUE             // Broadcast: Admin online nhận thông báo có báo cáo mới (payload: IssueRecord)
 }

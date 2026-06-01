@@ -93,6 +93,7 @@ public class RequestDispatcher {
                 case ADMIN_BAN_USER:              handleAdminBanUser(client, request);            break;
                 case ADMIN_UNBAN_USER:            handleAdminUnbanUser(client, request);          break;
                 case ADMIN_DELETE_BLOCKED_AUCTION:handleAdminDeleteBlockedAuction(client, request); break;
+                case ADMIN_GET_ALL_ISSUES:        handleAdminGetAllIssues(client);                 break;
 
                 default:
                     System.out.println("[DISPATCHER] Unknown code: " + request.getRequestCode());
@@ -286,13 +287,45 @@ public class RequestDispatcher {
 
     private void handleReportIssue(ClientHandler client, Message request) {
         try {
-            String issueContent = (String) request.getPayload();
+            com.auction.common.network.ReportIssueDTO dto =
+                    (com.auction.common.network.ReportIssueDTO) request.getPayload();
+            if (dto == null) {
+                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED, "Dữ liệu báo cáo rỗng", null));
+                return;
+            }
+
             Integer userId = client.getLoggedInUserId();
-            // Lưu vào DB (IssueDAO tồn tại trong project)
-            System.out.println("[REPORT] User#" + userId + ": " + issueContent);
-            client.sendMessage(new Message(ResponseCode.REPORT_SENT, "Báo cáo đã được gửi", null));
+            if (userId == null) userId = dto.getUserId();
+
+            com.auction.server.dao.IssueDAO issueDAO = new com.auction.server.dao.IssueDAO();
+            boolean saved = issueDAO.insertIssue(userId, dto.getAuctionId(), dto.getIssueType(), dto.getDescription());
+
+            if (saved) {
+                // Phản hồi thành công về Bidder
+                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_SUCCESS,
+                        "Báo cáo sự cố đã được ghi nhận thành công!", null));
+
+                // Tạo IssueRecord để broadcast lên Admin
+                com.auction.common.model.IssueRecord newIssue = new com.auction.common.model.IssueRecord(
+                        0, userId, dto.getAuctionId(), dto.getIssueType(), dto.getDescription(),
+                        java.time.LocalDateTime.now()
+                );
+                // Broadcast tới tất cả Admin đang online
+                SessionManager.getInstance().broadcastToAdmins(
+                        new Message(ResponseCode.ADMIN_NEW_ISSUE, "Báo cáo mới từ User#" + userId, newIssue),
+                        userService
+                );
+                System.out.println("[REPORT] ✅ User#" + userId + " báo cáo phiên #" + dto.getAuctionId()
+                        + " | Loại: " + dto.getIssueType());
+            } else {
+                client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
+                        "Lỗi hệ thống! Không thể lưu báo cáo vào Database.", null));
+                System.err.println("[REPORT] ❌ Không lưu được báo cáo của User#" + userId);
+            }
         } catch (Exception e) {
-            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi gửi báo cáo", null));
+            System.err.println("[REPORT ERROR] " + e.getMessage());
+            client.sendMessage(new Message(ResponseCode.REPORT_ISSUE_FAILED,
+                    "Lỗi xử lý báo cáo: " + e.getMessage(), null));
         }
     }
 
@@ -618,6 +651,17 @@ public class RequestDispatcher {
             client.sendMessage(new Message(ResponseCode.ADMIN_UNBAN_SUCCESS, "Đã unban user#" + userId, userId));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi unban user: " + e.getMessage(), null));
+        }
+    }
+
+    private void handleAdminGetAllIssues(ClientHandler client) {
+        try {
+            com.auction.server.dao.IssueDAO issueDAO = new com.auction.server.dao.IssueDAO();
+            java.util.List<com.auction.common.model.IssueRecord> issues = issueDAO.getAllIssues();
+            client.sendMessage(new Message(ResponseCode.ADMIN_ISSUES_RESULT, "OK", (java.io.Serializable) issues));
+            System.out.println("[ADMIN] Đã gửi " + issues.size() + " báo cáo sự cố cho Admin.");
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được báo cáo: " + e.getMessage(), null));
         }
     }
 }

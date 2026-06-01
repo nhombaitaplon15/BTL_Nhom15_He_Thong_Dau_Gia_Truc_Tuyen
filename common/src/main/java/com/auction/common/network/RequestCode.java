@@ -49,5 +49,9 @@ public enum RequestCode {
     ADMIN_GET_ALL_USERS,       // Lấy danh sách users (payload: null)
     ADMIN_BAN_USER,            // Ban user (payload: Integer userId)
     ADMIN_UNBAN_USER,          // Unban user (payload: Integer userId)
-    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
+    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION, // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
+
+    // ===================== ISSUES / REPORTS =====================
+    // REPORT_ISSUE đã có ở trên (bidder gửi báo cáo, payload: ReportIssueDTO)
+    ADMIN_GET_ALL_ISSUES        // Admin lấy toàn bộ báo cáo sự cố (payload: null)
 }
