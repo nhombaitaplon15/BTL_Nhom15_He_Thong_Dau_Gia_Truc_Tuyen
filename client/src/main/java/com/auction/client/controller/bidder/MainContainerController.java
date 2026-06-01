@@ -46,9 +46,9 @@ public class MainContainerController implements Initializable {
             // Lấy controller của trang vừa nạp và truyền thực thể MainContainer vào nó
             Object childController = loader.getController();
             if (childController instanceof BiddingHistoryController) {
-                //((BiddingHistoryController) childController).setMainContainer(this);
+                ((BiddingHistoryController) childController).setMainContainer(this);
             } else if (childController instanceof The_Home_Page_Bidder_View_Controller) {
-                //((The_Home_Page_Bidder_View_Controller) childController).setMainContainer(this);
+                ((The_Home_Page_Bidder_View_Controller) childController).setMainContainer(this);
             }
 
             // Xóa sạch giao diện cũ đang hiển thị ở vùng bên phải và nạp trang mới

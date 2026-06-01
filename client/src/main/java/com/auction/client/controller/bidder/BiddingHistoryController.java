@@ -235,10 +235,23 @@ public class BiddingHistoryController {
     @FXML
     void onLiveMenuClick(ActionEvent event) {
         cleanupListeners();
+        // Nếu không có mainContainer, chuyển scene trực tiếp
         if (this.mainContainer != null) {
             this.mainContainer.setPage("/view/view/bidder/The_Home_Page_Bidder_View.fxml");
+        } else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                        "/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
+                Parent root = loader.load();
+                The_Home_Page_Bidder_View_Controller homeCtrl = loader.getController();
+                if (homeCtrl != null) homeCtrl.setUserData(this.currentUser);
+                Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+                stage.setScene(new Scene(root, 1280, 720));
+                stage.show();
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
+
 
     private void cleanupListeners() {
         MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
