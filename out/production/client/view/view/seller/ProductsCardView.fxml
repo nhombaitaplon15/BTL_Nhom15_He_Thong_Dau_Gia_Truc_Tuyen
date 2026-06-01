@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!--
+    ProductCard.fxml — thẻ dùng chung cho AUCTIONING / PENDING / SOLD
+    Controller: com.auction.client.controller.ProductsCardController
+    Các node được ẩn/hiện động qua setVisible() trong controller.
+-->
+
+<HBox alignment="CENTER_LEFT" prefHeight="90.0" style="-fx-background-color: white; -fx-background-radius: 10;              -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 3);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.ProductsCardController">
+
+    <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+
+    <children>
+        <!-- Ảnh sản phẩm -->
+        <AnchorPane prefHeight="60.0" prefWidth="60.0" style="-fx-background-color: transparent; -fx-background-radius: 5;">
+            <children>
+                <ImageView fx:id="imgProduct" fitHeight="60.0" fitWidth="60.0" layoutY="3.0" pickOnBounds="true" preserveRatio="true" />
+            </children>
+        </AnchorPane>
+
+        <!-- Tên & phụ đề -->
+        <VBox alignment="CENTER_LEFT" spacing="5.0">
+            <HBox.margin><Insets left="20.0" /></HBox.margin>
+            <children>
+                <Label fx:id="itemNameLabel" text="Tên sản phẩm" textFill="#2f3640">
+                    <font><Font name="System Bold" size="16.0" /></font>
+                </Label>
+                <Label fx:id="subTitleLabel" text="Danh mục · Thời gian" textFill="#7f8fa6" />
+            </children>
+        </VBox>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <!-- Giá -->
+        <VBox alignment="CENTER_RIGHT" spacing="2.0">
+            <HBox.margin><Insets right="30.0" /></HBox.margin>
+            <children>
+                <Label fx:id="startPriceLabel" text="Khởi điểm: 0đ" textFill="#7f8fa6" />
+                <!-- Style được set động trong controller tuỳ CardType -->
+                <Label fx:id="mainPriceLabel" text="0đ">
+                    <font><Font name="System Bold" size="18.0" /></font>
+                </Label>
+                <Label fx:id="priceSubLabel" text="" textFill="#7f8fa6">
+                    <font><Font size="11.0" /></font>
+                </Label>
+            </children>
+        </VBox>
+
+        <!-- Badge trạng thái + winner (SOLD only) -->
+        <VBox alignment="CENTER_RIGHT" spacing="8.0">
+            <HBox.margin><Insets right="20.0" /></HBox.margin>
+            <children>
+                <!-- Text & màu nền được set động trong controller -->
+                <Label fx:id="statusBadgeLabel" text="">
+                    <font><Font size="11.0" /></font>
+                </Label>
+                <!-- Chỉ hiện với SOLD -->
+                <Label fx:id="winnerLabel" managed="false" text="" textFill="#7f8fa6" visible="false">
+                    <font><Font size="11.0" /></font>
+                </Label>
+            </children>
+        </VBox>
+
+        <!-- Nút hành động -->
+        <HBox alignment="CENTER" spacing="8.0">
+            <!-- primaryButton: "Chi tiết" / "Sửa" / "Xem lại" — style set động -->
+            <Button fx:id="primaryButton" prefHeight="35.0" prefWidth="70.0" text="" />
+            <!-- deleteButton: chỉ hiện với PENDING -->
+        </HBox>
+    </children>
+</HBox>

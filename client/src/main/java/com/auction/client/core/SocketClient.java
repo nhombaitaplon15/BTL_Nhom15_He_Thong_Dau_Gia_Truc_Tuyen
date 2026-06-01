@@ -54,10 +54,6 @@ public class SocketClient {
         }
     }
 
-    /**
-     * Gửi request lên server.
-     * Thread-safe: synchronized trên out.
-     */
     public void sendRequest(RequestCode code, Object payload) {
         if (!isConnected || out == null) return;
         try {
@@ -73,10 +69,6 @@ public class SocketClient {
         }
     }
 
-    /**
-     * Vòng lặp lắng nghe response từ server (chạy trên thread riêng).
-     * Mỗi message nhận được đưa vào JavaFX Application Thread qua Platform.runLater.
-     */
     private void listenToServer() {
         try {
             while (isConnected) {
@@ -93,17 +85,6 @@ public class SocketClient {
         }
     }
 
-    /**
-     * ĐÃ SỬA: Phân phối message đến đúng Controller qua MessageRouter.
-     *
-     * Trước đây: hàm này rỗng => TOÀN BỘ thông báo realtime từ server bị nuốt,
-     * không có gì hiển thị ra UI (giá bid mới, phiên kết thúc, chat...).
-     *
-     * Sau khi sửa: gọi MessageRouter.route() để tự động điều hướng đến
-     * Controller đang đăng ký lắng nghe ResponseCode tương ứng.
-     *
-     * Chạy trên JavaFX Application Thread (do Platform.runLater bọc bên ngoài).
-     */
     private void processResponse(Message response) {
         MessageRouter.getInstance().route(response);
     }
@@ -130,10 +111,6 @@ public class SocketClient {
         }
     }
 
-    /**
-     * Tự động thử kết nối lại sau 5 giây nếu bị ngắt đột ngột.
-     * Exponential backoff có thể thêm vào sau để tránh spam server.
-     */
     private void scheduleReconnect() {
         stopHeartbeat();
         Thread reconnectThread = new Thread(() -> {

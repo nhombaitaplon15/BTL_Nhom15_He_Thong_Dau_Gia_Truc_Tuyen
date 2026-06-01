@@ -1,5 +1,6 @@
 package com.auction.client.core;
 
+import com.auction.client.core.SocketClient;
 import com.auction.common.network.RequestCode;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

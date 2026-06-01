@@ -208,10 +208,10 @@ public class InsertItemController implements Initializable {
           String tacGia = txtTacGia.getText().trim();
           int namSangTac = Integer.parseInt(txtNamSangTac.getText().trim());
           String chatLieu = txtChatLieu.getText().trim();
-          String giayChungNhan = txtGiayChungNhan.getText().trim();
+          Boolean coGiayChungNhan = Boolean.valueOf(txtGiayChungNhan.getText().trim());
           newItem = new Art(0, name, description, startPrice, condition,
               sellerId, savedImagePath, LocalDateTime.now(),
-              tacGia, namSangTac, chatLieu, giayChungNhan);
+              tacGia, namSangTac, chatLieu, coGiayChungNhan);
         }
       }
 

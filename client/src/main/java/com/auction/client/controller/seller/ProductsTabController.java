@@ -6,7 +6,7 @@ import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -41,7 +41,7 @@ public class ProductsTabController implements Initializable {
 
   private ProductsCardController.CardType cardType;
   private String dbStatus;
-  private List<AuctionItemDAO> cachedData = List.of();
+  private List<AuctionItemDTO> cachedData = List.of();
 
   // Handler reference để unregister
   private Consumer<Message> onAuctionsResult;
@@ -104,7 +104,7 @@ public class ProductsTabController implements Initializable {
   @SuppressWarnings("unchecked")
   private void handleAuctionsResult(Message message) {
     if (!(message.getPayload() instanceof List<?> list)) return;
-    cachedData = ((List<AuctionItemDAO>) list).stream()
+    cachedData = ((List<AuctionItemDTO>) list).stream()
         .filter(a -> dbStatus.equalsIgnoreCase(a.getAuction().getAuctionStatus()))
         .collect(Collectors.toList());
     filterAndDisplay(searchField.getText().trim());
@@ -115,7 +115,7 @@ public class ProductsTabController implements Initializable {
   // ════════════════════════════════════════
 
   private void filterAndDisplay(String keyword) {
-    List<AuctionItemDAO> filtered = (keyword == null || keyword.isBlank())
+    List<AuctionItemDTO> filtered = (keyword == null || keyword.isBlank())
         ? cachedData
         : cachedData.stream()
         .filter(a -> a.getItem().getName().toLowerCase()
@@ -129,7 +129,7 @@ public class ProductsTabController implements Initializable {
       return;
     }
 
-    for (AuctionItemDAO dto : filtered) {
+    for (AuctionItemDTO dto : filtered) {
       try {
         FXMLLoader loader = new FXMLLoader(
             getClass().getResource("/view/view/seller/ProductCard.fxml"));

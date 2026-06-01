@@ -128,8 +128,8 @@ public class Auction implements Serializable {
     }
 
     public void setItem(Item itemData) {
+        this.item = itemData;
     }
-
     private Item item;
 
     public Item getItem() {

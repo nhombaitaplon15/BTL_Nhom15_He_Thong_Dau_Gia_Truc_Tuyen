@@ -1,5 +1,4 @@
 package com.auction.client.controller.bidder;
-
 import com.auction.common.model.User;
 import com.auction.server.service.TransactionService;
 import javafx.event.ActionEvent;
@@ -144,7 +143,7 @@ public class WalletController {
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/The_Home_Page_Bidder_View.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
 
             Object controller = loader.getController();

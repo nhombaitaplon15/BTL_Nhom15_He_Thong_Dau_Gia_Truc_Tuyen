@@ -6,9 +6,9 @@ import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.service.BiddingService;
+import com.auction.server.core.SessionManager;
 import com.auction.server.service.ManagerService;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -175,6 +175,9 @@ public class AuctionRoom {
                     String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, bidderName),
                     broadcastPayload);
                 broadcastToAll(broadcastMsg);
+
+                // --- BƯỚC 5b: Gửi thêm tới Admin đang online để LiveFeed cập nhật ---
+                SessionManager.getInstance().broadcastToAdmins(broadcastMsg);
 
                 // --- BƯỚC 6: Riêng người thắng nhận BID_SUCCESS ---
                 handler.sendMessage(new Message(ResponseCode.BID_SUCCESS,

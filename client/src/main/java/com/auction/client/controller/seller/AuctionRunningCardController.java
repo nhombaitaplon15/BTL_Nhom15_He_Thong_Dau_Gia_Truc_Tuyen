@@ -1,12 +1,11 @@
 package com.auction.client.controller.seller;
 
 import com.auction.client.core.MessageRouter;
-import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.network.Message;
-import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -51,7 +50,7 @@ public class AuctionRunningCardController extends BaseTimerCardController {
   /**
    * Nhận AuctionItemDAO — không gọi DB.
    */
-  public void setData(com.auction.server.dao.AuctionItemDAO dto) {
+  public void setData(AuctionItemDTO dto) {
     Item    item    = dto.getItem();
     Auction auction = dto.getAuction();
     currentAuctionId = auction.getAuctionId();

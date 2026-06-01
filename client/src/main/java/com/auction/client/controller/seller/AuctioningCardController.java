@@ -2,7 +2,7 @@ package com.auction.client.controller.seller;
 
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -21,7 +21,7 @@ public class AuctioningCardController {
     @FXML private Button detailButton;
     @FXML private Button btnChiTiet;
 
-    public void setData(AuctionItemDAO dto) {
+    public void setData(AuctionItemDTO dto) {
         try {
             Item item = dto.getItem();
             Auction auction = dto.getAuction();

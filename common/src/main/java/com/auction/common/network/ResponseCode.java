@@ -48,8 +48,6 @@ public enum ResponseCode {
     SELLER_CANCEL_FAILED,       // payload: String reason
     SELLER_CONFIRM_SALE_SUCCESS,// payload: null
     SELLER_CONFIRM_SALE_FAILED, // payload: String reason
-    SELLER_EDIT_SUCCESS,        // SỬA: payload: null
-    SELLER_EDIT_FAILED,         // SỬA: payload: String reason
     // Realtime broadcast cho Seller khi phiên của họ được duyệt/từ chối
     SELLER_AUCTION_APPROVED,    // (Push) payload: Integer auctionId
     SELLER_AUCTION_REJECTED,    // (Push) payload: Object[] {auctionId, reason}
@@ -75,5 +73,6 @@ public enum ResponseCode {
     ADMIN_NEW_PENDING_AUCTION,      // (Broadcast to Admin) payload: Auction
 
     ADMIN_AUCTION_APPROVED, // ===================== ERROR =====================
-    ADMIN_AUCTION_REJECTED, ERROR_MESSAGE               // payload: String errorDetail
+    ADMIN_AUCTION_REJECTED, ERROR_MESSAGE,              // payload: String errorDetail
+    SELLER_EDIT_SUCCESS, SELLER_EDIT_FAILED, ADMIN_DELETE_BLOCKED_SUCCESS                        // payload: Integer auctionId (đã xóa)
 }

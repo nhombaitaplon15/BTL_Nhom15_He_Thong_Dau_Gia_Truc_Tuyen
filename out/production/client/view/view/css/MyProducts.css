@@ -1,0 +1,175 @@
+/* ==============================================================
+   GLOBAL & TYPOGRAPHY (MyProducts)
+============================================================== */
+.root {
+    -fx-font-family: "Times New Roman";
+}
+
+.main-content {
+    -fx-background-color: #F5F0E8;
+}
+
+.transparent-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.tab-content {
+    -fx-background-color: #F5F0E8;
+    -fx-padding: 22 26 28 26;
+}
+
+.title-text {
+    -fx-font-size: 17;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.subtitle-text {
+    -fx-font-size: 11.5;
+    -fx-text-fill: #6B5E4A;
+}
+
+.bold-text {
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1A2B4A;
+}
+
+.muted-text {
+    -fx-font-size: 11;
+    -fx-text-fill: #8B7355;
+}
+
+/* ==============================================================
+   SIDEBAR (MyProducts)
+============================================================== */
+.sidebar {
+    -fx-background-color: #1A2B4A;
+    -fx-min-width: 190;
+    -fx-pref-width: 190;
+    -fx-padding: 20 0 20 0;
+    -fx-spacing: 2;
+}
+
+.sidebar-title {
+    -fx-text-fill: #8BA8D4;
+    -fx-font-size: 9;
+    -fx-font-weight: bold;
+    -fx-padding: 0 18 10 18;
+}
+
+.sidebar-add-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #8BA8D4;
+    -fx-font-size: 12;
+    -fx-cursor: hand;
+    -fx-padding: 11 18 11 18;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 0 3;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.sidebar-item {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 11 18 11 18;
+    -fx-cursor: hand;
+}
+
+.sidebar-item-active {
+    -fx-background-color: rgba(215, 168, 89, 0.14);
+    -fx-border-color: transparent transparent transparent #D7A859;
+    -fx-border-width: 0 0 0 3;
+    -fx-padding: 11 18 11 18;
+    -fx-cursor: hand;
+}
+
+.sidebar-text {
+    -fx-text-fill: #8BA8D4;
+    -fx-font-size: 12;
+}
+
+.icon-blue { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #4A90D9; -fx-background-radius: 99; }
+.icon-grey { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #607D8B; -fx-background-radius: 99; }
+.icon-green { -fx-min-width: 7; -fx-pref-width: 7; -fx-min-height: 7; -fx-pref-height: 7; -fx-background-color: #43A047; -fx-background-radius: 99; }
+
+.badge-yellow {
+    -fx-background-color: #D7A859;
+    -fx-text-fill: #3A2408;
+    -fx-font-size: 9;
+    -fx-font-weight: bold;
+    -fx-padding: 1 6 1 6;
+    -fx-background-radius: 99;
+}
+
+/* ==============================================================
+   CONTROLS & LISTS (MyProducts)
+============================================================== */
+.search-field {
+    -fx-background-color: #FDFAF4;
+    -fx-border-color: #D4C9B0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-padding: 7 12 7 12;
+    -fx-font-size: 12;
+}
+
+.btn-primary {
+    -fx-background-color: #233A66;
+    -fx-text-fill: #FFD691;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-padding: 7 16 7 16;
+    -fx-background-radius: 7;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.color-block-blue { -fx-min-width: 4; -fx-pref-width: 4; -fx-min-height: 18; -fx-pref-height: 18; -fx-background-color: #1565C0; -fx-background-radius: 2; }
+.color-block-orange { -fx-min-width: 4; -fx-pref-width: 4; -fx-min-height: 18; -fx-pref-height: 18; -fx-background-color: #F57F17; -fx-background-radius: 2; }
+.color-block-green { -fx-min-width: 4; -fx-pref-width: 4; -fx-min-height: 18; -fx-pref-height: 18; -fx-background-color: #2E7D32; -fx-background-radius: 2; }
+
+.transparent-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.empty-box {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: #E0D5C0;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 10;
+    -fx-padding: 36;
+}
+
+.empty-title {
+    -fx-font-size: 13;
+    -fx-text-fill: #A08C6E;
+}
+
+.info-box {
+    -fx-background-color: #FFF8E1;
+    -fx-border-color: #FFE082;
+    -fx-border-width: 0.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14 10 14;
+}
+
+.info-icon {
+    -fx-text-fill: #F57F17;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+}
+
+.info-text {
+    -fx-font-size: 11;
+    -fx-text-fill: #7B5800;
+}

@@ -1,38 +1,39 @@
+/* =========================================================
+   1. BUTTON WELCOME & BACKGROUND MÀN HÌNH
+   ========================================================= */
 .button-welcome {
-    -fx-background-color: #70e0bb;
+    -fx-background-color: linear-gradient(to right, #6C63FF, #3ECFCF);
     -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-background-radius: 5px; /* Bo góc nút */
+    -fx-background-radius: 8px;
 }
-
-/* Hiệu ứng khi di chuột vào */
 .button-welcome:hover {
-    -fx-background-color: #34dbae;
+    -fx-background-color: linear-gradient(to right, #5A52E0, #2BBCBC);
+    -fx-effect: dropshadow(gaussian, rgba(108,99,255,0.5), 12, 0, 0, 3);
 }
-/* Thiết lập ảnh nền cho màn hình mở đầu */
 .nen-anh-full {
-    -fx-background-image: url("../images/anen1.jpg"); /* Tên file ảnh nền của bạn */
-    -fx-background-size: 100% 100%; /* Ép ảnh giãn ra lấp đầy 100% chiều ngang và dọc */
+    -fx-background-image: url("../images/anen1.jpg");
+    -fx-background-size: 100% 100%;
     -fx-background-repeat: no-repeat;
 }
-/* =========================================================
-   BẢNG ĐẤU GIÁ (GỘP BẢN CŨ VÀ MỚI)
-   ========================================================= */
 
+/* =========================================================
+   2. BẢNG ĐẤU GIÁ / GIAO DỊCH (PREMIUM TABLE VIEW)
+   ========================================================= */
 .my-table {
-    -fx-background-color: transparent;
-    -fx-control-inner-background: transparent;
+    -fx-background-color: white;
+    -fx-control-inner-background: white;
     -fx-background-insets: 0;
-    -fx-background-radius: 16;
-    -fx-border-radius: 16;
-    -fx-border-color: #dbe2ea;
-    -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 4);
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: #D0D9FF;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.12), 20, 0, 0, 6);
     -fx-padding: 10;
-    -fx-table-cell-border-color: transparent; /* Xóa dòng kẻ dọc */
+    -fx-table-cell-border-color: transparent;
 }
 
-/* --- QUAN TRỌNG: ẨN SẠCH CÁC HÀNG TRỐNG (EMPTY ROWS) --- */
+/* Ẩn hàng trống */
 .my-table .table-row-cell:empty {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -41,27 +42,27 @@
     -fx-border-width: 0px;
 }
 
-/* --- HEADER --- */
+/* Table Header - Gradient tím xanh vibrant */
 .my-table .column-header-background {
-    -fx-background-color: white;
-    -fx-background-radius: 16 16 0 0;
-    -fx-padding: 6 0 6 0;
-    -fx-border-color: transparent transparent #eef2f7 transparent;
+    -fx-background-color: linear-gradient(to right, #6C63FF, #48C6EF);
+    -fx-background-radius: 14 14 0 0;
+    -fx-padding: 4 0 4 0;
+    -fx-border-color: transparent;
 }
 .my-table .column-header {
     -fx-background-color: transparent;
-    -fx-pref-height: 48;
+    -fx-pref-height: 52;
     -fx-border-color: transparent;
 }
 .my-table .column-header .label {
-    -fx-font-family: "Times New Roman";
-    -fx-text-fill: #334155;
+    -fx-font-family: "Segoe UI", "Arial";
+    -fx-text-fill: white;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0, 0, 1);
 }
 
-/* --- NỀN BÊN TRONG BẢNG THÀNH TRONG SUỐT --- */
 .my-table .virtual-flow,
 .my-table .virtual-flow .corner,
 .my-table .virtual-flow .clipped-container,
@@ -69,47 +70,241 @@
     -fx-background-color: transparent;
 }
 
-/* --- HÀNG DỮ LIỆU CÓ THẬT --- */
+/* Hàng dữ liệu - zebra stripes vibrant */
 .my-table .table-row-cell {
     -fx-background-color: white;
-    -fx-cell-size: 60px; /* Chiều cao để chứa 2 dòng text */
-    -fx-border-color: transparent transparent #f1f5f9 transparent; /* Chỉ kẻ viền dưới mỏng */
+    -fx-cell-size: 64px;
+    -fx-border-color: transparent transparent #EEF2FF transparent;
+    -fx-border-width: 0 0 1 0;
 }
-
-/* --- HIỆU ỨNG HOVER CHỈ CHO HÀNG CÓ DỮ LIỆU --- */
+.my-table .table-row-cell:filled:odd {
+    -fx-background-color: #FAFBFF;
+}
 .my-table .table-row-cell:filled:hover {
-    -fx-background-color: #F4F7FE !important;
-    -fx-transition: 0.2s;
+    -fx-background-color: linear-gradient(to right, #EEF2FF, #F0FDFF) !important;
+    -fx-cursor: hand;
 }
-
-/* --- CÁC Ô BÊN TRONG --- */
+.my-table .table-row-cell:filled:selected {
+    -fx-background-color: linear-gradient(to right, #E0E7FF, #CCFBF1) !important;
+}
 .my-table .table-cell {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 12 6 12;
 }
 
-/* =========================================================
-   PREMIUM COMPONENTS (BADGE & BUTTONS)
-   ========================================================= */
+/* Scrollbar - thanh cuộn vibrant */
+.my-table .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+.my-table .scroll-bar:vertical .thumb {
+    -fx-background-color: #C7D2FE;
+    -fx-background-radius: 6px;
+}
+.my-table .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #818CF8;
+}
+.my-table .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+.my-table .scroll-bar:vertical .increment-button,
+.my-table .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-pref-height: 0;
+}
 
+/* Status Badges */
 .status-badge {
-    -fx-background-radius: 12px;
-    -fx-padding: 4px 12px 4px 12px;
+    -fx-background-radius: 20px;
+    -fx-padding: 4px 14px 4px 14px;
     -fx-font-family: "Segoe UI", "Arial";
     -fx-font-weight: bold;
     -fx-font-size: 11px;
 }
-.badge-waiting { -fx-background-color: #FFF9E6; -fx-text-fill: #D48806; }
-.badge-open { -fx-background-color: #E6FFFA; -fx-text-fill: #00A67E; }
-.badge-closed { -fx-background-color: #F5F5F5; -fx-text-fill: #8C8C8C; }
-.badge-rejected { -fx-background-color: #FFF1F0; -fx-text-fill: #F5222D; }
+.badge-waiting { -fx-background-color: #FFF3CD; -fx-text-fill: #B45309; }
+.badge-open    { -fx-background-color: #D1FAE5; -fx-text-fill: #047857; }
+.badge-closed  { -fx-background-color: #F3F4F6; -fx-text-fill: #6B7280; }
+.badge-rejected{ -fx-background-color: #FEE2E2; -fx-text-fill: #DC2626; }
+.badge-running { -fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8; }
 
 .btn-action {
-    -fx-background-radius: 6px;
+    -fx-background-radius: 8px;
     -fx-padding: 6px 14px 6px 14px;
     -fx-font-family: "Segoe UI", "Arial";
     -fx-font-weight: bold;
     -fx-font-size: 12px;
     -fx-cursor: hand;
 }
+
+/* =========================================================
+   3. NAVBAR - Navigation bar
+   ========================================================= */
+.nav-bar {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.10), 10, 0, 0, 2);
+}
+.nav-btn-active {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-text-fill: #6C63FF;
+    -fx-border-color: #6C63FF;
+    -fx-border-width: 0 0 3 0;
+}
+.nav-btn-inactive {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-text-fill: #9CA3AF;
+}
+
+/* =========================================================
+   4. BIỂU ĐỒ BÁNH (PREMIUM PIE CHART - Vibrant)
+   ========================================================= */
+.pie-chart {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-legend-visible: true;
+    -fx-legend-side: right;
+}
+
+.chart-pie {
+    -fx-border-color: white;
+    -fx-border-width: 3px;
+    -fx-background-insets: 0;
+}
+.chart-pie:hover {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);
+}
+
+/* Màu vibrant - Waiting, Open, Running, Rejected, End */
+.default-color0.chart-pie { -fx-pie-color: #F59E0B; }
+.default-color0.chart-legend-item-symbol { -fx-background-color: #F59E0B; }
+
+.default-color1.chart-pie { -fx-pie-color: #10B981; }
+.default-color1.chart-legend-item-symbol { -fx-background-color: #10B981; }
+
+.default-color2.chart-pie { -fx-pie-color: #3B82F6; }
+.default-color2.chart-legend-item-symbol { -fx-background-color: #3B82F6; }
+
+.default-color3.chart-pie { -fx-pie-color: #EF4444; }
+.default-color3.chart-legend-item-symbol { -fx-background-color: #EF4444; }
+
+.default-color4.chart-pie { -fx-pie-color: #8B5CF6; }
+.default-color4.chart-legend-item-symbol { -fx-background-color: #8B5CF6; }
+
+.chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 0px 0px 0px 20px;
+}
+.chart-legend-item {
+    -fx-text-fill: #1E293B;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 0 5px 0;
+}
+.chart-legend-item-symbol {
+    -fx-background-radius: 50%;
+    -fx-padding: 6px;
+}
+
+/* =========================================================
+   5. PROGRESS BARS - Mảnh và đẹp
+   ========================================================= */
+.progress-bar {
+    -fx-min-height: 10px;
+    -fx-pref-height: 10px;
+    -fx-max-height: 10px;
+}
+.progress-bar .track {
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 20px;
+}
+.progress-bar .bar {
+    -fx-background-radius: 20px;
+    -fx-background-insets: 0;
+}
+
+/* =========================================================
+   6. CARDS / PANELS - Vibrant shadow
+   ========================================================= */
+.card-vibrant {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(99,102,241,0.12), 18, 0, 0, 5);
+}
+
+/* =========================================================
+   7. KPI STAT BOXES - Gradient cards
+   ========================================================= */
+.kpi-revenue {
+    -fx-background-color: linear-gradient(to bottom-right, #ECFDF5, #D1FAE5);
+    -fx-background-radius: 16;
+    -fx-border-color: #A7F3D0;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+.kpi-conversion {
+    -fx-background-color: linear-gradient(to bottom-right, #FFFBEB, #FEF3C7);
+    -fx-background-radius: 16;
+    -fx-border-color: #FDE68A;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+.kpi-bidders {
+    -fx-background-color: linear-gradient(to bottom-right, #EFF6FF, #DBEAFE);
+    -fx-background-radius: 16;
+    -fx-border-color: #BFDBFE;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+.kpi-disputes {
+    -fx-background-color: linear-gradient(to bottom-right, #FFF1F2, #FFE4E6);
+    -fx-background-radius: 16;
+    -fx-border-color: #FECDD3;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+
+/* =========================================================
+   8. SEARCH BAR & FILTER - Vibrant
+   ========================================================= */
+.search-field {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: #C7D2FE;
+    -fx-border-radius: 12;
+    -fx-border-width: 1.5;
+    -fx-padding: 8 14 8 14;
+}
+.search-field:focused {
+    -fx-border-color: #6C63FF;
+    -fx-effect: dropshadow(gaussian, rgba(108,99,255,0.25), 8, 0, 0, 2);
+}
+
+/* =========================================================
+   9. LIVE FEED ITEMS
+   ========================================================= */
+.live-feed-row {
+    -fx-background-color: linear-gradient(to right, #F0FDF4, #ECFEFF);
+    -fx-background-radius: 10;
+    -fx-padding: 6 12 6 12;
+    -fx-border-color: #A7F3D0;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+/* =========================================================
+   10. BAR CHART - Vibrant
+   ========================================================= */
+.chart-bar {
+    -fx-bar-fill: #6C63FF;
+}
+.default-color0.chart-bar { -fx-bar-fill: linear-gradient(to top, #6C63FF, #A78BFA); }
+.default-color1.chart-bar { -fx-bar-fill: linear-gradient(to top, #10B981, #34D399); }
+

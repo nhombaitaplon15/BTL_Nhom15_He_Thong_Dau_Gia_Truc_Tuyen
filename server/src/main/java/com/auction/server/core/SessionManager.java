@@ -3,6 +3,7 @@ package com.auction.server.core;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
 import com.auction.server.service.UserService;
+import com.auction.server.core.ClientHandler;
 
 import java.util.Collection;
 import java.util.Set;
@@ -147,5 +148,26 @@ public class SessionManager {
             }
         }
         System.out.println("[SESSION] Broadcast Admin (" + count + " admin online): " + message.getResponseCode());
+    }
+
+    /**
+     * [THÊM] Broadcast tới Admin không cần UserService — dùng UserDAO trực tiếp.
+     * Được gọi từ AuctionRoom khi có bid mới để Admin LiveFeed cập nhật realtime.
+     */
+    public void broadcastToAdmins(Message message) {
+        com.auction.server.dao.UserDAO userDAO = new com.auction.server.dao.UserDAO();
+        int count = 0;
+        for (java.util.Map.Entry<Integer, ClientHandler> entry : loggedInUsers.entrySet()) {
+            try {
+                User user = userDAO.getUserById(entry.getKey());
+                if (user != null && "ADMIN".equalsIgnoreCase(user.getRole())) {
+                    entry.getValue().sendMessage(message);
+                    count++;
+                }
+            } catch (Exception e) {
+                System.err.println("[SESSION] Lỗi broadcast Admin: " + e.getMessage());
+            }
+        }
+        System.out.println("[SESSION] Broadcast Admin LiveFeed (" + count + " admin): " + message.getResponseCode());
     }
 }

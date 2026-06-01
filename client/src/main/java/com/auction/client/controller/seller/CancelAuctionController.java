@@ -5,7 +5,7 @@ import com.auction.client.core.SocketClient;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
-import com.auction.server.dao.AuctionItemDAO;
+import com.auction.common.network.AuctionItemDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -24,7 +24,7 @@ public class CancelAuctionController {
   @FXML private Button btnKeep;
   @FXML private Button btnConfirmCancel;
 
-  private AuctionItemDAO auctionItem;
+  private AuctionItemDTO auctionItem;
   private Runnable onSuccessCallback;
 
   // Handler Realtime
@@ -42,7 +42,7 @@ public class CancelAuctionController {
     MessageRouter.getInstance().unregister(ResponseCode.SELLER_CANCEL_FAILED);
   }
 
-  public void setData(AuctionItemDAO item, Runnable onSuccess) {
+  public void setData(AuctionItemDTO item, Runnable onSuccess) {
     this.auctionItem = item;
     this.onSuccessCallback = onSuccess;
 

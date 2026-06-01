@@ -3,44 +3,15 @@ package com.auction.client.controller.admin;
 /*
  * ============================================================
  * FILE: The_Transaction_Page_Admin_View_Controller.java
- * ĐẶT TẠI: client/src/main/java/com/auction/client/controller/admin/
  *
- * THAY ĐỔI SO VỚI FILE GỐC (The_Transaction_Page_Admin_View_Controller.java
- * trong zip gốc — file đó đã có cơ bản nhưng nhiều lỗi nghiêm trọng):
- *
- * 1. [SỬA] @FXML tblTransactions → transactionTable (khớp fx:id trong FXML).
- *    Gốc: field tên "tblTransactions" nhưng FXML fx:id="transactionTable"
- *    → inject fail → TableView luôn null → NullPointerException.
- *
- * 2. [SỬA] Xóa 6 cột PropertyValueFactory, thay bằng 5 cột custom CellFactory.
- *    Lý do:
- *    - TransactionRequest.getId() trả về Object (không phải Integer)
- *      → PropertyValueFactory<>("id") crash ClassCastException.
- *    - TransactionRequest.getUser() trả về User object (nested)
- *      → PropertyValueFactory<>("userId") fail vì không có getUserId().
- *    - Custom lambda cell factory: an toàn tuyệt đối với nested objects.
- *
- * 3. [THÊM] buildCashflowChart(): vẽ LineChart 7 ngày với data thực.
- *    Gốc: có LineChart fx:id="cashflowChart" trong FXML nhưng controller
- *    KHÔNG BAO GIỜ populate → chart rỗng hoàn toàn.
- *    2 series: DEPOSIT APPROVED (xanh) + WITHDRAW APPROVED (đỏ).
- *
- * 4. [THÊM] buildPendingRequestsSection(): tạo card động từ PENDING transactions.
- *    Gốc: Mock card "@tran_binh / 10,000,000 đ" hardcode trong FXML
- *    → nút Duyệt/Từ chối không gắn action gì cả.
- *    Sau: Lọc PENDING từ data thực, mỗi card có 2 nút gọi socket.
- *
- * 5. [THÊM] updateSummaryKPIs(): cập nhật lblTotalInflow + lblPendingBadge.
- *    Gốc: 2 label này hardcode "542,000,000 đ" và "8 lệnh" trong FXML.
- *
- * 6. [THÊM] setupSearchFilter(): filter real-time theo ID hoặc username.
- *    Dùng ObservableList filteredTxList để không xóa data gốc.
- *
- * 7. [THÊM] unregister() tất cả handler khi chuyển màn (tránh memory leak).
- *    Gốc: không có unregister → MessageRouter giữ reference đến màn cũ.
- *
- * 8. [GIỮ] Socket-based ADMIN_GET_ALL_TRANSACTIONS, ADMIN_APPROVE_TRANSACTION,
- *          ADMIN_REJECT_TRANSACTION (đúng kiến trúc Client-Server).
+ * THAY ĐỔI MỚI SO VỚI FILE TRƯỚC:
+ * 1. [THÊM] @FXML cbTxStatus (ComboBox) — filter theo trạng thái GD
+ * 2. [THÊM] @FXML dpFilter (DatePicker) — filter theo ngày
+ * 3. [SỬA] setupSearchFilter() → gắn listener vào cbTxStatus + dpFilter
+ * 4. [SỬA] applySearchFilter() → filter đồng thời theo keyword + status + date
+ * 5. [SỬA] setupTable() → vibrant styles cho tất cả cell, badge đẹp hơn
+ * 6. [THÊM] Vibrant pending card styles (màu gradient, border vibrant)
+ * 7. [GIỮ] Toàn bộ socket logic không thay đổi
  * ============================================================
  */
 
@@ -52,6 +23,7 @@ import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -83,55 +55,43 @@ import java.util.ResourceBundle;
 public class The_Transaction_Page_Admin_View_Controller implements Initializable {
 
     // =========================================================
-    // FXML FIELDS — tên phải khớp fx:id trong FXML
+    // FXML FIELDS
     // =========================================================
+    @FXML private TableView<TransactionRequest>             transactionTable;
+    @FXML private TableColumn<TransactionRequest, Void>     colTxId;
+    @FXML private TableColumn<TransactionRequest, Void>     colUserInfo;
+    @FXML private TableColumn<TransactionRequest, Void>     colAmount;
+    @FXML private TableColumn<TransactionRequest, Void>     colTxStatus;
+    @FXML private TableColumn<TransactionRequest, Void>     colTxAction;
 
-    /** [SỬA] "tblTransactions" → "transactionTable" để khớp fx:id trong FXML */
-    @FXML private TableView<TransactionRequest> transactionTable;
-
-    /**
-     * [SỬA] 5 cột Void thay vì 6 cột typed.
-     * Dùng Void vì tất cả đều sẽ set bằng custom CellFactory.
-     * "colUserInfo" = gộp user + type vì TransactionRequest không có getUserId().
-     */
-    @FXML private TableColumn<TransactionRequest, Void> colTxId;
-    @FXML private TableColumn<TransactionRequest, Void> colUserInfo;
-    @FXML private TableColumn<TransactionRequest, Void> colAmount;
-    @FXML private TableColumn<TransactionRequest, Void> colTxStatus;
-    @FXML private TableColumn<TransactionRequest, Void> colTxAction;
-
-    /** [GIỮ] LineChart — fx:id đã có sẵn trong FXML gốc */
     @FXML private LineChart<String, Number> cashflowChart;
-
-    /** [THÊM] Labels KPI — fx:id mới thêm vào FXML */
     @FXML private Label lblTotalInflow;
     @FXML private Label lblPendingBadge;
     @FXML private Label lblPendingHeader;
     @FXML private Label lblStatusBar;
 
-    /** [THÊM] Search field — fx:id mới thêm vào FXML */
+    /** Search field — tfSearch */
     @FXML private TextField tfSearch;
 
-    /** [GIỮ] pendingRequestsContainer — fx:id đã có sẵn trong FXML gốc */
+    /** [THÊM] Status filter ComboBox — cbTxStatus */
+    @FXML private ComboBox<String> cbTxStatus;
+
+    /** [THÊM] Date filter — dpFilter */
+    @FXML private DatePicker dpFilter;
+
     @FXML private VBox pendingRequestsContainer;
 
     // =========================================================
     // STATE
     // =========================================================
-
     private User currentUser;
-
-    /** Toàn bộ dữ liệu gốc — không bao giờ bị xóa bởi filter */
     private final ObservableList<TransactionRequest> allTxList      = FXCollections.observableArrayList();
-    /** Dữ liệu hiển thị sau khi filter theo từ khóa */
     private final ObservableList<TransactionRequest> filteredTxList = FXCollections.observableArrayList();
-
     private final DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
 
     // =========================================================
     // LIFECYCLE
     // =========================================================
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTable();
@@ -145,39 +105,99 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     }
 
     // =========================================================
-    // ĐĂNG KÝ HANDLERS
-    // =========================================================
-
-    private void registerRealtimeHandlers() {
-        MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, this::onTransactionsReceived);
-
-        // Sau khi duyệt/từ chối → server trả kết quả → tự động reload
-        MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_TRANSACTION_APPROVED, msg -> {
-                    setStatus("✅ Đã duyệt giao dịch #" + msg.getPayload());
-                    loadTransactions();
-                });
-        MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_TRANSACTION_REJECTED, msg -> {
-                    setStatus("✅ Đã từ chối giao dịch #" + msg.getPayload());
-                    loadTransactions();
-                });
-        MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_TRANSACTION_FAILED, msg -> {
-                    setStatus("❌ Lỗi: " + msg.getMessage());
-                    showAlert(Alert.AlertType.ERROR, "Lỗi xử lý", msg.getMessage());
-                });
-    }
-
-    // =========================================================
-    // DATA LOADING
+    // SEARCH & FILTER (Nhiệm vụ 4)
     // =========================================================
 
     /**
-     * Gửi request qua socket → server gọi TransactionDAO/PaymentDAO.
-     * Không gọi DAO trực tiếp từ client (vi phạm kiến trúc).
+     * [SỬA] Gắn listener vào tfSearch + cbTxStatus + dpFilter.
+     * Tất cả thay đổi → gọi applySearchFilter() để filter đồng thời.
      */
+    private void setupSearchFilter() {
+        // Populate status combo
+        if (cbTxStatus != null) {
+            cbTxStatus.getItems().addAll("Tất cả", "PENDING", "APPROVED", "REJECTED", "SUCCESS");
+            cbTxStatus.getSelectionModel().selectFirst();
+            cbTxStatus.setOnAction(e -> applySearchFilter());
+        }
+
+        // Search text listener
+        if (tfSearch != null) {
+            tfSearch.textProperty().addListener((obs, oldVal, newVal) -> applySearchFilter());
+        }
+
+        // Date picker listener
+        if (dpFilter != null) {
+            dpFilter.valueProperty().addListener((obs, oldVal, newVal) -> applySearchFilter());
+        }
+    }
+
+    /**
+     * [SỬA] Filter đồng thời theo 3 điều kiện:
+     * - keyword (TxID, username, type)
+     * - status (cbTxStatus)
+     * - date   (dpFilter — ngày requestDate)
+     */
+    private void applySearchFilter() {
+        String keyword = (tfSearch != null && tfSearch.getText() != null)
+                ? tfSearch.getText().trim().toLowerCase() : "";
+        String statusSel = (cbTxStatus != null && cbTxStatus.getValue() != null)
+                ? cbTxStatus.getValue() : "Tất cả";
+        LocalDate dateFilter = (dpFilter != null) ? dpFilter.getValue() : null;
+
+        List<TransactionRequest> result = allTxList.stream()
+                .filter(tx -> {
+                    // 1. Keyword filter
+                    if (!keyword.isEmpty()) {
+                        boolean matchId   = String.valueOf(tx.getRequestId()).contains(keyword);
+                        boolean matchUser = tx.getUser() != null
+                                && tx.getUser().getUsername() != null
+                                && tx.getUser().getUsername().toLowerCase().contains(keyword);
+                        boolean matchType = tx.getType() != null
+                                && tx.getType().toLowerCase().contains(keyword);
+                        if (!matchId && !matchUser && !matchType) return false;
+                    }
+                    // 2. Status filter
+                    if (!"Tất cả".equals(statusSel)) {
+                        if (!statusSel.equalsIgnoreCase(tx.getStatus())) return false;
+                    }
+                    // 3. Date filter (exact date match)
+                    if (dateFilter != null && tx.getRequestDate() != null) {
+                        LocalDate txDate = tx.getRequestDate().toLocalDate();
+                        if (!txDate.equals(dateFilter)) return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        filteredTxList.setAll(result);
+        setStatus("🔍 Hiển thị " + result.size() + " / " + allTxList.size() + " giao dịch.");
+    }
+
+    // =========================================================
+    // SOCKET HANDLERS
+    // =========================================================
+    private void registerRealtimeHandlers() {
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, this::onTransactionsReceived);
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_APPROVED, msg -> {
+            Platform.runLater(() -> {
+                setStatus("✅ Đã duyệt giao dịch #" + msg.getPayload());
+                loadTransactions();
+            });
+        });
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_REJECTED, msg -> {
+            Platform.runLater(() -> {
+                setStatus("✅ Đã từ chối giao dịch #" + msg.getPayload());
+                loadTransactions();
+            });
+        });
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_FAILED, msg -> {
+            Platform.runLater(() -> {
+                setStatus("❌ Lỗi: " + msg.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Lỗi xử lý", msg.getMessage());
+            });
+        });
+    }
+
     private void loadTransactions() {
         SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_TRANSACTIONS, null);
         setStatus("⏳ Đang tải danh sách giao dịch...");
@@ -187,29 +207,23 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     private void onTransactionsReceived(Message message) {
         List<TransactionRequest> list = (List<TransactionRequest>) message.getPayload();
         if (list == null) list = Collections.emptyList();
+        final List<TransactionRequest> finalList = list;
 
-        allTxList.setAll(list);
-        applySearchFilter();         // Cập nhật filteredTxList
-
-        updateSummaryKPIs(list);     // Cập nhật 2 KPI header
-        buildCashflowChart(list);    // Vẽ line chart 7 ngày
-        buildPendingRequestsSection(list); // Tạo card động
-
-        setStatus("✅ Đã tải " + list.size() + " giao dịch.");
+        Platform.runLater(() -> {
+            allTxList.setAll(finalList);
+            applySearchFilter();
+            updateSummaryKPIs(finalList);
+            buildCashflowChart(finalList);
+            buildPendingRequestsSection(finalList);
+            setStatus("✅ Đã tải " + finalList.size() + " giao dịch.");
+        });
     }
 
     // =========================================================
-    // CẬP NHẬT KPI HEADER
+    // KPI SUMMARY
     // =========================================================
-
-    /**
-     * Tính và hiển thị:
-     * - lblTotalInflow: tổng DEPOSIT APPROVED trong tháng hiện tại
-     * - lblPendingBadge: số lệnh WITHDRAW đang PENDING
-     */
     private void updateSummaryKPIs(List<TransactionRequest> list) {
         LocalDate now = LocalDate.now();
-
         double totalInflow = list.stream()
                 .filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getType())
                         && "APPROVED".equalsIgnoreCase(tx.getStatus())
@@ -220,8 +234,7 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
 
         long pendingWithdrawCount = list.stream()
                 .filter(tx -> "WITHDRAW".equalsIgnoreCase(tx.getType())
-                        && "PENDING".equalsIgnoreCase(tx.getStatus()))
-                .count();
+                        && "PENDING".equalsIgnoreCase(tx.getStatus())).count();
 
         long totalPending = list.stream()
                 .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
@@ -233,25 +246,15 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     }
 
     // =========================================================
-    // CASHFLOW LINE CHART (7 ngày)
+    // CASHFLOW CHART
     // =========================================================
-
-    /**
-     * [THÊM] Vẽ xu hướng dòng tiền 7 ngày gần nhất.
-     * 2 series:
-     *   - "Nạp tiền" (xanh lá): DEPOSIT APPROVED, đơn vị triệu đồng
-     *   - "Rút tiền" (đỏ):      WITHDRAW APPROVED, đơn vị triệu đồng
-     *
-     * Lý do dùng APPROVED: chỉ giao dịch đã xác nhận mới phản ánh dòng tiền thực.
-     * Lý do đơn vị triệu: tránh trục Y quá lớn, khó đọc.
-     */
     private void buildCashflowChart(List<TransactionRequest> list) {
         if (cashflowChart == null) return;
         cashflowChart.getData().clear();
         cashflowChart.setTitle("Xu hướng dòng tiền");
+        cashflowChart.setStyle("-fx-background-color: transparent;");
 
         LocalDate today = LocalDate.now();
-        // LinkedHashMap để giữ thứ tự ngày từ cũ → mới
         Map<String, Double> depositByDay  = new LinkedHashMap<>();
         Map<String, Double> withdrawByDay = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) {
@@ -259,19 +262,14 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
             depositByDay.put(key,  0.0);
             withdrawByDay.put(key, 0.0);
         }
-
         for (TransactionRequest tx : list) {
-            if (tx.getRequestDate() == null)                            continue;
-            if (!"APPROVED".equalsIgnoreCase(tx.getStatus()))          continue;
+            if (tx.getRequestDate() == null)                   continue;
+            if (!"APPROVED".equalsIgnoreCase(tx.getStatus())) continue;
             LocalDate txDay = tx.getRequestDate().toLocalDate();
             if (txDay.isBefore(today.minusDays(6)) || txDay.isAfter(today)) continue;
-
             String key = txDay.format(dayFormatter);
-            if ("DEPOSIT".equalsIgnoreCase(tx.getType())) {
-                depositByDay.merge(key, tx.getAmount(), Double::sum);
-            } else if ("WITHDRAW".equalsIgnoreCase(tx.getType())) {
-                withdrawByDay.merge(key, tx.getAmount(), Double::sum);
-            }
+            if ("DEPOSIT".equalsIgnoreCase(tx.getType()))        depositByDay.merge(key, tx.getAmount(), Double::sum);
+            else if ("WITHDRAW".equalsIgnoreCase(tx.getType())) withdrawByDay.merge(key, tx.getAmount(), Double::sum);
         }
 
         XYChart.Series<String, Number> depositSeries = new XYChart.Series<>();
@@ -286,26 +284,17 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
 
         cashflowChart.getData().addAll(depositSeries, withdrawSeries);
 
-        // Phải set style sau khi add vào chart (JavaFX render async)
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             if (depositSeries.getNode() != null)
-                depositSeries.getNode().setStyle("-fx-stroke: #05CD99; -fx-stroke-width: 2.5;");
+                depositSeries.getNode().setStyle("-fx-stroke: #10B981; -fx-stroke-width: 2.5;");
             if (withdrawSeries.getNode() != null)
-                withdrawSeries.getNode().setStyle("-fx-stroke: #FF5B5C; -fx-stroke-width: 2.5;");
+                withdrawSeries.getNode().setStyle("-fx-stroke: #EF4444; -fx-stroke-width: 2.5;");
         });
     }
 
     // =========================================================
     // PENDING CARDS ĐỘNG
     // =========================================================
-
-    /**
-     * [THÊM] Tạo card UI động cho từng giao dịch PENDING.
-     * Xóa sạch mock data hardcode trong FXML, thay bằng data thực từ server.
-     *
-     * Sắp xếp: mới nhất lên trên.
-     * Mỗi card: tên user | số tiền | loại | ngân hàng | 2 nút Duyệt/Từ chối.
-     */
     private void buildPendingRequestsSection(List<TransactionRequest> list) {
         if (pendingRequestsContainer == null) return;
         pendingRequestsContainer.getChildren().clear();
@@ -320,28 +309,25 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
 
         if (pendingList.isEmpty()) {
             Label empty = new Label("✅ Không có giao dịch nào chờ duyệt.");
-            empty.setStyle("-fx-text-fill: #05CD99; -fx-font-size: 13px;");
+            empty.setStyle("-fx-text-fill: #10B981; -fx-font-size: 13px; -fx-font-weight: bold;");
             pendingRequestsContainer.getChildren().add(empty);
             return;
         }
-
-        for (TransactionRequest tx : pendingList) {
+        for (TransactionRequest tx : pendingList)
             pendingRequestsContainer.getChildren().add(buildPendingCard(tx));
-        }
     }
 
-    /**
-     * Tạo một card VBox cho một lệnh PENDING.
-     * Cấu trúc card:
-     *   Dòng 1: @username [bên trái]   |   ± số tiền [bên phải]
-     *   Dòng 2: Loại GD • bankInfo • thời gian
-     *   Dòng 3: [✓ Duyệt]  [✗ Từ chối]
-     */
+    /** [SỬA] Vibrant card với gradient border + màu sắc sặc sỡ hơn */
     private VBox buildPendingCard(TransactionRequest tx) {
         VBox card = new VBox(8);
-        card.setStyle("-fx-border-color: #E9EDF7; -fx-border-width: 0 0 1 0; -fx-padding: 0 0 12 0;");
+        boolean isWithdraw = "WITHDRAW".equalsIgnoreCase(tx.getType());
+        String borderColor = isWithdraw ? "#FDE68A" : "#A7F3D0";
+        String bgColor     = isWithdraw ? "#FFFBEB" : "#F0FDF4";
+        card.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 14; "
+                + "-fx-border-color: " + borderColor + "; -fx-border-width: 1.5; "
+                + "-fx-border-radius: 14; -fx-padding: 12 14 12 14;");
 
-        // --- Dòng 1: Tên user + số tiền ---
+        // Row 1: user + amount
         HBox row1 = new HBox(10);
         row1.setAlignment(Pos.CENTER_LEFT);
 
@@ -350,69 +336,61 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
                 : "User #" + (tx.getUser() != null ? tx.getUser().getId() : "?");
 
         Label lblUser = new Label(userName);
-        lblUser.setStyle("-fx-text-fill: #2b3674; -fx-font-weight: bold; -fx-font-size: 14px;");
-        lblUser.setFont(Font.font("Times New Roman Bold", 14));
+        lblUser.setStyle("-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 14px;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        boolean isWithdraw = "WITHDRAW".equalsIgnoreCase(tx.getType());
-        String  amountSign  = isWithdraw ? "- " : "+ ";
-        String  amountColor = isWithdraw ? "#a53e3e" : "#05CD99";
+        String amountSign  = isWithdraw ? "− " : "+ ";
+        String amountColor = isWithdraw ? "#B45309" : "#047857";
         Label lblAmount = new Label(amountSign + formatMoney(tx.getAmount()));
-        lblAmount.setStyle("-fx-text-fill: " + amountColor
-                + "; -fx-font-weight: bold; -fx-font-size: 14px;");
+        lblAmount.setStyle("-fx-text-fill: " + amountColor + "; -fx-font-weight: bold; -fx-font-size: 14px;");
 
         row1.getChildren().addAll(lblUser, spacer, lblAmount);
 
-        // --- Dòng 2: Loại + bank + thời gian ---
-        String typeText = isWithdraw ? "Rút tiền" : "Nạp tiền";
+        // Row 2: info
+        String typeText = isWithdraw ? "💸 Rút tiền" : "💰 Nạp tiền";
         StringBuilder infoSb = new StringBuilder(typeText);
         if (tx.getBankInfo() != null && !tx.getBankInfo().isBlank())
             infoSb.append(" • ").append(tx.getBankInfo());
         if (tx.getRequestDate() != null)
-            infoSb.append(" • ")
-                    .append(tx.getRequestDate().format(DateTimeFormatter.ofPattern("dd/MM HH:mm")));
+            infoSb.append(" • ").append(tx.getRequestDate().format(DateTimeFormatter.ofPattern("dd/MM HH:mm")));
         Label lblInfo = new Label(infoSb.toString());
-        lblInfo.setStyle("-fx-text-fill: #A3AED0; -fx-font-size: 12px;");
+        lblInfo.setStyle("-fx-text-fill: #64748B; -fx-font-size: 12px;");
 
-        // --- Dòng 3: Nút Duyệt / Từ chối (gọi socket) ---
+        // Row 3: buttons
         HBox btnRow = new HBox(10);
 
         Button btnApprove = new Button("✓ Duyệt");
-        btnApprove.setStyle("-fx-background-color: #79a49e; -fx-text-fill: white; "
-                + "-fx-background-radius: 8; -fx-cursor: hand; -fx-font-weight: bold;");
+        btnApprove.setStyle("-fx-background-color: linear-gradient(to right, #10B981, #34D399); "
+                + "-fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; "
+                + "-fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.3), 6, 0, 0, 2);");
         btnApprove.setFont(Font.font("Times New Roman Bold", 12));
         btnApprove.setOnAction(e -> {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                    "Duyệt giao dịch #" + tx.getRequestId()
-                            + "\n" + typeText + ": " + formatMoney(tx.getAmount())
-                            + "\nUser: " + userName,
+                    "Duyệt giao dịch #" + tx.getRequestId() + "?\n" + typeText + ": " + formatMoney(tx.getAmount()),
                     ButtonType.YES, ButtonType.NO);
             confirm.setTitle("Xác nhận duyệt");
             confirm.showAndWait().ifPresent(btn -> {
                 if (btn == ButtonType.YES) {
-                    SocketClient.getInstance().sendRequest(
-                            RequestCode.ADMIN_APPROVE_TRANSACTION, tx.getRequestId());
+                    SocketClient.getInstance().sendRequest(RequestCode.ADMIN_APPROVE_TRANSACTION, tx.getRequestId());
                     setStatus("⏳ Đang duyệt giao dịch #" + tx.getRequestId() + "...");
                 }
             });
         });
 
         Button btnReject = new Button("✗ Từ chối");
-        btnReject.setStyle("-fx-background-color: #F4F7FE; -fx-text-fill: #a53e3e; "
-                + "-fx-background-radius: 8; -fx-cursor: hand; -fx-font-weight: bold; "
-                + "-fx-border-color: #FFCCCC; -fx-border-radius: 8;");
+        btnReject.setStyle("-fx-background-color: white; -fx-text-fill: #EF4444; "
+                + "-fx-background-radius: 10; -fx-cursor: hand; -fx-font-weight: bold; "
+                + "-fx-border-color: #FCA5A5; -fx-border-radius: 10; -fx-border-width: 1.5;");
         btnReject.setFont(Font.font("Times New Roman Bold", 12));
         btnReject.setOnAction(e -> {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                    "Từ chối giao dịch #" + tx.getRequestId() + "?",
-                    ButtonType.YES, ButtonType.NO);
+                    "Từ chối giao dịch #" + tx.getRequestId() + "?", ButtonType.YES, ButtonType.NO);
             confirm.setTitle("Xác nhận từ chối");
             confirm.showAndWait().ifPresent(btn -> {
                 if (btn == ButtonType.YES) {
-                    SocketClient.getInstance().sendRequest(
-                            RequestCode.ADMIN_REJECT_TRANSACTION, tx.getRequestId());
+                    SocketClient.getInstance().sendRequest(RequestCode.ADMIN_REJECT_TRANSACTION, tx.getRequestId());
                     setStatus("⏳ Đang từ chối giao dịch #" + tx.getRequestId() + "...");
                 }
             });
@@ -424,114 +402,89 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     }
 
     // =========================================================
-    // TABLE SETUP (custom CellFactory thay PropertyValueFactory)
+    // TABLE SETUP (Nhiệm vụ 3: giống AuctionPage)
     // =========================================================
-
-    /**
-     * Lý do KHÔNG dùng PropertyValueFactory:
-     * - TransactionRequest.getId() trả về Object → ClassCastException
-     * - TransactionRequest.getUser() trả về User object (không có getUserId())
-     * - Custom lambda hoàn toàn kiểm soát được null, nested object
-     */
     private void setupTable() {
-
-        // --- CỘT 1: Mã GD ---
+        // Cột 1: Mã GD
         colTxId.setCellFactory(col -> new TableCell<TransactionRequest, Void>() {
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
-                }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 TransactionRequest tx = (TransactionRequest) getTableRow().getItem();
                 Label lbl = new Label("#" + tx.getRequestId());
-                lbl.setStyle("-fx-text-fill: #4318FF; -fx-font-weight: bold; "
+                lbl.setStyle("-fx-text-fill: #6C63FF; -fx-font-weight: bold; "
                         + "-fx-font-family: 'Courier New'; -fx-font-size: 13px;");
                 setGraphic(lbl);
             }
         });
 
-        // --- CỘT 2: Người dùng & Loại (gộp user + type thành 1 cell) ---
+        // Cột 2: Người dùng & Loại
         colUserInfo.setCellFactory(col -> new TableCell<TransactionRequest, Void>() {
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
-                }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 TransactionRequest tx = (TransactionRequest) getTableRow().getItem();
-
                 String userName = (tx.getUser() != null && tx.getUser().getUsername() != null)
-                        ? tx.getUser().getUsername()
-                        : "ID#" + (tx.getUser() != null ? tx.getUser().getId() : "?");
+                        ? tx.getUser().getUsername() : "ID#" + (tx.getUser() != null ? tx.getUser().getId() : "?");
                 Label lblName = new Label("@" + userName);
-                lblName.setStyle("-fx-text-fill: #2B3674; -fx-font-weight: bold; -fx-font-size: 13px;");
-
+                lblName.setStyle("-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px;");
                 boolean isWithdraw = "WITHDRAW".equalsIgnoreCase(tx.getType());
                 Label lblType = new Label(isWithdraw ? "💸 Rút tiền" : "💰 Nạp tiền");
-                lblType.setStyle("-fx-text-fill: " + (isWithdraw ? "#FF8800" : "#05CD99")
-                        + "; -fx-font-size: 11px;");
-
+                lblType.setStyle("-fx-text-fill: " + (isWithdraw ? "#B45309" : "#047857")
+                        + "; -fx-font-size: 11px; -fx-font-weight: bold;");
                 setGraphic(new VBox(3, lblName, lblType));
             }
         });
 
-        // --- CỘT 3: Số tiền (có dấu + / - và màu tương ứng) ---
+        // Cột 3: Số tiền
         colAmount.setCellFactory(col -> new TableCell<TransactionRequest, Void>() {
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
-                }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 TransactionRequest tx = (TransactionRequest) getTableRow().getItem();
                 boolean isWithdraw = "WITHDRAW".equalsIgnoreCase(tx.getType());
-                Label lbl = new Label((isWithdraw ? "- " : "+ ") + formatMoney(tx.getAmount()));
-                lbl.setStyle("-fx-text-fill: " + (isWithdraw ? "#a53e3e" : "#05CD99")
-                        + "; -fx-font-weight: bold; -fx-font-size: 13px;");
+                Label lbl = new Label((isWithdraw ? "− " : "+ ") + formatMoney(tx.getAmount()));
+                lbl.setStyle("-fx-text-fill: " + (isWithdraw ? "#B45309" : "#047857")
+                        + "; -fx-font-weight: bold; -fx-font-size: 14px;");
                 setGraphic(lbl);
             }
         });
 
-        // --- CỘT 4: Trạng thái (badge với background color) ---
+        // Cột 4: Trạng thái (badge vibrant)
         colTxStatus.setCellFactory(col -> new TableCell<TransactionRequest, Void>() {
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
-                }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 TransactionRequest tx = (TransactionRequest) getTableRow().getItem();
                 String status = tx.getStatus();
                 Label lbl = new Label(status != null ? status : "UNKNOWN");
-
-                String color, bg;
-                switch (status != null ? status : "") {
-                    case "PENDING"  -> { color = "#FF8800"; bg = "#FFF4E5"; }
-                    case "APPROVED" -> { color = "#05CD99"; bg = "#E6FBF7"; }
-                    case "REJECTED" -> { color = "#FF5B5C"; bg = "#FFF0F0"; }
-                    default         -> { color = "#707EAE"; bg = "#F4F7FE"; }
-                }
-                lbl.setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; "
-                        + "-fx-background-color: " + bg + "; -fx-background-radius: 8; "
-                        + "-fx-font-size: 12px;");
-                lbl.setPadding(new Insets(3, 8, 3, 8));
+                String style = switch (status != null ? status : "") {
+                    case "PENDING"          -> "-fx-text-fill: #92400E; -fx-font-weight: bold; -fx-background-color: #FEF3C7; -fx-background-radius: 12; -fx-padding: 4 12 4 12;";
+                    case "APPROVED"         -> "-fx-text-fill: #047857; -fx-font-weight: bold; -fx-background-color: #D1FAE5; -fx-background-radius: 12; -fx-padding: 4 12 4 12;";
+                    case "REJECTED"         -> "-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-background-color: #FEE2E2; -fx-background-radius: 12; -fx-padding: 4 12 4 12;";
+                    case "SUCCESS"          -> "-fx-text-fill: #1D4ED8; -fx-font-weight: bold; -fx-background-color: #DBEAFE; -fx-background-radius: 12; -fx-padding: 4 12 4 12;";
+                    default                 -> "-fx-text-fill: #64748B; -fx-font-size: 12px;";
+                };
+                lbl.setStyle(style);
                 setGraphic(lbl);
             }
         });
 
-        // --- CỘT 5: Thao tác (Duyệt/Từ chối — chỉ hiện khi PENDING) ---
+        // Cột 5: Thao tác (Duyệt / Từ chối — chỉ hiện khi PENDING)
         colTxAction.setCellFactory(col -> new TableCell<TransactionRequest, Void>() {
-            private final Button btnApprove = new Button("Duyệt");
-            private final Button btnReject  = new Button("Từ chối");
+            private final Button btnApprove = new Button("✓ Duyệt");
+            private final Button btnReject  = new Button("✗ Từ chối");
             private final HBox   box        = new HBox(6, btnApprove, btnReject);
 
             {
                 box.setAlignment(Pos.CENTER_LEFT);
-                btnApprove.setStyle("-fx-background-color: #05CD99; -fx-text-fill: white; "
-                        + "-fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;");
-                btnReject.setStyle("-fx-background-color: #FF5B5C; -fx-text-fill: white; "
-                        + "-fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;");
+                btnApprove.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; "
+                        + "-fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-font-size: 11px;");
+                btnReject.setStyle("-fx-background-color: white; -fx-text-fill: #EF4444; "
+                        + "-fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; "
+                        + "-fx-border-color: #FCA5A5; -fx-border-radius: 8; -fx-font-size: 11px;");
+                btnApprove.setPadding(new Insets(5, 10, 5, 10));
+                btnReject.setPadding(new Insets(5, 10, 5, 10));
                 btnApprove.setFont(Font.font("Times New Roman Bold", 11));
                 btnReject.setFont(Font.font("Times New Roman Bold", 11));
 
@@ -544,8 +497,7 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
                     confirm.setTitle("Xác nhận duyệt");
                     confirm.showAndWait().ifPresent(btn -> {
                         if (btn == ButtonType.YES)
-                            SocketClient.getInstance().sendRequest(
-                                    RequestCode.ADMIN_APPROVE_TRANSACTION, tx.getRequestId());
+                            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_APPROVE_TRANSACTION, tx.getRequestId());
                     });
                 });
 
@@ -558,20 +510,15 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
                     confirm.setTitle("Xác nhận từ chối");
                     confirm.showAndWait().ifPresent(btn -> {
                         if (btn == ButtonType.YES)
-                            SocketClient.getInstance().sendRequest(
-                                    RequestCode.ADMIN_REJECT_TRANSACTION, tx.getRequestId());
+                            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_REJECT_TRANSACTION, tx.getRequestId());
                     });
                 });
             }
 
-            @Override
-            protected void updateItem(Void item, boolean empty) {
+            @Override protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null); return;
-                }
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 TransactionRequest tx = (TransactionRequest) getTableRow().getItem();
-                // Chỉ hiện nút khi PENDING; trạng thái khác = không thể hành động
                 setGraphic("PENDING".equalsIgnoreCase(tx.getStatus()) ? box : null);
             }
         });
@@ -580,78 +527,36 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     }
 
     // =========================================================
-    // SEARCH FILTER REAL-TIME
-    // =========================================================
-
-    /**
-     * [THÊM] Gắn listener vào tfSearch.textProperty() để filter real-time.
-     * Lọc theo: requestId, username, hoặc loại giao dịch.
-     * Dùng filteredTxList để không xóa allTxList gốc.
-     */
-    private void setupSearchFilter() {
-        if (tfSearch == null) return;
-        tfSearch.textProperty().addListener((obs, oldVal, newVal) -> applySearchFilter());
-    }
-
-    private void applySearchFilter() {
-        String keyword = (tfSearch != null && tfSearch.getText() != null)
-                ? tfSearch.getText().trim().toLowerCase() : "";
-
-        if (keyword.isEmpty()) {
-            filteredTxList.setAll(allTxList);
-        } else {
-            filteredTxList.setAll(allTxList.stream()
-                    .filter(tx -> {
-                        if (String.valueOf(tx.getRequestId()).contains(keyword)) return true;
-                        if (tx.getUser() != null && tx.getUser().getUsername() != null
-                                && tx.getUser().getUsername().toLowerCase().contains(keyword)) return true;
-                        if (tx.getType() != null
-                                && tx.getType().toLowerCase().contains(keyword)) return true;
-                        return false;
-                    })
-                    .collect(Collectors.toList()));
-        }
-    }
-
-    // =========================================================
     // FXML HANDLERS
     // =========================================================
-
-    @FXML
-    void handleRefresh(ActionEvent event) {
-        loadTransactions();
-    }
+    @FXML void handleRefresh(ActionEvent event) { loadTransactions(); }
 
     // =========================================================
     // NAVIGATION
     // =========================================================
-
     @FXML public void goToHomePage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Home_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Home_Page_Admin_View.fxml");
     }
     @FXML public void goToAuctionPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Auction_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Auction_Page_Admin_View.fxml");
     }
     @FXML public void goToSettingsPage(ActionEvent event) {
-        switchPage(event, "/view/view/The_Settings_Page_Admin_View.fxml");
+        switchPage(event, "/view/view/admin/The_Settings_Page_Admin_View.fxml");
     }
 
     private void switchPage(ActionEvent event, String fxmlPath) {
-        // [THÊM] Hủy handler trước khi rời màn hình
         unregisterAllHandlers();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent root = loader.load();
             Object ctrl = loader.getController();
-            if (ctrl instanceof The_Auction_Page_Admin_View_Controller c)
-                c.setUserData(currentUser);
+            if (ctrl instanceof The_Auction_Page_Admin_View_Controller c) c.setUserData(currentUser);
+            else if (ctrl instanceof The_Home_Page_Admin_View_Controller c) c.setUserData(currentUser);
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
-            stage.setMaximized(true);
+            // KHÔNG setMaximized → giữ nguyên kích thước
             stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void unregisterAllHandlers() {
@@ -664,9 +569,8 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     // =========================================================
     // HELPERS
     // =========================================================
-
     private void setStatus(String msg) {
-        if (lblStatusBar != null) lblStatusBar.setText(msg);
+        Platform.runLater(() -> { if (lblStatusBar != null) lblStatusBar.setText(msg); });
     }
 
     private String formatMoney(double amount) {
