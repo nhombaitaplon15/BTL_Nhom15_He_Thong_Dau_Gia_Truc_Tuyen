@@ -62,7 +62,7 @@ public class ChangePasswordController {
     @FXML
     void handleBackToProfile(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/bidder/ProfileView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("view/view/bidder/ProfileView.fxml"));
             Parent root = loader.load();
 
             ProfileController profile = loader.getController();

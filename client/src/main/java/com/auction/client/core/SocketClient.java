@@ -76,7 +76,7 @@ public class SocketClient {
             while (isConnected) {
                 Message response = (Message) in.readObject();
                 // BẮT BUỘC: JavaFX không cho phép update UI từ thread ngoài Application Thread
-                Platform.runLater(() -> processResponse(response));
+                processResponse(response);
             }
         } catch (Exception e) {
             if (isConnected) {

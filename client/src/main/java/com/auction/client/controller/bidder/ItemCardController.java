@@ -1,8 +1,7 @@
 package com.auction.client.controller.bidder;
 
-
-
 import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
 import com.auction.common.model.Auction;
@@ -19,6 +18,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -34,16 +34,16 @@ public class ItemCardController {
     @FXML private Label startPrice;
     @FXML private Label currentPrice;
     @FXML private Label timeRemaining;
+    @FXML private Button btnBid; // ĐỒNG BỘ FX:ID: Khớp hoàn toàn với fx:id="btnBid" từ FXML
 
     private Item currentItem;
     private User currentUser;
     private int currentAuctionId;
-
     private Timeline countdownTimeline;
 
     @FXML
     public void initialize() {
-        // Lắng nghe sự kiện kết thúc phiên đấu giá từ Server gửi về cho toàn bộ các Client (Khớp enum của bạn)
+        // Lắng nghe sự kiện kết thúc phiên đấu giá tập trung từ Server
         MessageRouter.getInstance().register(ResponseCode.AUCTION_ENDED, this::handleAuctionEndedNotification);
     }
 
@@ -77,6 +77,7 @@ public class ItemCardController {
                 timeRemaining.setText("Thời gian còn lại: Đã kết thúc!");
                 timeRemaining.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
             }
+            if (btnBid != null) btnBid.setDisable(true);
             Platform.runLater(this::removeCardFromUI);
             return;
         }
@@ -94,8 +95,8 @@ public class ItemCardController {
             if (now.isAfter(endTime)) {
                 timeRemaining.setText("Thời gian còn lại: Đã kết thúc!");
                 timeRemaining.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
+                if (btnBid != null) btnBid.setDisable(true);
                 countdownTimeline.stop();
-                // Phía Client chỉ cần đợi Server quét luồng ngầm tự đóng và bắn gói AUCTION_ENDED về
                 return;
             }
 
@@ -112,18 +113,19 @@ public class ItemCardController {
     }
 
     private void handleAuctionEndedNotification(Message message) {
-        // Payload của AUCTION_ENDED trả về mảng Object[] {auctionId, winnerUsername, finalPrice}
         if (!(message.getPayload() instanceof Object[])) return;
         Object[] data = (Object[]) message.getPayload();
 
         int auctionId = (int) data[0];
-        if (auctionId != this.currentAuctionId) return; // Không phải thẻ này thì bỏ qua
+        if (auctionId != this.currentAuctionId) return; // Đúng ID phiên của thẻ này thì mới xử lý tiếp
 
         String winnerUsername = (String) data[1];
         double finalPrice = (double) data[2];
 
         Platform.runLater(() -> {
-            stopTimer();
+            stopTimer(); // Hủy đăng ký an toàn để giải phóng memory bus
+
+            if (btnBid != null) btnBid.setDisable(true);
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("KẾT THÚC PHIÊN ĐẤU GIÁ");
@@ -147,38 +149,41 @@ public class ItemCardController {
     }
 
     private void removeCardFromUI() {
-        try {
-            Node cardContainer = null;
-            Node currentNode = timeRemaining;
-            while (currentNode != null) {
-                Parent parent = currentNode.getParent();
-                if (parent instanceof Pane && ! (parent.getClass().getName().contains("Card") || (parent.getId() != null && parent.getId().contains("card")))) {
-                    cardContainer = currentNode;
-                    break;
+        // ĐỒNG BỘ LUỒNG UI: Ép chạy trên JavaFX Application Thread để tránh lỗi va chạm phân cảnh đồ họa
+        Platform.runLater(() -> {
+            try {
+                Node cardContainer = null;
+                Node currentNode = timeRemaining;
+                while (currentNode != null) {
+                    Parent parent = currentNode.getParent();
+                    if (parent instanceof Pane && !(parent.getClass().getName().contains("Card") || (parent.getId() != null && parent.getId().contains("card")))) {
+                        cardContainer = currentNode;
+                        break;
+                    }
+                    currentNode = parent;
                 }
-                currentNode = parent;
+                if (cardContainer == null && timeRemaining.getParent() != null) {
+                    cardContainer = timeRemaining.getParent().getParent();
+                }
+                if (cardContainer != null && cardContainer.getParent() instanceof Pane) {
+                    ((Pane) cardContainer.getParent()).getChildren().remove(cardContainer);
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Lỗi hạ thẻ giao diện: " + e.getMessage());
             }
-            if (cardContainer == null && timeRemaining.getParent() != null) {
-                cardContainer = timeRemaining.getParent().getParent();
-            }
-            if (cardContainer != null && cardContainer.getParent() instanceof Pane) {
-                ((Pane) cardContainer.getParent()).getChildren().remove(cardContainer);
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Lỗi hạ thẻ: " + e.getMessage());
-        }
+        });
     }
 
     public void stopTimer() {
         if (countdownTimeline != null) countdownTimeline.stop();
+        // Giải phóng Listener để tránh rò rỉ Event Bus mạng
         MessageRouter.getInstance().unregister(ResponseCode.AUCTION_ENDED);
     }
 
     @FXML
     void handleBidAction(ActionEvent event) {
-        // Giữ nguyên logic mở phòng đấu giá trực chiến...
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/AuctionRoomView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/AuctionRoomView.fxml"));
             Parent root = loader.load();
             AuctionRoomController roomController = loader.getController();
             if (roomController != null) {
@@ -189,6 +194,8 @@ public class ItemCardController {
             stage.setTitle("Sàn Đấu Giá Live - Phiên #" + currentAuctionId);
             stage.setMaximized(true);
             stage.show();
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

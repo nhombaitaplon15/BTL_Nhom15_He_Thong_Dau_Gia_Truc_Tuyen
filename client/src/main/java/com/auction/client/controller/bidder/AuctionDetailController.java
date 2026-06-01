@@ -1,7 +1,5 @@
 package com.auction.client.controller.bidder;
 
-
-
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
@@ -30,6 +28,7 @@ import java.time.LocalDateTime;
 
 public class AuctionDetailController {
 
+    // 🎯 ĐỒNG BỘ: Mảng 4 ID Admin hệ thống giải ngân tiền cọc
     private static final int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
 
     @FXML private Label lblAuctionId;
@@ -49,9 +48,11 @@ public class AuctionDetailController {
     @FXML
     public void initialize() {
         System.out.println("🔌 Khởi tạo cổng mạng cho màn hình Chi tiết đấu giá.");
-        // Đã dọn dẹp MessageRouter khỏi initialize để tránh lỗi lặp Listener khi bật/tắt cửa sổ
     }
 
+    /**
+     * Nạp dữ liệu ban đầu và đăng ký các cổng lắng nghe từ Server
+     */
     public void loadAuctionDetail(int auctionId, String fallbackName, User user) {
         this.currentUser = user;
 
@@ -63,15 +64,19 @@ public class AuctionDetailController {
             hboxWinnerActions.setManaged(false);
         }
 
-        // ĐĂNG KÝ AN TOÀN: Mỗi lần nạp dữ liệu mới thì đăng ký mới với Event Bus
+        // ĐĂNG KÝ AN TOÀN: Làm sạch Listener cũ tránh lặp luồng dữ liệu
         cleanupListeners();
         MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, this::handleAuctionDetailResult);
         MessageRouter.getInstance().register(ResponseCode.WITHDRAW_SUCCESS, this::handleTransactionSuccess);
         MessageRouter.getInstance().register(ResponseCode.WITHDRAW_FAILED, this::handleTransactionFailed);
 
+        // Gửi yêu cầu lên Server lấy thông tin chi tiết phiên
         SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, auctionId);
     }
 
+    /**
+     * Xử lý dữ liệu phiên đấu giá từ Server đổ về qua Socket
+     */
     private void handleAuctionDetailResult(Message message) {
         Object payload = message.getPayload();
         if (!(payload instanceof Auction)) return;
@@ -91,8 +96,10 @@ public class AuctionDetailController {
                 lblEndTime.setText(currentAuction.getEndTime().toString());
             }
 
+            // Kiểm tra hiển thị nút bấm cho người thắng cuộc
             checkAndToggleWinnerActions(currentAuction, currentUser);
 
+            // Hiển thị thông tin vật phẩm đính kèm
             if (item != null) {
                 if (lblItemName != null) lblItemName.setText(item.getName());
                 if (lblDescription != null) lblDescription.setText(item.getDescription());
@@ -104,17 +111,21 @@ public class AuctionDetailController {
                         InputStream is = getClass().getResourceAsStream(path);
                         if (is != null) imgProduct.setImage(new Image(is));
                     } catch (Exception e) {
-                        System.err.println("❌ Lỗi hiển thị ảnh: " + e.getMessage());
+                        System.err.println("❌ Lỗi hiển thị ảnh chi tiết vật phẩm: " + e.getMessage());
                     }
                 }
             }
 
+            // Chạy bộ đếm ngược thời gian thực nếu phiên đang diễn ra
             if (currentAuction.getEndTime() != null && "RUNNING".equalsIgnoreCase(currentAuction.getAuctionStatus())) {
                 startRealtimeStatusTracker(currentAuction.getEndTime(), currentAuction, currentUser);
             }
         });
     }
 
+    /**
+     * Logic kiểm tra xem User hiện tại có phải người thắng phiên để hiện 2 nút Thanh Toán / Hủy Đấu Giá hay không
+     */
     private void checkAndToggleWinnerActions(Auction auction, User user) {
         String status = auction.getAuctionStatus();
 
@@ -141,7 +152,7 @@ public class AuctionDetailController {
                     long hoursLeft = totalMinutesLeft / 60;
                     long minutesLeft = totalMinutesLeft % 60;
 
-                    // Xác định Admin đang cầm ví tạm của phiên này
+                    // Xác định Admin đang nắm giữ ví tạm dựa trên thuật toán lấy số dư của id phiên
                     int idx = currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length;
                     int assignedAdminId = ESCROW_ADMIN_IDS[idx];
 
@@ -155,7 +166,7 @@ public class AuctionDetailController {
                     }
                 } else {
                     if (lblStatus != null) {
-                        lblStatus.setText("❌ QUÁ HẠN 24H (TỰ ĐỘNG HỦY PHIÊN PHẠT CỌC)");
+                        lblStatus.setText("❌ QUÁ HẠN 24H (HỆ THỐNG TỰ ĐỘNG KHÓA VÀ PHẠT CỌC)");
                         lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
                     }
                     if (hboxWinnerActions != null) {
@@ -178,6 +189,9 @@ public class AuctionDetailController {
         }
     }
 
+    /**
+     * Cập nhật màu sắc CSS cho nhãn trạng thái
+     */
     private void updateStatusStyle(String status) {
         if (lblStatus == null) return;
 
@@ -199,6 +213,9 @@ public class AuctionDetailController {
         }
     }
 
+    /**
+     * Bộ theo dõi đếm ngược thời gian thực kết thúc phiên
+     */
     private void startRealtimeStatusTracker(LocalDateTime endTime, Auction auction, User user) {
         if (liveStatusTimeline != null) { liveStatusTimeline.stop(); }
         liveStatusTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
@@ -213,6 +230,9 @@ public class AuctionDetailController {
         liveStatusTimeline.play();
     }
 
+    /**
+     * 🟢 NÚT XÁC NHẬN NHẬN HÀNG VÀ THANH TOÁN (Gửi lệnh qua Socket)
+     */
     @FXML
     void handlePayAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
@@ -232,13 +252,16 @@ public class AuctionDetailController {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.YES) {
-                // Đóng gói mảng: {auctionId, winnerId, adminIdIdGiamTien} gửi lên Server xử lý dòng tiền
+                // Đóng gói mảng dữ liệu gửi lên Server xử lý dòng tiền qua Database tập trung
                 Object[] txPayload = new Object[] { currentAuction.getAuctionId(), currentUser.getId(), assignedAdminId };
                 SocketClient.getInstance().sendRequest(RequestCode.ADMIN_CREATE_TRANSACTION, txPayload);
             }
         });
     }
 
+    /**
+     * 🔴 NÚT TỪ CHỐI NHẬN HÀNG - HỦY PHIÊN PHẠT CỌC 7% (Gửi lệnh qua Socket)
+     */
     @FXML
     void handleCancelAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
@@ -258,23 +281,30 @@ public class AuctionDetailController {
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.YES) {
-                // Gửi thông tin sang server gồm ID phiên và ID Admin đang giữ ví tạm để Server trừ bảng Admin tương ứng
+                // Gửi thông tin sang server gồm ID phiên và ID Admin giữ tiền để Server thực hiện Trực tiếp trên DB của nó
                 Object[] rejectPayload = new Object[] { currentAuction.getAuctionId(), assignedAdminId };
                 SocketClient.getInstance().sendRequest(RequestCode.ADMIN_REJECT_TRANSACTION, rejectPayload);
             }
         });
     }
 
+    /**
+     * Xử lý khi Server báo Giao dịch / Giải ngân / Phạt cọc THÀNH CÔNG qua Socket
+     */
     private void handleTransactionSuccess(Message message) {
         Platform.runLater(() -> {
-            showNotification("Thành công", "Hệ thống đã xử lý giải ngân dòng tiền từ ví tạm Admin thành công!");
+            showNotification("Thành công", "Hệ thống mạng đã thực thi thay đổi dòng tiền thành công!");
             if (lblStatus != null && currentAuction != null) {
+                // Đồng bộ RAM lập tức
                 currentAuction.setAuctionStatus("PAID");
                 checkAndToggleWinnerActions(currentAuction, currentUser);
             }
         });
     }
 
+    /**
+     * Xử lý khi Server báo giao dịch THẤT BẠI
+     */
     private void handleTransactionFailed(Message message) {
         Platform.runLater(() -> {
             showNotification("Thất bại", "Giao dịch lỗi hoặc số dư ví tạm Admin không đủ: " + message.getMessage());
@@ -289,6 +319,9 @@ public class AuctionDetailController {
         stage.close();
     }
 
+    /**
+     * Giải phóng cổng lắng nghe khi đóng cửa sổ để tránh rò rỉ bộ nhớ mạng (Memory Leak)
+     */
     private void cleanupListeners() {
         MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
         MessageRouter.getInstance().unregister(ResponseCode.WITHDRAW_SUCCESS);

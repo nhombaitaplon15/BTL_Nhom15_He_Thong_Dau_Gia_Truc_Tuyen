@@ -1,7 +1,5 @@
 package com.auction.common.network;
 
-
-
 /**
  * Enum định nghĩa các loại Response từ Server -> Client.
  *
@@ -40,6 +38,7 @@ public enum ResponseCode {
     PASSWORD_CHANGED,           // payload: null
     PASSWORD_CHANGE_FAILED,     // payload: null
     REPORT_SENT,                // payload: null
+    WALLET_UPDATE_RESULT,       // ✅ THÊM MỚI: Trả về kết quả thông tin ví và số tiền tạm giữ (payload: Map)
 
     // ===================== SELLER =====================
     SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)

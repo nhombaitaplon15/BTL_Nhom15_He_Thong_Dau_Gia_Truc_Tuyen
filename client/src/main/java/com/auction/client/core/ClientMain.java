@@ -1,6 +1,5 @@
 package com.auction.client.core;
 
-
 import com.auction.common.network.RequestCode;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -52,4 +51,3 @@ public class ClientMain extends Application {
         launch(args);
     }
 }
-

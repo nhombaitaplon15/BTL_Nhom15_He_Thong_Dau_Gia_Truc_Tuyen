@@ -1,7 +1,5 @@
 package com.auction.common.network;
 
-
-
 /**
  * Enum định nghĩa các loại Request từ Client -> Server.
  *
@@ -31,6 +29,7 @@ public enum RequestCode {
     UPDATE_PROFILE,     // Cập nhật thông tin cá nhân (payload: User)
     CHANGE_PASSWORD,    // Đổi mật khẩu (payload: String[] {oldPwd, newPwd})
     REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: String message)
+    GET_WALLET_INFO,    // ✅ THÊM MỚI: Lấy thông tin ví & tiền tạm giữ realtime (payload: Integer userId)
 
     // ===================== SELLER =====================
     SELLER_GET_MY_ITEMS,       // Lấy danh sách item của seller (payload: null)
