@@ -22,14 +22,16 @@ public enum RequestCode {
     LEAVE_ROOM,         // Rời phòng (payload: Integer auctionId)
     PLACE_BID,          // Đặt giá (payload: BidPlaceDTO)
     CHAT_MESSAGE,       // Chat trong phòng (payload: String message)
-    FETCH_BID_HISTORY,  // Lịch sử đặt giá của user (payload: Integer userId)
+    FETCH_BID_HISTORY,  // Lịch sử đặt giá của user (payload: null — server tự lấy từ session)
+    GET_AUCTION_DETAIL, // ✅ MỚI: Lấy chi tiết 1 phiên (payload: Integer auctionId)
+    REJECT_WIN,         // ✅ MỚI: Người thắng hủy kèo, phạt cọc 7% (payload: Integer auctionId)
     DEPOSIT_REQUEST,    // Nạp tiền vào ví (payload: Double amount)
     WITHDRAW_REQUEST,   // Rút tiền từ ví (payload: Double amount)
     GET_PROFILE,        // Lấy thông tin cá nhân (payload: null)
     UPDATE_PROFILE,     // Cập nhật thông tin cá nhân (payload: User)
     CHANGE_PASSWORD,    // Đổi mật khẩu (payload: String[] {oldPwd, newPwd})
-    REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: String message)
-    GET_WALLET_INFO,    // ✅ THÊM MỚI: Lấy thông tin ví & tiền tạm giữ realtime (payload: Integer userId)
+    REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: ReportIssueDTO)
+    GET_WALLET_INFO,    // Lấy thông tin ví & tiền tạm giữ realtime (payload: null)
     FETCH_TRANSACTION_HISTORY, // Lấy lịch sử giao dịch của user (payload: null)
 
     // ===================== SELLER =====================
@@ -51,9 +53,8 @@ public enum RequestCode {
     ADMIN_GET_ALL_USERS,       // Lấy danh sách users (payload: null)
     ADMIN_BAN_USER,            // Ban user (payload: Integer userId)
     ADMIN_UNBAN_USER,          // Unban user (payload: Integer userId)
-    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION, // Xóa phiên BLOCKED sau 5 phút (payload: Integer auctionId)
+    SELLER_ADD_ITEM, SELLER_EDIT_AUCTION, ADMIN_DELETE_BLOCKED_AUCTION,
 
     // ===================== ISSUES / REPORTS =====================
-    // REPORT_ISSUE đã có ở trên (bidder gửi báo cáo, payload: ReportIssueDTO)
     ADMIN_GET_ALL_ISSUES        // Admin lấy toàn bộ báo cáo sự cố (payload: null)
 }

@@ -1,11 +1,7 @@
 package com.auction.server.core;
 
 import com.auction.common.exception.AuctionException;
-import com.auction.common.model.Auction;
-import com.auction.common.model.BiddingHistory;
-import com.auction.common.model.Item;
-import com.auction.common.model.TransactionRequest;
-import com.auction.common.model.User;
+import com.auction.common.model.*;
 import com.auction.common.network.*;
 import com.auction.common.network.AuctionItemDTO;
 import com.auction.server.service.AdminService;
@@ -254,14 +250,21 @@ public class RequestDispatcher {
         }
     }
 
+    // Trong RequestDispatcher.java
     private void handleFetchBidHistory(ClientHandler client) {
         try {
             Integer userId = client.getLoggedInUserId();
             if (userId == null) return;
-            var history = biddingService.getBiddingHistory(userId);
-            client.sendMessage(new Message(ResponseCode.BID_HISTORY_RESULT, "OK", history));
+
+            List<BidHistoryRow> history = biddingService.getBiddingHistory(userId);
+
+            // LOG CỰC KỲ QUAN TRỌNG: Kiểm tra ở console server
+            System.out.println("[SERVER DEBUG] Đang gửi " + (history == null ? 0 : history.size()) + " bản ghi cho User " + userId);
+
+            // Đảm bảo ép sang Serializable
+            client.sendMessage(new Message(ResponseCode.BID_HISTORY_RESULT, "OK", (java.io.Serializable) history));
         } catch (Exception e) {
-            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được lịch sử đặt giá", null));
+            e.printStackTrace();
         }
     }
 
