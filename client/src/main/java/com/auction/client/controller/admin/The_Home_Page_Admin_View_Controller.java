@@ -3,6 +3,7 @@ package com.auction.client.controller.admin;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
+import com.auction.common.model.IssueRecord;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
@@ -45,6 +46,8 @@ public class The_Home_Page_Admin_View_Controller {
     @FXML private Label lblAdminName, lblPendingCount;
     private List<Auction>            cachedAuctions     = Collections.emptyList();
     private List<TransactionRequest> cachedTransactions = Collections.emptyList();
+    /** Số báo cáo sự cố từ Bidder — đóng góp vào Disputes KPI */
+    private int                      cachedIssueCount   = 0;
     private User currentUser;
     private static final int MAX_LIVE_FEED_ITEMS = 20;
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -57,9 +60,10 @@ public class The_Home_Page_Admin_View_Controller {
     @FXML
     public void initialize() {
         registerRealtimeHandlers();
-        // Gửi 2 request song song để lấy data thực từ server qua socket.
+        // Gửi 3 request song song để lấy data thực từ server qua socket.
         SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
         SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_TRANSACTIONS, null);
+        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_ISSUES, null);
         System.out.println("[HOME ADMIN] Khởi tạo xong — đã gửi request lấy dữ liệu.");
 
         // PIECHART
@@ -84,6 +88,12 @@ public class The_Home_Page_Admin_View_Controller {
                 ResponseCode.NEW_BID_UPDATE, this::onNewBidReceived);
         MessageRouter.getInstance().register(
                 ResponseCode.ADMIN_NEW_PENDING_AUCTION, this::onNewPendingAuction);
+        // Lắng nghe báo cáo mới từ Bidder → cập nhật Disputes KPI ngay lập tức
+        MessageRouter.getInstance().register(
+                ResponseCode.ADMIN_NEW_ISSUE, this::onNewIssueReceived);
+        // Nhận danh sách tất cả issues khi initialize
+        MessageRouter.getInstance().register(
+                ResponseCode.ADMIN_ISSUES_RESULT, this::onIssuesReceived);
     }
 
     private void onAuctionsReceived(Message message) {
@@ -108,9 +118,7 @@ public class The_Home_Page_Admin_View_Controller {
         this.cachedTransactions = list;
         double revenue = list.stream().filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getType()) && "APPROVED".equalsIgnoreCase(tx.getStatus())).mapToDouble(TransactionRequest::getAmount).sum();
         if (lblRevenue != null) lblRevenue.setText(formatMoney(revenue));
-        long waiting = cachedAuctions.stream().filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
-        long pendingTx = list.stream().filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
-        if (lblDisputes != null) lblDisputes.setText((waiting + pendingTx) + " việc");
+        refreshDisputesKPI();
         rebuildQuickStats();
     }
 
@@ -156,6 +164,61 @@ public class The_Home_Page_Admin_View_Controller {
         SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
     }
 
+    /** Nhận danh sách toàn bộ issues khi màn hình khởi động */
+    @SuppressWarnings("unchecked")
+    private void onIssuesReceived(Message message) {
+        List<IssueRecord> issues = (List<IssueRecord>) message.getPayload();
+        if (issues == null) issues = Collections.emptyList();
+        cachedIssueCount = issues.size();
+        Platform.runLater(this::refreshDisputesKPI);
+        System.out.println("[HOME ADMIN] Nhận " + cachedIssueCount + " báo cáo sự cố.");
+    }
+
+    /** Nhận thông báo push khi có báo cáo MỚI — tăng counter + hiển thị alert nhỏ */
+    private void onNewIssueReceived(Message message) {
+        IssueRecord issue = (IssueRecord) message.getPayload();
+        cachedIssueCount++;
+        Platform.runLater(() -> {
+            refreshDisputesKPI();
+            // Thêm vào live feed
+            if (liveFeedContainer != null) {
+                String timestamp = java.time.LocalDateTime.now().format(timeFormatter);
+                HBox feedRow = new HBox(10);
+                feedRow.setAlignment(Pos.CENTER_LEFT);
+                feedRow.setStyle("-fx-background-color: #FFF5F5; -fx-background-radius: 8; -fx-padding: 5 10 5 10;");
+                Label lblTime = new Label("[" + timestamp + "]");
+                lblTime.setStyle("-fx-text-fill: #A3AED0; -fx-font-size: 11px; -fx-font-family: 'Courier New';");
+                Label lblAuction = (issue != null) ? new Label("Phiên #" + issue.getAuctionId()) : new Label("Báo cáo mới");
+                lblAuction.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 12px;");
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+                String issueType = (issue != null && issue.getIssueType() != null) ? issue.getIssueType() : "Sự cố";
+                Label lblInfo = new Label("⚠ " + issueType);
+                lblInfo.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px;");
+                feedRow.getChildren().addAll(lblTime, lblAuction, spacer, lblInfo);
+                liveFeedContainer.getChildren().removeIf(node -> node instanceof Label lbl
+                        && lbl.getText() != null && lbl.getText().startsWith("⏳"));
+                liveFeedContainer.getChildren().add(0, feedRow);
+                if (liveFeedContainer.getChildren().size() > MAX_LIVE_FEED_ITEMS)
+                    liveFeedContainer.getChildren().remove(MAX_LIVE_FEED_ITEMS,
+                            liveFeedContainer.getChildren().size());
+            }
+        });
+        System.out.println("[HOME ADMIN] 🔔 Báo cáo mới! Tổng: " + cachedIssueCount);
+    }
+
+    /**
+     * Cập nhật label Disputes = pending auctions + pending transactions + issues
+     */
+    private void refreshDisputesKPI() {
+        long waiting   = cachedAuctions.stream()
+                .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
+        long pendingTx = cachedTransactions.stream()
+                .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
+        long total = waiting + pendingTx + cachedIssueCount;
+        if (lblDisputes != null) lblDisputes.setText(total + " việc");
+    }
+
 
     //===================================================KPIS=========================================================//
 
@@ -164,8 +227,6 @@ public class The_Home_Page_Admin_View_Controller {
         int total = list.size();
         long sold = list.stream().filter(a ->
                 "SOLD".equals(a.getAuctionStatus()) || "FINISHED".equals(a.getAuctionStatus())).count();
-        long waiting = list.stream().filter(a ->
-                "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         double rate = (total > 0) ? (sold * 100.0 / total) : 0.0;
         if (lblConversionRate != null) lblConversionRate.setText(String.format("%.1f%%", rate));
         long activeBidders = list.stream()
@@ -174,9 +235,10 @@ public class The_Home_Page_Admin_View_Controller {
                 .map(Auction::getCurrentWinnerId)
                 .distinct().count();
         if (lblActiveBidders != null) lblActiveBidders.setText(activeBidders + " người");
-        long pendingTx = cachedTransactions.stream().filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
-        if (lblDisputes != null) lblDisputes.setText((waiting + pendingTx) + " việc");
+        long waiting = list.stream().filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         if (lblPendingCount != null) lblPendingCount.setText("Chờ duyệt: " + waiting);
+        // Disputes = waiting auctions + pending transactions + issues
+        refreshDisputesKPI();
     }
 
     private void rebuildQuickStats() {
@@ -449,6 +511,8 @@ public class The_Home_Page_Admin_View_Controller {
         MessageRouter.getInstance().unregister(ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT);
         MessageRouter.getInstance().unregister(ResponseCode.NEW_BID_UPDATE);
         MessageRouter.getInstance().unregister(ResponseCode.ADMIN_NEW_PENDING_AUCTION);
+        MessageRouter.getInstance().unregister(ResponseCode.ADMIN_NEW_ISSUE);
+        MessageRouter.getInstance().unregister(ResponseCode.ADMIN_ISSUES_RESULT);
     }
 
     private String formatMoney(double amount) {

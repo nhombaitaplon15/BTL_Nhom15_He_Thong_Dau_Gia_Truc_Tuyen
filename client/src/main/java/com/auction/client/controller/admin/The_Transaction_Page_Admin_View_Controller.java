@@ -69,6 +69,8 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     @FXML private Label lblPendingBadge;
     @FXML private Label lblPendingHeader;
     @FXML private Label lblStatusBar;
+    @FXML private Label lblAdminName, lblPendingCount;
+    private User currentUser;
 
     /** Search field — tfSearch */
     @FXML private TextField tfSearch;
@@ -84,7 +86,6 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     // =========================================================
     // STATE
     // =========================================================
-    private User currentUser;
     private final ObservableList<TransactionRequest> allTxList      = FXCollections.observableArrayList();
     private final ObservableList<TransactionRequest> filteredTxList = FXCollections.observableArrayList();
     private final DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
@@ -585,5 +586,20 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+    @FXML
+    public void handleLogout(ActionEvent event) {
+        // Nếu ở các trang kia bạn có đăng ký MessageRouter lắng nghe realtime,
+        // hãy nhớ unregister chúng ở đây (giống hàm unregisterAllHandlers bên trang chủ)
+
+        try {
+            // Đảm bảo đường dẫn đến file LoginView.fxml là chính xác với cấu trúc thư mục của bạn
+            Parent root = FXMLLoader.load(getClass().getResource("/view/view/bidder/LoginView.fxml"));
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

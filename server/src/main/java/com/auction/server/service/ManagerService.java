@@ -3,19 +3,29 @@ package com.auction.server.service;
 import com.auction.common.model.Auction;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
-import com.auction.common.exception.AuctionException ;
-import com.auction.common.exception.ErrorCode ;
+import com.auction.common.exception.AuctionException;
+import com.auction.common.exception.ErrorCode;
 import com.auction.server.core.AuctionRoom;
 import com.auction.server.core.AuctionRoomManager;
-import com.auction.server.dao.AuctionDAO ;
+import com.auction.server.dao.AuctionDAO;
 import com.auction.common.network.AuctionItemDTO;
-import com.auction.server.dao.UserDAO ;
+import com.auction.server.dao.UserDAO;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * ManagerService - Điều phối toàn bộ vòng đời phiên đấu giá.
+ *
+ * ĐÃ SỬA BUG RACE CONDITION trong autoCloseAuction():
+ *   LỖI CŨ: room.closeRoom() là async (submit vào roomQueueProcessor),
+ *   nhưng ngay sau đó AuctionRoomManager.removeRoom() gọi destroyRoom()
+ *   → shutdownNow() cancel task broadcast trước khi kịp gửi → client
+ *   KHÔNG BAO GIỜ nhận được AUCTION_ENDED và WINNER_NOTIFICATION.
+ *
+ *   SỬA: Dùng AuctionRoomManager.closeRoomNaturally() — hàm này remove
+ *   phòng khỏi map ngay (không nhận bid mới) nhưng delay destroyRoom()
+ *   3 giây để broadcast hoàn tất trước khi shutdown thread pool.
  */
 public class ManagerService {
 
@@ -48,24 +58,35 @@ public class ManagerService {
         return auctionDAO.getAll();
     }
 
-    /** Lấy danh sách phiên theo trạng thái - Dùng cho handleFetchRooms của Socket Server */
     public List<Auction> getAuctionsByStatus(String status) {
         return auctionDAO.getAuctionsByStatus(status);
     }
 
-    /** Tìm danh sách các phiên do một Người bán cụ thể đăng lên */
     public List<Auction> getAuctionsBySeller(int sellerId) {
         return auctionDAO.getAuctionsBySeller(sellerId);
     }
 
+    public List<Auction> getLiveAuctionsByCategory(String category) {
+        List<Auction> auctions = auctionDAO.getLiveAuctionsByCategory(category);
+        for (Auction auction : auctions) {
+            try {
+                Item item = itemService.getItemById(auction.getItemId());
+                auction.setItem(item);
+            } catch (Exception e) {
+                System.err.println("[MANAGER] Không load được item cho auction #" + auction.getAuctionId());
+            }
+        }
+        return auctions;
+    }
 
     public Auction getAuctionOrThrow(int auctionId) {
         Auction auction = auctionDAO.getAuctionById(auctionId);
         if (auction == null) {
-            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Phiên đấu giá không tồn tại"); //  Đã sửa thành "throw new"
+            throw new AuctionException(ErrorCode.AUCTION_NOT_FOUND.name(), "Phiên đấu giá không tồn tại");
         }
         return auction;
     }
+
     // --- 2. THIẾT LẬP PHIÊN ĐẤU GIÁ ---
 
     public void scheduleAuction(int itemId, LocalDateTime startTime, LocalDateTime endTime) {
@@ -74,25 +95,24 @@ public class ManagerService {
             throw new AuctionException(ErrorCode.ITEM_NOT_FOUND.name(), "Sản phẩm không tồn tại");
         }
 
-        // ĐÃ FIX Ở ĐÂY: Sử dụng trực tiếp tham số 'itemId' thay vì gọi 'item.getId()' đang bị trả về 0
         Auction auction = new Auction(
-            0,
-            itemId,              // <-- Fix: Tránh được lỗi vi phạm khóa ngoại
-            item.getSellerId(),
-            "WAITING_FOR_ADMIN",
-            item.getStartingPrice(),
-            item.getStartingPrice(),
-            0,
-            null,
-            startTime,
-            endTime,
-            LocalDateTime.now()
+                0,
+                itemId,
+                item.getSellerId(),
+                "WAITING_FOR_ADMIN",
+                item.getStartingPrice(),
+                item.getStartingPrice(),
+                0,
+                null,
+                startTime,
+                endTime,
+                LocalDateTime.now()
         );
 
         if (!auctionDAO.insertAuction(auction)) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi khi lưu phiên đấu giá vào Database");
         }
-        System.out.println("[MANAGER] Đã lên lịch chờ duyệt (Scheduled) cho Item: " + itemId);
+        System.out.println("[MANAGER] Đã lên lịch chờ duyệt cho Item: " + itemId);
     }
 
     // --- 3. ĐIỀU KHIỂN TRẠNG THÁI ---
@@ -111,8 +131,6 @@ public class ManagerService {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(), "Chưa đến giờ bắt đầu");
         }
         transitStatus(auctionId, "OPEN", "RUNNING");
-
-        // Tạo phòng kết nối realtime trong AuctionRoomManager phục vụ mạng Socket
         AuctionRoomManager.getInstance().createRoom(auctionId, auction.getCurrentPrice());
         System.out.println("[MANAGER] Phiên " + auctionId + " -> RUNNING. Phòng realtime đã tạo thành công.");
     }
@@ -121,7 +139,7 @@ public class ManagerService {
         Auction a = getAuctionOrThrow(id);
         if (!from.equals(a.getAuctionStatus())) {
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
-                "Trạng thái hiện tại không hợp lệ. Cần: " + from);
+                    "Trạng thái hiện tại không hợp lệ. Cần: " + from);
         }
         auctionDAO.updateStatus(id, to);
     }
@@ -132,35 +150,38 @@ public class ManagerService {
         Thread t = new Thread(() -> {
             while (running) {
                 try {
-                    Thread.sleep(1000); // Quét chu kỳ mỗi giây một lần
+                    Thread.sleep(1000);
                     LocalDateTime now = LocalDateTime.now();
 
-                    // NHIỆM VỤ 1: Tự động kích hoạt phòng khi đến giờ mở (OPEN -> RUNNING)
+                    // NHIỆM VỤ 1: OPEN -> RUNNING khi đến giờ bắt đầu
                     List<Auction> openAuctions = auctionDAO.getAuctionsByStatus("OPEN");
                     for (Auction auction : openAuctions) {
                         if (!now.isBefore(auction.getStartTime())) {
                             auctionDAO.updateStatus(auction.getAuctionId(), "RUNNING");
                             AuctionRoomManager.getInstance().createRoom(
-                                auction.getAuctionId(), auction.getCurrentPrice());
+                                    auction.getAuctionId(), auction.getCurrentPrice());
                             System.out.println("[AUTO-BOT] Phiên " + auction.getAuctionId() + " -> RUNNING");
                         }
                     }
 
-                    // NHIỆM VỤ 2: RUNNING -> SOLD/ENDED
+                    // NHIỆM VỤ 2: RUNNING -> SOLD/ENDED khi hết giờ
                     List<Auction> activeAuctions = auctionDAO.getAuctionsByStatus("RUNNING");
                     for (Auction auction : activeAuctions) {
                         if (now.isAfter(auction.getEndTime())) {
                             String finalStatus = (auction.getCurrentWinnerId() != null
-                                && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
+                                    && auction.getCurrentWinnerId() > 0) ? "SOLD" : "ENDED";
                             auctionDAO.updateStatus(auction.getAuctionId(), finalStatus);
                             System.out.println("[AUTO-BOT] Hết giờ! Phiên " + auction.getAuctionId() + " -> " + finalStatus);
 
-                            AuctionRoom room = AuctionRoomManager.getInstance().getRoom(auction.getAuctionId());
-                            if (room != null) {
-                                room.closeRoom(auction.getCurrentWinnerId(), auction.getCurrentPrice());
-                            }
-
-                            AuctionRoomManager.getInstance().removeRoom(auction.getAuctionId());
+                            // ĐÃ SỬA: Dùng closeRoomNaturally thay vì closeRoom + removeRoom tách biệt.
+                            // closeRoomNaturally() = remove khỏi map ngay (không nhận bid mới)
+                            // + broadcast AUCTION_ENDED + WINNER_NOTIFICATION async
+                            // + delay 3s trước khi destroyRoom() để broadcast hoàn tất.
+                            AuctionRoomManager.getInstance().closeRoomNaturally(
+                                    auction.getAuctionId(),
+                                    auction.getCurrentWinnerId(),
+                                    auction.getCurrentPrice()
+                            );
                         }
                     }
 
@@ -172,7 +193,7 @@ public class ManagerService {
                 }
             }
         }, "AuctionBot-Thread");
-        t.setDaemon(true); // Luồng tự hủy khi Server chính dừng hoạt động
+        t.setDaemon(true);
         t.start();
     }
 
@@ -183,16 +204,15 @@ public class ManagerService {
         System.out.println("[MANAGER] Đã tắt Bot quét phiên đấu giá.");
     }
 
-    /** Giữ lại hàm bổ trợ này từ code của bạn bạn để đồng bộ cấu trúc */
     public void clearData() {
         System.out.println("[MANAGER] Dữ liệu lưu an toàn dưới SQL, hệ thống hoạt động ổn định.");
     }
-    public Auction getAuctionById(int auctionId) {return auctionDAO.getAuctionById(auctionId);}
+
+    public Auction getAuctionById(int auctionId) { return auctionDAO.getAuctionById(auctionId); }
 
     public List<AuctionItemDTO> getAuctionItemsBySeller(int sellerId) {
         List<Auction> auctions = auctionDAO.getAuctionsBySeller(sellerId);
         List<AuctionItemDTO> combinedList = new java.util.ArrayList<>();
-
         for (Auction auction : auctions) {
             try {
                 Item item = itemService.getItemById(auction.getItemId());
@@ -207,8 +227,6 @@ public class ManagerService {
     }
 
     public void removeAuctionFromCache(int auctionId) {
-        // ManagerService hiện dùng DB làm source of truth, không giữ cache riêng.
-        // AuctionRoomManager có thể đã removeRoom khi block, đảm bảo lại ở đây.
         AuctionRoomManager.getInstance().removeRoom(auctionId);
         System.out.println("[MANAGER] Đã dọn dẹp cache/room cho phiên #" + auctionId);
     }

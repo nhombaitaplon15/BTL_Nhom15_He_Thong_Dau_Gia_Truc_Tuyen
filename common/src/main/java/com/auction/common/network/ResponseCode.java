@@ -20,6 +20,7 @@ public enum ResponseCode {
     AUCTION_STATUS_CHANGED,
     SWITCH_ROLE_SUCCESS,
     SWITCH_ROLE_FAILED,
+
     // ===================== BIDDER =====================
     ROOM_LIST_RESULT,           // payload: List<Auction>
     ROOM_JOIN_SUCCESS,          // payload: Integer auctionId
@@ -42,11 +43,12 @@ public enum ResponseCode {
     PASSWORD_CHANGE_FAILED,     // payload: null
     REPORT_SENT,                // payload: null
     TRANSACTIONS_RESULT,        // payload: List<TransactionRequest> (Lịch sử giao dịch cá nhân)
-    AUCTION_DETAIL_RESULT,     // payload: AuctionItemDTO
-    BIDDER_PAY_SUCCESS,        // payload: null
-    BIDDER_PAY_FAILED,         // payload: String reason
-    BIDDER_CANCEL_SUCCESS,     // payload: null
-    BIDDER_CANCEL_FAILED,      // payload: String reason
+    AUCTION_DETAIL_RESULT,      // payload: AuctionItemDTO
+    BIDDER_PAY_SUCCESS,         // payload: null
+    BIDDER_PAY_FAILED,          // payload: String reason
+    BIDDER_CANCEL_SUCCESS,      // payload: null
+    BIDDER_CANCEL_FAILED,       // payload: String reason
+    WINNER_NOTIFICATION,
 
     // ===================== SELLER =====================
     SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)
@@ -85,5 +87,11 @@ public enum ResponseCode {
     ADMIN_DELETE_BLOCKED_SUCCESS,   // payload: Integer auctionId (đã xóa)
 
     // ===================== ERROR =====================
-    ERROR_MESSAGE                   // payload: String errorDetail
+    ERROR_MESSAGE,                  // payload: String errorDetail
+
+    // ===================== ISSUES / REPORTS (Thêm mới từ đoạn code) =====================
+    REPORT_ISSUE_SUCCESS,
+    REPORT_ISSUE_FAILED,
+    ADMIN_ISSUES_RESULT,
+    ADMIN_NEW_ISSUE
 }

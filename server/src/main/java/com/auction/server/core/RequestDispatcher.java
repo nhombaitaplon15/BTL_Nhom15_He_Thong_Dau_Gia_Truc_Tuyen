@@ -38,7 +38,7 @@ public class RequestDispatcher {
                 case LOGIN:            handleLogin(client, request);           break;
                 case REGISTER:         handleRegister(client, request);        break;
                 case FORGOT_PASSWORD:  handleForgotPassword(client, request);  break;
-                case SWITCH_ROLE: handleSwitchRole(client, request); break;
+                case SWITCH_ROLE:      handleSwitchRole(client, request);      break;
 
                 case FETCH_ROOMS:      handleFetchRooms(client);               break;
                 case FETCH_ITEMS:      handleFetchItems(client, request);      break;
@@ -54,14 +54,13 @@ public class RequestDispatcher {
                 case CHANGE_PASSWORD:  handleChangePassword(client, request);  break;
                 case REPORT_ISSUE:     handleReportIssue(client, request);     break;
                 case GET_USER_TRANSACTIONS: handleGetUserTransactions(client, request); break;
-
-                case FETCH_AUCTION_DETAIL: handleFetchAuctionDetail(client, request); break;
-                case BIDDER_PAY_AUCTION:   handleBidderPayAuction(client, request);   break;
-                case BIDDER_CANCEL_AUCTION:handleBidderCancelAuction(client, request);break;
+                case FETCH_AUCTION_DETAIL:  handleFetchAuctionDetail(client, request);  break;
+                case BIDDER_PAY_AUCTION:    handleBidderPayAuction(client, request);    break;
+                case BIDDER_CANCEL_AUCTION: handleBidderCancelAuction(client, request); break;
 
                 case SELLER_GET_MY_ITEMS:     handleSellerGetMyItems(client, request);    break;
                 case SELLER_CREATE_AUCTION:   handleSellerCreateAuction(client, request); break;
-                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client, request); break;
+                case SELLER_GET_MY_AUCTIONS:  handleSellerGetMyAuctions(client);          break;
                 case SELLER_CANCEL_AUCTION:   handleSellerCancelAuction(client, request); break;
                 case SELLER_CONFIRM_SALE:     handleSellerConfirmSale(client, request);   break;
                 case SELLER_ADD_ITEM:         handleSellerAddItem(client, request);       break;
@@ -79,6 +78,7 @@ public class RequestDispatcher {
                 case ADMIN_BAN_USER:              handleAdminBanUser(client, request);            break;
                 case ADMIN_UNBAN_USER:            handleAdminUnbanUser(client, request);          break;
                 case ADMIN_DELETE_BLOCKED_AUCTION:handleAdminDeleteBlockedAuction(client, request); break;
+                case ADMIN_GET_ALL_ISSUES:        handleAdminGetAllIssues(client);                break;
 
                 default:
                     System.out.println("[DISPATCHER] Unknown code: " + request.getRequestCode());
@@ -146,7 +146,6 @@ public class RequestDispatcher {
     private void handleLogin(ClientHandler client, Message request) {
         try {
             LoginDTO loginData = (LoginDTO) request.getPayload();
-            System.out.println(">>> [DEBUG SERVER] Nhận yêu cầu đăng nhập | Tài khoản: [" + loginData.getUsername() + "] - Mật khẩu: [" + loginData.getPassword() + "]");
             User user = userService.handleLogin(loginData.getUsername(), loginData.getPassword());
             if (user != null) {
                 boolean registered = SessionManager.getInstance().loginUser(user.getId(), client);
@@ -179,7 +178,6 @@ public class RequestDispatcher {
         }
     }
 
-    // --- HÀM MỚI: Xử lý chức năng quên mật khẩu ---
     private void handleForgotPassword(ClientHandler client, Message request) {
         try {
             String[] payload = (String[]) request.getPayload();
@@ -187,10 +185,7 @@ public class RequestDispatcher {
             String phone = payload[1];
             String newPass = payload[2];
 
-            // Gọi logic cập nhật mật khẩu của bạn bên trong UserService
             userService.handleForgotPassword(username, phone, newPass);
-
-            // Nếu không có lỗi văng ra nghĩa là thành công
             client.sendMessage(new Message(ResponseCode.FORGOT_PASSWORD_SUCCESS, "Khôi phục mật khẩu thành công!", null));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.FORGOT_PASSWORD_FAILED, e.getMessage(), null));
@@ -201,11 +196,8 @@ public class RequestDispatcher {
         try {
             Integer userId = client.getLoggedInUserId();
             User user = userService.getUserById(userId);
-
-            // Lấy đích danh vai trò mà Client muốn chuyển (từ Payload)
             String targetRole = (String) request.getPayload();
 
-            // Truyền vào UserService
             userService.handleSwitchRole(user, targetRole);
             client.sendMessage(new Message(ResponseCode.SWITCH_ROLE_SUCCESS, "OK", user.getRole()));
         } catch (Exception e) {
@@ -367,7 +359,7 @@ public class RequestDispatcher {
         }
     }
 
-    private void handleSellerGetMyItems(ClientHandler client,Message request) {
+    private void handleSellerGetMyItems(ClientHandler client, Message request) {
         try {
             Integer sellerId = (Integer) request.getPayload();
             List<Item> items = itemService.getItemsBySeller(sellerId);
@@ -397,17 +389,15 @@ public class RequestDispatcher {
                     userService
                 );
             }
-            System.out.println("[SELLER] User#" + sellerId + " tạo phiên cho item#" + dto.getItemId());
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTION_CREATE_FAILED, "Tạo phiên thất bại: " + e.getMessage(), null));
         }
     }
 
-    private void handleSellerGetMyAuctions(ClientHandler client, Message request) {
+    private void handleSellerGetMyAuctions(ClientHandler client) {
         try {
-            Integer sellerId = (Integer) request.getPayload();
+            Integer sellerId = client.getLoggedInUserId();
             List<AuctionItemDTO> combinedAuctions = managerService.getAuctionItemsBySeller(sellerId);
-
             client.sendMessage(new Message(ResponseCode.SELLER_AUCTIONS_RESULT, "OK", combinedAuctions));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được danh sách phiên", null));
@@ -464,7 +454,6 @@ public class RequestDispatcher {
             sellerService.editAuction(seller, updatedAuction);
 
             client.sendMessage(new Message(ResponseCode.SELLER_EDIT_SUCCESS, "Cập nhật thành công!", null));
-            System.out.println("[SELLER] User#" + sellerId + " đã sửa phiên #" + updatedAuction.getAuctionId());
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.SELLER_EDIT_FAILED, e.getMessage(), null));
         }
@@ -492,7 +481,6 @@ public class RequestDispatcher {
                     new Message(ResponseCode.SELLER_AUCTION_APPROVED, "Phiên của bạn đã được duyệt!", auctionId));
 
                 AuctionRoomManager.getInstance().openRoom(auction);
-                System.out.println("[ADMIN] Đã duyệt + mở phòng cho phiên #" + auctionId);
             } else {
                 client.sendMessage(new Message(ResponseCode.ADMIN_APPROVE_FAILED, "Không thể duyệt phiên này", null));
             }
@@ -599,8 +587,14 @@ public class RequestDispatcher {
             int auctionId  = (int)    payload[0];
             int winnerId   = (int)    payload[1];
             double price   = (double) payload[2];
+
             transactionService.createTransactionFromAuction(auctionId, winnerId, price);
             client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_CREATED, "Giao dịch đã được tạo!", null));
+
+            User refreshed = userService.getUserById(winnerId);
+            if (refreshed != null) {
+                client.sendMessage(new Message(ResponseCode.PROFILE_RESULT, "OK", refreshed));
+            }
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_FAILED, e.getMessage(), null));
         }
@@ -633,6 +627,16 @@ public class RequestDispatcher {
             client.sendMessage(new Message(ResponseCode.ADMIN_UNBAN_SUCCESS, "Đã unban user#" + userId, userId));
         } catch (Exception e) {
             client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Lỗi unban user: " + e.getMessage(), null));
+        }
+    }
+
+    private void handleAdminGetAllIssues(ClientHandler client) {
+        try {
+            com.auction.server.dao.IssueDAO issueDAO = new com.auction.server.dao.IssueDAO();
+            java.util.List<com.auction.common.model.IssueRecord> issues = issueDAO.getAllIssues();
+            client.sendMessage(new Message(ResponseCode.ADMIN_ISSUES_RESULT, "OK", (java.io.Serializable) issues));
+        } catch (Exception e) {
+            client.sendMessage(new Message(ResponseCode.ERROR_MESSAGE, "Không lấy được báo cáo: " + e.getMessage(), null));
         }
     }
 }
