@@ -1,11 +1,12 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
-import com.auction.server.dao.BiddingHistoryDAO;
-import com.auction.server.dao.PaymentDAO;
-import com.auction.server.dao.AuctionDAO;
-import com.auction.common.model.Auction;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -17,9 +18,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class BiddingHistoryController implements Initializable {
@@ -35,18 +39,28 @@ public class BiddingHistoryController implements Initializable {
     @FXML private Button btnViewDetail;
 
     private final ObservableList<BidHistoryRow> historyList = FXCollections.observableArrayList();
-    private final BiddingHistoryDAO historyDAO = new BiddingHistoryDAO();
-    private final PaymentDAO paymentDAO = new PaymentDAO();
-    private final AuctionDAO auctionDAO = new AuctionDAO();
-    private User currentUser;
 
+    private User currentUser;
     private The_Home_Page_Bidder_View_Controller homeControllerInstance;
     private Scene homeScene;
+
+    // Các Consumer lắng nghe dữ liệu trả về từ Server Realtime
+    private final Consumer<Message> onHistoryResult = this::handleHistoryResult;
+    private final Consumer<Message> onProfileResult = this::handleProfileResult;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         setupTable();
         setupSearch();
+
+        // Đăng ký nhận kết quả từ Server qua Socket
+        MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, onHistoryResult);
+        MessageRouter.getInstance().register(ResponseCode.PROFILE_RESULT, onProfileResult);
+    }
+
+    private void cleanupHandlers() {
+        MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
+        MessageRouter.getInstance().unregister(ResponseCode.PROFILE_RESULT);
     }
 
     public void setMainHomeController(Scene homeScene, The_Home_Page_Bidder_View_Controller homeController) {
@@ -72,80 +86,47 @@ public class BiddingHistoryController implements Initializable {
             @Override
             protected void updateItem(Double amount, boolean empty) {
                 super.updateItem(amount, empty);
+
+                // GỌI CSS: Xóa class cũ trước khi gán mới (JavaFX hay dùng lại Cell cũ khi cuộn)
+                getStyleClass().removeAll("amount-text");
+
                 if (empty || amount == null) {
                     setText(null);
-                    setStyle("");
                 } else {
                     setText(String.format("%,.0f UETệ", amount));
-                    TableRow<?> row = getTableRow();
-                    if (row != null && row.isSelected()) {
-                        setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-text-fill: #1d4ed8; -fx-font-weight: bold;");
-                    }
+                    getStyleClass().add("amount-text");
                 }
             }
         });
 
-        // 🎯 ĐÃ TINH GỌN: Bỏ qua trạng thái "Bị đè giá" phức tạp
         colStatus.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(empty || item == null ? null : item, empty);
+
+                // GỌI CSS: Dọn dẹp sạch sẽ các màu cũ
+                getStyleClass().removeAll("status-win", "status-lead", "status-fail", "status-default");
+
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
                     return;
                 }
 
-                BidHistoryRow rowData = getTableRow() != null ? getTableRow().getItem() : null;
+                String displayStatus = item.toUpperCase();
 
-                if (rowData != null) {
-                    try {
-                        Auction auction = auctionDAO.getAuctionById(rowData.getAuctionId());
-
-                        if (auction != null) {
-                            String auctionStatus = auction.getAuctionStatus() != null ? auction.getAuctionStatus().toUpperCase() : "RUNNING";
-
-                            // LÚC ĐANG CHẠY: Mặc định hiển thị là đang dẫn đầu phiên
-                            if ("RUNNING".equals(auctionStatus)) {
-                                setText("ĐANG DẪN ĐẦU");
-                            }
-                            // KHI KẾT THÚC: Phân định thắng / thua rõ ràng
-                            else {
-                                if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() == currentUser.getId()
-                                        && rowData.getBidAmount() >= auction.getCurrentPrice()) {
-                                    setText("THẮNG CUỘC 🏆");
-                                } else {
-                                    setText("THẤT BẠI");
-                                }
-                            }
-                        } else {
-                            setText(item);
-                        }
-                    } catch (Exception e) {
-                        setText(item);
-                    }
+                if (displayStatus.contains("SUCCESS") || displayStatus.contains("WIN") || displayStatus.contains("THẮNG")) {
+                    displayStatus = "THẮNG CUỘC 🏆";
+                    getStyleClass().add("status-win");
+                } else if (displayStatus.contains("RUNNING") || displayStatus.contains("LEAD") || displayStatus.contains("DẪN ĐẦU")) {
+                    displayStatus = "ĐANG DẪN ĐẦU";
+                    getStyleClass().add("status-lead");
+                } else if (displayStatus.contains("FAIL") || displayStatus.contains("LOSE") || displayStatus.contains("OVERBID") || displayStatus.contains("THẤT BẠI")) {
+                    displayStatus = "THẤT BẠI";
+                    getStyleClass().add("status-fail");
                 } else {
-                    setText(item);
+                    getStyleClass().add("status-default");
                 }
-
-                // Đổ màu sắc trạng thái ngắn gọn
-                TableRow<?> row = getTableRow();
-                if (row != null && row.isSelected()) {
-                    setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
-                } else {
-                    String currentText = getText();
-                    if ("THẮNG CUỘC 🏆".equals(currentText)) {
-                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;"); // Màu xanh lá
-                    } else if ("ĐANG DẪN ĐẦU".equals(currentText)) {
-                        setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;"); // Màu xanh ngọc
-                    } else if ("THẤT BẠI".equals(currentText)) {
-                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;"); // Màu đỏ
-                    } else {
-                        setStyle("");
-                    }
-                }
+                setText(displayStatus);
             }
         });
 
@@ -158,18 +139,28 @@ public class BiddingHistoryController implements Initializable {
 
     private void loadHistory() {
         if (currentUser == null) return;
-        new Thread(() -> {
-            try {
-                List<BidHistoryRow> list = historyDAO.getHistoryByUser(currentUser.getId());
-                Platform.runLater(() -> {
-                    historyList.setAll(list);
-                    historyTable.setItems(historyList);
-                });
-            } catch (Exception e) {
-                System.err.println("❌ Lỗi kết nối Database khi tải bảng lịch sử đặt giá!");
-                e.printStackTrace();
+        SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, currentUser.getId());
+    }
+
+    private void handleHistoryResult(Message msg) {
+        Object payload = msg.getPayload();
+
+        // 🛡️ LỚP KHIÊN BẢO VỆ CHỐNG CRASH CLASSCASTEXCEPTION
+        if (payload instanceof List<?> rawList) {
+            List<BidHistoryRow> safeList = new ArrayList<>();
+            for (Object obj : rawList) {
+                if (obj instanceof BidHistoryRow) {
+                    safeList.add((BidHistoryRow) obj);
+                } else {
+                    System.err.println("❌ LỖI NGHIÊM TRỌNG: Server trả về sai kiểu dữ liệu (" + obj.getClass().getSimpleName() + " thay vì BidHistoryRow). Vui lòng báo Backend sửa DAO!");
+                }
             }
-        }).start();
+
+            Platform.runLater(() -> {
+                historyList.setAll(safeList);
+                historyTable.setItems(historyList);
+            });
+        }
     }
 
     private void setupSearch() {
@@ -179,8 +170,8 @@ public class BiddingHistoryController implements Initializable {
                 return;
             }
             List<BidHistoryRow> filtered = historyList.stream()
-                    .filter(item -> item.getItemName() != null && item.getItemName().toLowerCase().contains(newValue.toLowerCase()))
-                    .collect(Collectors.toList());
+                .filter(item -> item.getItemName() != null && item.getItemName().toLowerCase().contains(newValue.toLowerCase()))
+                .collect(Collectors.toList());
             historyTable.setItems(FXCollections.observableArrayList(filtered));
         });
     }
@@ -188,22 +179,27 @@ public class BiddingHistoryController implements Initializable {
     @FXML
     private void handleRefresh() {
         if (currentUser != null) {
-            new Thread(() -> {
-                try {
-                    double actualBalance = paymentDAO.getBalance(currentUser.getId());
-                    Platform.runLater(() -> currentUser.setBalance(actualBalance));
-                } catch (Exception e) { e.printStackTrace(); }
-            }).start();
+            SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, currentUser.getId());
         }
         loadHistory();
+    }
 
-        if (homeControllerInstance != null) {
-            homeControllerInstance.updateWalletUI();
+    private void handleProfileResult(Message msg) {
+        Object payload = msg.getPayload();
+        if (payload instanceof User) {
+            User updatedUser = (User) payload;
+            Platform.runLater(() -> {
+                this.currentUser.setBalance(updatedUser.getBalance());
+                if (homeControllerInstance != null) {
+                    homeControllerInstance.updateWalletUI();
+                }
+            });
         }
     }
 
     @FXML
     private void onLiveMenuClick() {
+        cleanupHandlers();
         try {
             if (homeScene != null) {
                 if (homeControllerInstance != null) {

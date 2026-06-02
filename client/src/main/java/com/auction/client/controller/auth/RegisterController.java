@@ -1,7 +1,13 @@
 package com.auction.client.controller.auth;
 
-import com.auction.common.exception.AuctionException ;
-import com.auction.server.service.UserService;
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
+import com.auction.common.network.Message;
+import com.auction.common.network.RegisterDTO;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +18,9 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.function.Consumer;
+import java.text.Normalizer;
+
 public class RegisterController {
 
     @FXML private TextField txtUsername;
@@ -19,11 +28,24 @@ public class RegisterController {
     @FXML private TextField txtEmail;
     @FXML private TextField txtPhone;
 
-    private static UserService userService = new UserService();
+    private final Consumer<Message> onRegisterSuccess = this::handleRegisterSuccess;
+    private final Consumer<Message> onRegisterFailed = this::handleRegisterFailed;
+
+    @FXML
+    public void initialize() {
+        MessageRouter.getInstance().register(ResponseCode.REGISTER_SUCCESS, onRegisterSuccess);
+        MessageRouter.getInstance().register(ResponseCode.REGISTER_FAILED, onRegisterFailed);
+    }
+
+    private void cleanupHandlers() {
+        MessageRouter.getInstance().unregister(ResponseCode.REGISTER_SUCCESS);
+        MessageRouter.getInstance().unregister(ResponseCode.REGISTER_FAILED);
+    }
 
     @FXML
     public void handleRegister(ActionEvent event) {
         String username = txtUsername.getText().trim();
+        username = Normalizer.normalize(username, Normalizer.Form.NFC);
         String password = txtPassword.getText().trim();
         String email = txtEmail.getText().trim();
         String phone = txtPhone.getText().trim();
@@ -33,25 +55,22 @@ public class RegisterController {
             return;
         }
 
-        try {
-            // 1. Đăng ký tài khoản xuống DB
-            userService.handleRegister(username, password, email, phone);
+        RegisterDTO registerData = new RegisterDTO(username, password, email, phone, "BIDDER");
+        SocketClient.getInstance().sendRequest(RequestCode.REGISTER, registerData);
+    }
 
-            // 2. Hiện thông báo thành công trước
-            showAlert(Alert.AlertType.INFORMATION, "Xác nhận",
-                    "Đăng ký thành công!\nChào mừng thành viên mới: " + username);
+    private void handleRegisterSuccess(Message msg) {
+        Platform.runLater(() -> {
+            showAlert(Alert.AlertType.INFORMATION, "Xác nhận", "Đăng ký thành công!\nVui lòng đăng nhập để tiếp tục.");
+            chuyenTrangLogin();
+        });
+    }
 
-            // 3. Tiến hành chuyển trang (Lỗi thường phát sinh ở đây do sai đường dẫn FXML)
-            chuyenTrangChu(event);
-
-        } catch (AuctionException e) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi đăng ký", e.getMessage());
-        } catch (Exception e) {
-            // In chi tiết lỗi ra console để em kiểm tra lỗi gì nếu chuyển trang thất bại
-            System.err.println("=== LỖI PHÁT SINH KHI ĐĂNG KÝ/CHUYỂN TRANG ===");
-            e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Đăng ký xong nhưng lỗi điều hướng: " + e.getMessage());
-        }
+    private void handleRegisterFailed(Message msg) {
+        Platform.runLater(() -> {
+            String errorMsg = msg.getMessage() != null ? msg.getMessage() : "Đăng ký thất bại do lỗi hệ thống!";
+            showAlert(Alert.AlertType.ERROR, "Lỗi đăng ký", errorMsg);
+        });
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
@@ -62,36 +81,35 @@ public class RegisterController {
         alert.showAndWait();
     }
 
-    private void chuyenTrangChu(ActionEvent event) {
+    private void chuyenTrangLogin() {
+        cleanupHandlers();
         try {
-            // ⚠️ EM KIỂM TRA KỸ ĐƯỜNG DẪN NÀY:
-            // Nếu file nằm trong thư mục bidder thì phải là: "/view/bidder/The_Home_Page_Bidder_View.fxml"
-            String fxmlPath = "/view/The_Home_Page_Bidder_View.fxml";
-
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/auth/LoginView.fxml"));
             Parent root = loader.load();
 
-            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            Stage stage = (Stage) txtUsername.getScene().getWindow();
             stage.setScene(new Scene(root));
+            stage.setTitle("Đăng Nhập Hệ Thống");
             stage.centerOnScreen();
             stage.show();
         } catch (Exception e) {
-            System.err.println("=== LỖI KHÔNG TÌM THẤY FILE FXML TRANG CHỦ ===");
-            e.printStackTrace(); // In lỗi đỏ lòm ở terminal để check chuẩn tên file
-            showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể tải giao diện trang chủ! Kiểm tra lại tên file FXML.");
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể tải giao diện đăng nhập!");
         }
     }
 
     @FXML
     public void Welcome_back(ActionEvent event){
+        cleanupHandlers();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/LoginView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/auth/LoginView.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root);
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
 
             stage.setScene(scene);
+            stage.setTitle("Đăng Nhập Hệ Thống");
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();

@@ -244,7 +244,7 @@ public class BiddingService {
     }
 
     /** Trả về danh sách lịch sử đấu giá đồng bộ theo Model hệ thống mạng */
-    public List<BiddingHistory> getBiddingHistory(int bidderId) {
-        return biddingHistoryDAO.getHistoryByBidderId(bidderId);
+    public List<BidHistoryRow> getBiddingHistory(int bidderId) {
+        return biddingHistoryDAO.getHistoryByUser(bidderId);
     }
 }

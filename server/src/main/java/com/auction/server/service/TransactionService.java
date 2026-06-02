@@ -1,14 +1,14 @@
 package com.auction.server.service;
 
+import com.auction.common.model.Auction;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
 import com.auction.common.exception.AuctionException;
 import com.auction.common.exception.ErrorCode;
+import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.DBConnection;
-
-// Thêm các thư viện này để Server bắn tín hiệu Realtime về Client
 import com.auction.server.core.SessionManager;
 import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
@@ -25,8 +25,6 @@ public class TransactionService {
     public TransactionService(ManagerService managerService) {
         this.managerService = managerService;
     }
-
-    // --- 1. NGƯỜI DÙNG ĐĂNG KÝ YÊU CẦU (NẠP / RÚT) ---
 
     public void handleDepositRequest(User currentUser, double amount) {
         if (amount <= 0) {
@@ -74,8 +72,6 @@ public class TransactionService {
         handleWithdrawRequest(currentUser, amount, "Khác");
     }
 
-    // --- 2. HÓA ĐƠN TỰ ĐỘNG TỪ HỆ THỐNG ---
-
     public void createTransactionFromAuction(int auctionId, int winnerId, double amount) {
         if (winnerId <= 0) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "ID người thắng không hợp lệ!");
@@ -94,8 +90,6 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi Database khi tạo giao dịch đấu giá: " + e.getMessage());
         }
     }
-
-    // --- 3. ĐIỀU KHIỂN & PHÊ DUYỆT TỪ ADMIN ---
 
     public void handleApproveTransaction(User adminUser, int transId, int targetUserId, double amount, String type) {
         if (!adminUser.isAdmin()) {
@@ -149,8 +143,6 @@ public class TransactionService {
         return transDAO.getTransactionsByUserId(userId);
     }
 
-    /** * HÀM NÀY ĐÃ ĐƯỢC SỬA: Đồng bộ RAM và báo Realtime về Client
-     */
     public void approveTransaction(Integer txId) {
         if (txId == null) {
             throw new AuctionException(ErrorCode.INVALID_INPUT.name(), "Transaction ID không hợp lệ!");
@@ -168,7 +160,6 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.TRANSACTION_FAILED.name(), "Không tìm thấy giao dịch yêu cầu!");
         }
 
-        // 1. Cập nhật dưới Database SQL
         boolean success = transDAO.processApproval(
             target.getRequestId(),
             target.getUser().getId(),
@@ -180,7 +171,6 @@ public class TransactionService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Duyệt giao dịch thất bại!");
         }
 
-        // 2. ĐỒNG BỘ TRỰC TIẾP LÊN BỘ NHỚ RAM CỦA SERVER
         User liveUser = managerService.getUserById(target.getUser().getId());
         if (liveUser != null) {
             double amount = target.getAmount();
@@ -192,7 +182,6 @@ public class TransactionService {
 
             System.out.println(">>> [ĐỒNG BỘ RAM] Cập nhật số dư mới cho User#" + liveUser.getId() + ": " + liveUser.getBalance());
 
-            // 3. PUSH REALTIME: Ép Server gửi thông báo cập nhật UI cho người dùng (nếu họ đang mở app)
             try {
                 SessionManager.getInstance().sendToUserIfOnline(
                     liveUser.getId(),
@@ -211,6 +200,74 @@ public class TransactionService {
 
         if (!success) {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Từ chối giao dịch thất bại!");
+        }
+    }
+
+    public void processAuctionWinnerPayment(int auctionId, int userId) {
+        Auction auction;
+        try {
+            auction = managerService.getAuctionOrThrow(auctionId);
+        } catch (Exception e) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), e.getMessage());
+        }
+
+        if (auction.getCurrentWinnerId() == null || auction.getCurrentWinnerId() != userId) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Lỗi bảo mật: Bạn không phải là người chiến thắng phiên này.");
+        }
+
+        int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
+        int assignedAdminId = ESCROW_ADMIN_IDS[auctionId % ESCROW_ADMIN_IDS.length];
+
+        AuctionDAO auctionDAO = new AuctionDAO();
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            boolean success = paymentDAO.processAcceptPayment(conn, auction.getSellerId(), assignedAdminId, auction.getCurrentPrice());
+
+            if (success) {
+                auctionDAO.updateStatus(auctionId, "PAID");
+                conn.commit();
+            } else {
+                conn.rollback();
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi xử lý dòng tiền nội bộ. Giao dịch bị hủy.");
+            }
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối CSDL: " + e.getMessage());
+        }
+    }
+
+    public void processAuctionWinnerPenalty(int auctionId, int userId) {
+        Auction auction;
+        try {
+            auction = managerService.getAuctionOrThrow(auctionId);
+        } catch (Exception e) {
+            throw new AuctionException(ErrorCode.INVALID_INPUT.name(), e.getMessage());
+        }
+
+        if (auction.getCurrentWinnerId() == null || auction.getCurrentWinnerId() != userId) {
+            throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Lỗi bảo mật: Bạn không phải là người chiến thắng phiên này.");
+        }
+
+        int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
+        int assignedAdminId = ESCROW_ADMIN_IDS[auctionId % ESCROW_ADMIN_IDS.length];
+
+        AuctionDAO auctionDAO = new AuctionDAO();
+
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            boolean success = paymentDAO.processPenalty7Percent(conn, userId, assignedAdminId, auction.getCurrentPrice());
+
+            if (success) {
+                auctionDAO.updateStatus(auctionId, "REJECTED");
+                conn.commit();
+            } else {
+                conn.rollback();
+                throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi trừ tiền phạt cọc. Giao dịch bị hủy.");
+            }
+        } catch (SQLException e) {
+            throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối CSDL: " + e.getMessage());
         }
     }
 }

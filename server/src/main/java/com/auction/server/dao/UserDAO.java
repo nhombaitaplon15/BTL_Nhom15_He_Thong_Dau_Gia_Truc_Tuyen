@@ -27,24 +27,26 @@ public class UserDAO {
     /**
      * 2. Xác thực Đăng nhập - Sử dụng UserFactory map dữ liệu thực thể
      */
-    public User checkLogin(String username, String password) {
-        String sql = "SELECT * FROM public.users WHERE username = ? AND password = ?";
+    public User checkLogin(String loginName, String password) {
+        String sql = "SELECT * FROM public.users WHERE (username = ? OR email = ?) AND password = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username);
-            ps.setString(2, password);
+
+            ps.setString(1, loginName);
+            ps.setString(2, loginName);
+            ps.setString(3, password);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return UserFactory.createUser(
-                            rs.getInt("user_id"),
-                            rs.getString("username"),
-                            rs.getString("email"),
-                            rs.getString("password"),
-                            rs.getString("phone"),
-                            rs.getString("status"),
-                            rs.getString("role"),
-                            rs.getDouble("balance")
+                        rs.getInt("user_id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("phone"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getDouble("balance")
                     );
                 }
             }
@@ -53,6 +55,7 @@ public class UserDAO {
         }
         return null;
     }
+
 
     /**
      * 3. Đăng ký tài khoản mới (Tự động nạp ID sinh tự động từ Postgres vào đối tượng)

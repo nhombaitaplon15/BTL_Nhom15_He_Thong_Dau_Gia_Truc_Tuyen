@@ -78,9 +78,9 @@ public class AccountController {
   private final Consumer<Message> onDepositFailed = msg -> showError("Nạp tiền thất bại: " + msg.getMessage());
   private final Consumer<Message> onWithdrawSuccess = this::handleWithdrawSuccess;
   private final Consumer<Message> onWithdrawFailed = msg -> showError("Rút tiền thất bại: " + msg.getMessage());
-
-  // THÊM MỚI: Consumer xử lý kết quả lịch sử giao dịch
   private final Consumer<Message> onTransactionsResult = this::handleTransactionsResult;
+  private final Consumer<Message> onSwitchRoleSuccess = this::handleSwitchRoleSuccess;
+  private final Consumer<Message> onSwitchRoleFailed = this::handleSwitchRoleFailed;
 
   @FXML
   public void initialize() {
@@ -110,9 +110,9 @@ public class AccountController {
     router.register(ResponseCode.DEPOSIT_FAILED, onDepositFailed);
     router.register(ResponseCode.WITHDRAW_SUCCESS, onWithdrawSuccess);
     router.register(ResponseCode.WITHDRAW_FAILED, onWithdrawFailed);
-
-    // THÊM MỚI: Đăng ký lắng nghe sự kiện trả về danh sách giao dịch
     router.register(ResponseCode.TRANSACTIONS_RESULT, onTransactionsResult);
+    router.register(ResponseCode.SWITCH_ROLE_SUCCESS, onSwitchRoleSuccess);
+    router.register(ResponseCode.SWITCH_ROLE_FAILED, onSwitchRoleFailed);
   }
 
   public void cleanupHandlers() {
@@ -125,9 +125,9 @@ public class AccountController {
     router.unregister(ResponseCode.DEPOSIT_FAILED);
     router.unregister(ResponseCode.WITHDRAW_SUCCESS);
     router.unregister(ResponseCode.WITHDRAW_FAILED);
-
-    // THÊM MỚI: Hủy đăng ký lắng nghe
     router.unregister(ResponseCode.TRANSACTIONS_RESULT);
+    router.unregister(ResponseCode.SWITCH_ROLE_SUCCESS);
+    router.unregister(ResponseCode.SWITCH_ROLE_FAILED);
   }
 
   private void requestProfile() {
@@ -135,10 +135,7 @@ public class AccountController {
   }
 
   private void requestWalletData() {
-    // Vẫn lấy profile để cập nhật số dư
     SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
-
-    // THÊM MỚI: Gửi request lấy lịch sử giao dịch của user
     SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, myId);
   }
 
@@ -154,7 +151,6 @@ public class AccountController {
     }
   }
 
-  // THÊM MỚI: Xử lý dữ liệu giao dịch trả về
   @SuppressWarnings("unchecked")
   private void handleTransactionsResult(Message msg) {
     Object payload = msg.getPayload();
@@ -163,7 +159,6 @@ public class AccountController {
 
       Platform.runLater(() -> {
         if (transactions == null || transactions.isEmpty()) {
-          // Trống -> Hiện Empty Box, ẩn List
           if (emptyTransactions != null) {
             emptyTransactions.setVisible(true);
             emptyTransactions.setManaged(true);
@@ -173,7 +168,6 @@ public class AccountController {
             listTransactions.setManaged(false);
           }
         } else {
-          // Có dữ liệu -> Ẩn Empty Box, hiện List và đổ dữ liệu
           if (emptyTransactions != null) {
             emptyTransactions.setVisible(false);
             emptyTransactions.setManaged(false);
@@ -210,7 +204,7 @@ public class AccountController {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu nạp tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
       requestProfile();
-      requestWalletData(); // Refresh lại ví sau khi gửi yêu cầu nạp
+      requestWalletData();
     });
   }
 
@@ -218,7 +212,7 @@ public class AccountController {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu rút tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
       requestProfile();
-      requestWalletData(); // Refresh lại ví sau khi gửi yêu cầu rút
+      requestWalletData();
     });
   }
 
@@ -241,8 +235,6 @@ public class AccountController {
     double balance = user.getBalance();
     set(lblBalance, formatMoney(balance) + " UETệ");
     set(lblBalanceUpdated, "Cập nhật vừa xong");
-
-    // Đã xóa phần ẩn cứng listTransactions ở đây, do handleTransactionsResult đã đảm nhận việc đó
   }
 
   @FXML
@@ -324,27 +316,41 @@ public class AccountController {
       showError("Không thể chuyển trang: " + e.getMessage());
     }
   }
-  @FXML void handleSwitchToBidder(ActionEvent event ) {
-    try {
-      // Gọi thẳng trang giao diện con vì nó đã tích hợp sẵn Sidebar menu của riêng nó
-      FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
-      Parent root = loader.load();
 
-      //Ép kiểu controller để truyền dữ liệu User vừa lấy từ Database Railway sang trang chủ
-      The_Home_Page_Bidder_View_Controller homeController = loader.getController();
-      homeController.setUserData(ClientSession.getInstance().getCurrentUser());
-      Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-      Scene scene = new Scene(root, 1280, 720);
+  @FXML void handleSwitchToBidder(ActionEvent event) {
+    SocketClient.getInstance().sendRequest(RequestCode.SWITCH_ROLE, "BIDDER");
+  }
 
-      stage.setScene(scene);
-      stage.setTitle("Elite Auction - Trang chủ hệ thống");
-      stage.setMaximized(true); // Giữ tính năng phóng to toàn màn hình cho đẹp
-      stage.centerOnScreen();
-      stage.show();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    System.out.println("Chuyển người mua"); }
+  private void handleSwitchRoleSuccess(Message msg) {
+    Platform.runLater(() -> {
+      cleanupHandlers();
+      try {
+        String newRole = (String) msg.getPayload();
+        ClientSession.getInstance().getCurrentUser().setRole(newRole);
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
+        Parent root = loader.load();
+
+        The_Home_Page_Bidder_View_Controller homeController = loader.getController();
+        homeController.setUserData(ClientSession.getInstance().getCurrentUser());
+
+        Stage stage = (Stage) txtUsername.getScene().getWindow();
+        Scene scene = new Scene(root, 1280, 720);
+
+        stage.setScene(scene);
+        stage.setTitle("Elite Auction - Trang chủ hệ thống");
+        stage.setMaximized(true);
+        stage.centerOnScreen();
+        stage.show();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    });
+  }
+
+  private void handleSwitchRoleFailed(Message msg) {
+    Platform.runLater(() -> showError(msg.getMessage()));
+  }
 
   private void clearPasswordFields() {
     if (txtCurrentPass != null) txtCurrentPass.clear();

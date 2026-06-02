@@ -14,7 +14,8 @@ public enum RequestCode {
     // ===================== AUTH =====================
     LOGIN,              // Đăng nhập (payload: LoginDTO)
     REGISTER,           // Đăng ký (payload: LoginDTO)
-
+    FORGOT_PASSWORD,    // Khôi phục mật khẩu (payload: String[] {username, phone, newPass})
+    SWITCH_ROLE,
     // ===================== BIDDER / SHARED USER =====================
     FETCH_ROOMS,        // Lấy danh sách phòng đấu giá đang mở
     FETCH_ITEMS,        // Lấy items theo danh mục phòng (payload: String category)
@@ -29,7 +30,10 @@ public enum RequestCode {
     UPDATE_PROFILE,     // Cập nhật thông tin cá nhân (payload: User)
     CHANGE_PASSWORD,    // Đổi mật khẩu (payload: String[] {oldPwd, newPwd})
     REPORT_ISSUE,       // Gửi báo cáo sự cố (payload: String message)
-    GET_USER_TRANSACTIONS, // THÊM MỚI: Lấy lịch sử giao dịch cá nhân (payload: Integer userId)
+    GET_USER_TRANSACTIONS, // Lấy lịch sử giao dịch cá nhân (payload: Integer userId)
+    FETCH_AUCTION_DETAIL,      // payload: Integer auctionId
+    BIDDER_PAY_AUCTION,        // payload: Integer auctionId
+    BIDDER_CANCEL_AUCTION,     // payload: Integer auctionId
 
     // ===================== SELLER =====================
     SELLER_GET_MY_ITEMS,       // Lấy danh sách item của seller (payload: null)

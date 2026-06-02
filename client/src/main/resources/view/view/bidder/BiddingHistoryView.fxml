@@ -37,6 +37,21 @@
         .table-view .table-row-cell:filled:selected .table-cell {
         -fx-background-color: #E2E8F0;
         }
+        /* --- MÀU SẮC TRẠNG THÁI (CSS MỚI) --- */
+        .amount-text { -fx-text-fill: #1d4ed8; -fx-font-weight: bold; }
+        .status-win { -fx-text-fill: #16a34a; -fx-font-weight: bold; }
+        .status-lead { -fx-text-fill: #059669; -fx-font-weight: bold; }
+        .status-fail { -fx-text-fill: #dc2626; -fx-font-weight: bold; }
+        .status-default { -fx-text-fill: #1d4ed8; -fx-font-weight: bold; }
+
+        /* Ép màu chữ thành trắng khi người dùng click chọn dòng (selected) */
+        .table-row-cell:selected .amount-text,
+        .table-row-cell:selected .status-win,
+        .table-row-cell:selected .status-lead,
+        .table-row-cell:selected .status-fail,
+        .table-row-cell:selected .status-default {
+        -fx-text-fill: white !important;
+        }
     </style>
 
     <children>

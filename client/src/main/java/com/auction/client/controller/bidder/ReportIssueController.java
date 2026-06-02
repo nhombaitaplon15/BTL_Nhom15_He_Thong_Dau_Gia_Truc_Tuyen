@@ -1,7 +1,12 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.BidHistoryRow;
 import com.auction.common.model.User;
-import com.auction.server.dao.IssueDAO; // Nhớ import đúng vị trí file DAO vừa tạo
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -15,27 +20,28 @@ public class ReportIssueController {
     @FXML private ComboBox<String> cbIssueType;
     @FXML private TextArea txtDescription;
 
+    // ĐÃ FIX: Sử dụng đúng kiểu BidHistoryRow để đồng bộ với BiddingHistoryController
     private BidHistoryRow currentData;
     private User currentUser;
-    private IssueDAO issueDAO = new IssueDAO(); // Khởi tạo đối tượng DAO kết nối DB
 
     @FXML
     public void initialize() {
         if (cbIssueType != null) {
             cbIssueType.getItems().addAll(
-                    "Lỗi trừ tiền tài khoản",
-                    "Lỗi không nhận lệnh đặt giá (Bid)",
-                    "Sản phẩm thực tế sai mô tả",
-                    "Hệ thống bị giật lag mất kết nối",
-                    "Sự cố khác"
+                "Lỗi trừ tiền tài khoản",
+                "Lỗi không nhận lệnh đặt giá (Bid)",
+                "Sản phẩm thực tế sai mô tả",
+                "Hệ thống bị giật lag mất kết nối",
+                "Sự cố khác"
             );
             cbIssueType.getSelectionModel().selectFirst();
         }
+
+        // Đăng ký nhận kết quả từ Server qua cấu trúc Realtime
+        MessageRouter.getInstance().register(ResponseCode.REPORT_SENT, this::handleReportSuccess);
     }
 
-    /**
-     * Nhận đồng thời dữ liệu dòng chọn và thông tin User hiện tại từ màn hình chính chuyển sang
-     */
+    // ĐÃ FIX: Đổi tham số truyền vào thành BidHistoryRow
     public void setIssueData(BidHistoryRow data, User user) {
         if (data != null) {
             this.currentData = data;
@@ -47,6 +53,7 @@ public class ReportIssueController {
 
     @FXML
     private void handleCancel() {
+        MessageRouter.getInstance().unregister(ResponseCode.REPORT_SENT);
         Stage stage = (Stage) txtSessionId.getScene().getWindow();
         stage.close();
     }
@@ -63,30 +70,21 @@ public class ReportIssueController {
             return;
         }
 
-        // Tạo luồng phụ xử lý DB nhằm tăng trải nghiệm người dùng
-        new Thread(() -> {
-            int userId = (currentUser != null) ? currentUser.getId() : 0;
-            int auctionId = (currentData != null) ? currentData.getAuctionId() : Integer.parseInt(txtSessionId.getText());
+        int auctionId = (currentData != null) ? currentData.getAuctionId() : Integer.parseInt(txtSessionId.getText());
 
-            // Thực hiện ghi nhận xuống DB
-            boolean isSuccess = issueDAO.insertIssue(userId, auctionId, issueType, description);
+        // Đóng gói mảng dữ liệu bắn lên Server
+        Object[] reportPayload = new Object[]{auctionId, issueType, description};
+        SocketClient.getInstance().sendRequest(RequestCode.REPORT_ISSUE, reportPayload);
+    }
 
-            // Trở lại luồng UI chính JavaFX để tương tác thông báo
-            Platform.runLater(() -> {
-                if (isSuccess) {
-                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
-                    successAlert.setTitle("Thành công");
-                    successAlert.setHeaderText(null);
-                    successAlert.setContentText("Báo cáo sự cố đã được gửi và lưu trữ thành công vào Database!");
-                    successAlert.showAndWait();
-                    handleCancel(); // Tự động đóng cửa sổ sau khi gửi thành công
-                } else {
-                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-                    errorAlert.setTitle("Thất bại");
-                    errorAlert.setContentText("Lỗi hệ thống! Không thể kết nối Database để lưu báo cáo.");
-                    errorAlert.showAndWait();
-                }
-            });
-        }).start();
+    private void handleReportSuccess(Message msg) {
+        Platform.runLater(() -> {
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("Thành công");
+            successAlert.setHeaderText(null);
+            successAlert.setContentText("Báo cáo sự cố đã được gửi và lưu trữ thành công!");
+            successAlert.showAndWait();
+            handleCancel();
+        });
     }
 }

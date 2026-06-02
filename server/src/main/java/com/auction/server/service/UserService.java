@@ -45,12 +45,22 @@ public class UserService {
 
         // Guard: Không tìm thấy user hoặc nhập sai mật khẩu
         if (user == null) {
-            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tài khoản hoặc mật khẩu không chính xác!");
+            throw new AuctionException(ErrorCode.USER_NOT_FOUND.name(), "Tài khoản / email hoặc mật khẩu không chính xác!");
         }
 
         // Guard: Tài khoản bị vô hiệu hóa
         if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Tài khoản hiện đang bị khóa bởi Admin!");
+        }
+
+        // 🎯 FIX LỖI VAI TRÒ: TỰ ĐỘNG RESET VỀ BIDDER KHI ĐĂNG NHẬP
+        // Dù lần trước thoát app ngang hay đăng xuất khi đang là SELLER,
+        // Server sẽ luôn đảm bảo khởi tạo lại người dùng bằng giao diện BIDDER mặc định.
+        if ("SELLER".equalsIgnoreCase(user.getRole())) {
+            if (userDAO.updateRole(user.getId(), "BIDDER")) {
+                user.setRole("BIDDER"); // Cập nhật trên RAM để gửi về Client đúng quyền
+                System.out.println(">>> [SYSTEM] Đã tự động reset vai trò của " + username + " về BIDDER.");
+            }
         }
 
         return user;
@@ -102,14 +112,14 @@ public class UserService {
     }
 
     /** Chuyển đổi qua lại giữa vai trò Người mua (Bidder) và Người bán (Seller) */
-    public void handleSwitchRole(User currentUser) {
+    public void handleSwitchRole(User currentUser, String targetRole) {
         if (currentUser.isAdmin()) {
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Admin hệ thống không thể thực hiện chức năng này!");
         }
-        String targetRole = currentUser.getRole().equalsIgnoreCase("BIDDER") ? "SELLER" : "BIDDER";
 
+        // Bỏ dòng đảo ngược mù đi, thay bằng việc update thẳng targetRole
         if (userDAO.updateRole(currentUser.getId(), targetRole)) {
-            currentUser.setRole(targetRole); // Đồng bộ vai trò thực thể trên RAM Java Session
+            currentUser.setRole(targetRole); // Đồng bộ vai trò trên RAM
             System.out.println(">>> Đã chuyển sang vai trò: " + targetRole);
         } else {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi: Không thể cập nhật vai trò!");

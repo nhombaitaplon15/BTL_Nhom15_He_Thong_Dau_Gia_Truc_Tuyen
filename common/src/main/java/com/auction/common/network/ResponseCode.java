@@ -15,8 +15,11 @@ public enum ResponseCode {
     LOGIN_FAILED,           // payload: null
     REGISTER_SUCCESS,       // payload: null
     REGISTER_FAILED,        // payload: null
+    FORGOT_PASSWORD_SUCCESS,// payload: null
+    FORGOT_PASSWORD_FAILED, // payload: String reason
     AUCTION_STATUS_CHANGED,
-
+    SWITCH_ROLE_SUCCESS,
+    SWITCH_ROLE_FAILED,
     // ===================== BIDDER =====================
     ROOM_LIST_RESULT,           // payload: List<Auction>
     ROOM_JOIN_SUCCESS,          // payload: Integer auctionId
@@ -38,7 +41,12 @@ public enum ResponseCode {
     PASSWORD_CHANGED,           // payload: null
     PASSWORD_CHANGE_FAILED,     // payload: null
     REPORT_SENT,                // payload: null
-    TRANSACTIONS_RESULT,        // THÊM MỚI: payload: List<TransactionRequest> (Lịch sử giao dịch cá nhân)
+    TRANSACTIONS_RESULT,        // payload: List<TransactionRequest> (Lịch sử giao dịch cá nhân)
+    AUCTION_DETAIL_RESULT,     // payload: AuctionItemDTO
+    BIDDER_PAY_SUCCESS,        // payload: null
+    BIDDER_PAY_FAILED,         // payload: String reason
+    BIDDER_CANCEL_SUCCESS,     // payload: null
+    BIDDER_CANCEL_FAILED,      // payload: String reason
 
     // ===================== SELLER =====================
     SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)
@@ -49,7 +57,6 @@ public enum ResponseCode {
     SELLER_CANCEL_FAILED,       // payload: String reason
     SELLER_CONFIRM_SALE_SUCCESS,// payload: null
     SELLER_CONFIRM_SALE_FAILED, // payload: String reason
-    // Realtime broadcast cho Seller khi phiên của họ được duyệt/từ chối
     SELLER_AUCTION_APPROVED,    // (Push) payload: Integer auctionId
     SELLER_AUCTION_REJECTED,    // (Push) payload: Object[] {auctionId, reason}
     SELLER_AUCTION_SOLD,        // (Push) payload: Object[] {auctionId, finalPrice, buyerName}

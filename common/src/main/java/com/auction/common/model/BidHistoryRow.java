@@ -1,6 +1,6 @@
 package com.auction.common.model;
-
-public class BidHistoryRow {
+import java.io.Serializable;
+public class BidHistoryRow implements Serializable {
     private int id;
     private int auctionId;
     private String itemName;
