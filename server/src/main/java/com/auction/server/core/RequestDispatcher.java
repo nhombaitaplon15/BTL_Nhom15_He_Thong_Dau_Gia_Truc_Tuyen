@@ -200,8 +200,12 @@ public class RequestDispatcher {
                     System.err.println("[DISPATCHER] Không load được lịch sử bid cho phiên #" + roomId);
                 }
 
-                // 6. Đồng bộ mức giá mới nhất từ RAM
+                // 6. Đồng bộ mức giá + winner mới nhất từ RAM (tránh stale data từ DB)
                 fullAuction.setCurrentPrice(room.getCurrentPrice());
+                // FIX: Đồng bộ currentWinnerId từ RAM phòng để client tính escrow đúng
+                if (room.getCurrentWinnerId() != null) {
+                    fullAuction.setCurrentWinnerId(room.getCurrentWinnerId());
+                }
 
                 // 7. Gửi gói tin thành công kèm full data
                 client.sendMessage(new Message(ResponseCode.ROOM_JOIN_SUCCESS, "Đã vào phòng thành công!", fullAuction));

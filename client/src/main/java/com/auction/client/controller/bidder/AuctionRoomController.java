@@ -104,42 +104,50 @@ public class AuctionRoomController {
         Platform.runLater(() -> {
             try {
                 Object[] payload = (Object[]) message.getPayload();
-                int auctionId = (Integer) payload[0];
-                double newPrice = (Double) payload[1];
+                int auctionId   = (Integer) payload[0];
+                double newPrice = (Double)  payload[1];
                 String bidderName = (String) payload[2];
+                // FIX: Server broadcast kèm bidderId (payload[3]) để client đồng bộ currentWinnerId chính xác
+                Integer newWinnerId = (payload.length > 3 && payload[3] instanceof Integer)
+                        ? (Integer) payload[3] : null;
 
                 if (currentAuction == null || currentAuction.getAuctionId() != auctionId) return;
 
                 System.out.println("🔥 [Live] Giá mới: " + newPrice + " bởi " + bidderName);
+
+                // 1. Cập nhật giá hiện tại — LUÔN lấy từ server, không tự tính
                 currentAuction.setCurrentPrice(newPrice);
                 lblCurrentPrice.setText(String.format("%,.0f UETệ", newPrice));
 
-                // Hiển thị tên "Bạn (Tôi)" nếu là chính mình
+                // 2. Xác định người đặt giá
                 boolean isMe = currentUser != null && bidderName.equals(currentUser.getUsername());
                 String displayName = isMe ? "Bạn (Tôi)" : bidderName;
                 addBidLogToUI(displayName, newPrice, true);
 
-                // --- SỬA LOGIC: Cập nhật Winner mới lên RAM Client để tính toán ví tạm giữ ---
-                if (isMe) {
+                // 3. FIX: Cập nhật currentWinnerId — ưu tiên dùng winnerId server gửi kèm,
+                //    fallback tính theo username nếu server cũ chưa gửi winnerId
+                if (newWinnerId != null) {
+                    currentAuction.setCurrentWinnerId(newWinnerId);
+                } else if (isMe && currentUser != null) {
                     currentAuction.setCurrentWinnerId(currentUser.getId());
                 } else {
-                    // Nếu người khác đè giá, kiểm tra xem mình có vừa bị mất ngôi dẫn đầu không
-                    if (currentAuction.getCurrentWinnerId() != null && currentAuction.getCurrentWinnerId().equals(currentUser.getId())) {
-                        currentAuction.setCurrentWinnerId(-1); // Đánh dấu không còn dẫn đầu
-                    }
+                    // Người khác đè giá — mình không còn dẫn đầu
+                    currentAuction.setCurrentWinnerId(-1);
                 }
 
-                // Cập nhật ngay lập tức UI số tiền tạm giữ
+                // 4. Cập nhật UI tiền tạm giữ ngay lập tức (không cần chờ GET_PROFILE)
                 if (lblUserEscrow != null) {
-                    double escrow = isMe ? newPrice : 0;
+                    boolean iAmLeading = currentUser != null
+                            && currentAuction.getCurrentWinnerId() != null
+                            && currentAuction.getCurrentWinnerId().equals(currentUser.getId());
+                    double escrow = iAmLeading ? newPrice : 0;
                     lblUserEscrow.setText(String.format("%,.0f UETệ", escrow));
                 }
 
-                // Nếu bị người khác đè giá -> Chủ động xin Server Profile mới để cộng lại tiền vào ví chính
+                // 5. Nếu bị người khác đè giá → lấy lại số dư ví từ server (tiền escrow được hoàn)
                 if (!isMe) {
                     SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
                 }
-                // ----------------------------------------------------------------------------
 
             } catch (Exception e) {
                 System.err.println("Lỗi gói tin NEW_BID_UPDATE: " + e.getMessage());
@@ -155,15 +163,16 @@ public class AuctionRoomController {
                     Alert.AlertType.INFORMATION);
             txtBidAmount.clear();
 
-            if (myBidAmount != null) {
+            // FIX: KHÔNG tự cập nhật lblCurrentPrice hay currentWinnerId tại đây.
+            // NEW_BID_UPDATE từ server là source of truth và broadcast ngay sau đó.
+            // Tự cập nhật tại đây gây race condition → hiển thị giá cũ (của mình)
+            // dù người khác đã đặt giá cao hơn trước khi server xử lý xong bid của mình.
+            // Chỉ cập nhật escrow tạm thời cho UX mượt mà (NEW_BID_UPDATE sẽ xác nhận lại)
+            if (myBidAmount != null && lblUserEscrow != null) {
                 lblUserEscrow.setText(String.format("%,.0f UETệ", myBidAmount));
-                if (currentAuction != null && currentUser != null) {
-                    currentAuction.setCurrentWinnerId(currentUser.getId());
-                    currentAuction.setCurrentPrice(myBidAmount);
-                    lblCurrentPrice.setText(String.format("%,.0f UETệ", myBidAmount));
-                }
             }
-            // Cập nhật lại số dư ví chính realtime từ server
+
+            // Lấy số dư ví mới (đã bị trừ) từ server
             SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
         });
     }

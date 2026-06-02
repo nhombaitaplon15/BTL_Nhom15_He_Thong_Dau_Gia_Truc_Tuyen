@@ -9,6 +9,8 @@ import com.auction.common.exception.ErrorCode;
 import com.auction.server.dao.*;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,22 +21,26 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * BiddingService — ĐÃ SỬA TOÀN DIỆN:
  *
- * ❌ LỖI CŨ 1 (rejectWin): Gọi paymentDAO.updateBalance(adminId, penalty, "+") thay vì
- *    processPenalty7Percent() → escrow_balance admin không bao giờ được trừ → tiền bị kẹt.
+ * FIX QUAN TRỌNG — DB không cập nhật khi đặt giá:
  *
- * ❌ LỖI CŨ 2 (rejectWin): Kiểm tra status == "FINISHED" nhưng AutoBot đặt "SOLD"
- *    khi phiên kết thúc có winner → winner KHÔNG BAO GIỜ hủy được (AuctionException mọi lần).
+ * ❌ LỖI CŨ: placeBid() đọc Auction từ DB (lần 1) để validate, nhưng khi vào
+ *    executeBidTransaction(), bước hoàn tiền người cũ dùng auction.getCurrentWinnerId()
+ *    và auction.getCurrentPrice() từ object đó — object này đã STALE vì được đọc
+ *    TRƯỚC KHI lock. Nếu người khác đặt giá chen vào giữa lúc đọc và lúc lock,
+ *    winnerId và currentPrice đều sai → hoàn tiền sai người, sai số tiền.
  *
- * ❌ LỖI CŨ 3: auction.setAuctionStatus() là sync RAM vô nghĩa vì object này bị GC ngay,
- *    không ảnh hưởng gì đến DB hay các request sau.
+ * ❌ LỖI CŨ 2: AuctionRoom.processBid() gọi getAuctionOrThrow() lấy object auction
+ *    rồi bỏ đi, sau đó placeBid() lại gọi getAuctionOrThrow() lần nữa bên trong
+ *    → double fetch DB không nhất quán.
  *
- * ✅ SỬA 1: rejectWin() chấp nhận cả "SOLD" và "FINISHED" (align với AutoBot).
- * ✅ SỬA 2: Gọi paymentDAO.processPenalty7Percent() đúng chuẩn:
- *    - escrow_balance[admin] -= bidAmount   (giải phóng cọc)
- *    - system_revenue[admin] += 7%          (phí phạt)
- *    - balance[winner]       += 93%         (hoàn tiền)
- * ✅ SỬA 3: Xóa bỏ sync RAM (auction.setAuctionStatus, liveUser.setBalance) vì DB = truth.
- * ✅ SỬA 4: Ghi đủ 2 bản ghi lịch sử: PENALTY + REFUND.
+ * ✅ FIX: executeBidTransaction() đọc lại current_winner_id và current_price
+ *    TRỰC TIẾP TỪ DB trong cùng transaction với FOR UPDATE lock — đảm bảo
+ *    giá trị luôn là mới nhất tại thời điểm transaction chạy, không bị race condition.
+ *
+ * ✅ FIX: Thêm placeBidWithAuction(user, auction, bidAmount) để AuctionRoom
+ *    truyền object Auction vào thay vì để placeBid() fetch lại lần 2 — tránh double fetch.
+ *    Validate vẫn dùng object auction từ tham số, còn executeBidTransaction() tự
+ *    đọc lại winner/price từ DB trong transaction nên không bị stale.
  */
 public class BiddingService {
 
@@ -45,7 +51,6 @@ public class BiddingService {
     private final BiddingHistoryDAO biddingHistoryDAO = new BiddingHistoryDAO();
     private final Map<Integer, ReentrantLock> lockMap = new ConcurrentHashMap<>();
 
-    // Phải khớp với PaymentDAO và TransactionService
     private static final int[] ADMIN_IDS = {1, 2, 3, 4};
 
     public BiddingService(ManagerService managerService) { this.managerService = managerService; }
@@ -53,6 +58,26 @@ public class BiddingService {
     public ManagerService getManagerService() { return managerService; }
 
     // ─── PLACE BID ───────────────────────────────────────────────────────────
+
+    /**
+     * Được gọi từ AuctionRoom.processBid() — truyền auction vào thay vì fetch lại lần 2.
+     * Validate dùng auction từ tham số, còn DB transaction tự đọc lại winner/price.
+     */
+    public void placeBidWithAuction(User user, Auction auction, double bidAmount) {
+        validateBidRules(user, auction, bidAmount);
+
+        ReentrantLock lock = lockMap.computeIfAbsent(auction.getAuctionId(), k -> new ReentrantLock());
+        lock.lock();
+        try {
+            // Kiểm tra lại giá sau khi có lock (tránh race condition giữa validate và execute)
+            if (bidAmount <= auction.getCurrentPrice())
+                throw new AuctionException(ErrorCode.BID_TOO_LOW.name(), "Giá đã thay đổi, vui lòng đặt cao hơn!");
+            executeBidTransaction(user, auction, bidAmount);
+            System.out.println("[BID] " + user.getUsername() + " đặt " + bidAmount + " thành công!");
+        } finally {
+            lock.unlock();
+        }
+    }
 
     public void placeBid(User user, int auctionId, double bidAmount) {
         if (managerService == null)
@@ -95,50 +120,73 @@ public class BiddingService {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // BƯỚC 1: Hoàn tiền cho người dẫn đầu cũ (nếu có)
-                if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
-                    if (!paymentDAO.updateBalance(conn, auction.getCurrentWinnerId(), auction.getCurrentPrice(), "+"))
-                        throw new SQLException("Lỗi hoàn tiền cho người dẫn đầu cũ (ID=" + auction.getCurrentWinnerId() + ")");
-                }
-
-                // BƯỚC 2: Kiểm tra số dư người đặt mới
-                try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                        "SELECT balance FROM users WHERE user_id = ? AND balance >= ?")) {
-                    ps.setInt(1, user.getId());
-                    ps.setDouble(2, amount);
-                    try (java.sql.ResultSet rs = ps.executeQuery()) {
-                        if (!rs.next()) throw new SQLException("Số dư không đủ để đặt giá!");
+                // BƯỚC 1 (FIX): Đọc lại current_winner_id và current_price TRỰC TIẾP TỪ DB
+                // trong cùng transaction với FOR UPDATE — tránh dùng object Auction có thể stale.
+                // Nếu ai đó đặt giá chen vào giữa lúc validate và lúc lock,
+                // ta vẫn hoàn tiền đúng người và đúng số tiền.
+                Integer actualWinnerId = null;
+                double  actualCurrentPrice = 0;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT current_winner_id, current_price FROM public.auctions WHERE auction_id = ? FOR UPDATE")) {
+                    ps.setInt(1, auction.getAuctionId());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            int wid = rs.getInt("current_winner_id");
+                            actualWinnerId    = rs.wasNull() ? null : wid;
+                            actualCurrentPrice = rs.getDouble("current_price");
+                        }
                     }
                 }
 
-                // BƯỚC 3: Trừ ví người đặt mới, nạp vào escrow admin
-                if (!paymentDAO.updateBalance(conn, user.getId(), amount, "-"))
-                    throw new SQLException("Lỗi trừ ví người đặt!");
+                // Kiểm tra lại giá từ DB — tránh race condition khi nhiều client cùng đặt
+                if (amount <= actualCurrentPrice)
+                    throw new SQLException("Giá đã bị người khác đặt cao hơn, vui lòng thử lại!");
 
+                // BƯỚC 2: Hoàn tiền cho người dẫn đầu cũ (dùng dữ liệu đọc từ DB, không từ object)
+                if (actualWinnerId != null && actualWinnerId > 0) {
+                    if (!paymentDAO.updateBalance(conn, actualWinnerId, actualCurrentPrice, "+"))
+                        throw new SQLException("Lỗi hoàn tiền cho người dẫn đầu cũ (ID=" + actualWinnerId + ")");
+                }
+
+                // BƯỚC 3: Kiểm tra và trừ ví người đặt mới
+                if (!paymentDAO.updateBalance(conn, user.getId(), amount, "-"))
+                    throw new SQLException("Số dư không đủ hoặc lỗi trừ ví người đặt!");
+
+                // BƯỚC 4: Nạp vào escrow admin
                 int assignedAdminId = ADMIN_IDS[auction.getAuctionId() % ADMIN_IDS.length];
-                try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE users SET escrow_balance = escrow_balance + ? WHERE user_id = ?")) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE public.users SET escrow_balance = escrow_balance + ? WHERE user_id = ?")) {
                     ps.setDouble(1, amount);
                     ps.setInt(2, assignedAdminId);
                     if (ps.executeUpdate() <= 0)
                         throw new SQLException("Không thể nạp cọc vào ví tạm Admin#" + assignedAdminId);
                 }
 
+                // BƯỚC 5: Ghi transaction lịch sử nạp cọc
                 transactionDAO.createTransaction(conn, user.getId(), amount,
                         "BID_PLACED_" + auction.getAuctionId(), "SUCCESS");
 
-                // BƯỚC 4: Cập nhật giá và winner vào DB
-                if (!auctionDAO.updateBid(conn, auction.getAuctionId(), user.getId(), amount))
-                    throw new SQLException("Cập nhật giá mới vào phiên thất bại!");
+                // BƯỚC 6: Cập nhật current_price, current_winner_id, total_bids vào DB
+                // Dùng điều kiện current_price = actualCurrentPrice để đảm bảo nguyên tử
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE public.auctions SET current_price = ?, current_winner_id = ?, total_bids = total_bids + 1 " +
+                                "WHERE auction_id = ? AND current_price = ?")) {
+                    ps.setDouble(1, amount);
+                    ps.setInt(2, user.getId());
+                    ps.setInt(3, auction.getAuctionId());
+                    ps.setDouble(4, actualCurrentPrice);
+                    if (ps.executeUpdate() == 0)
+                        throw new SQLException("Cập nhật giá thất bại — giá đã thay đổi đồng thời!");
+                }
 
-                // BƯỚC 5: Anti-sniping
+                // BƯỚC 7: Anti-sniping
                 LocalDateTime newEndTime = calculateAntiSniping(auction.getEndTime());
                 if (newEndTime != null) {
                     auctionDAO.updateEndTime(conn, auction.getAuctionId(), newEndTime);
-                    auction.setEndTime(newEndTime); // Cập nhật object local để AuctionRoom broadcast đúng
+                    auction.setEndTime(newEndTime);
                 }
 
-                // BƯỚC 6: Lịch sử đặt giá
+                // BƯỚC 8: Ghi lịch sử đặt giá (bidding_history)
                 String itemName = "Vật phẩm #" + auction.getItemId();
                 try {
                     com.auction.common.model.Item item = new ItemDAO().getItemById(auction.getItemId());
@@ -148,11 +196,11 @@ public class BiddingService {
                 biddingHistoryDAO.saveBidRecordWithConnection(conn, auction.getAuctionId(),
                         itemName, user.getId(), user.getUsername(), amount);
 
+                // COMMIT — tất cả hoặc không gì cả
                 conn.commit();
 
-                // Cập nhật object Auction local — chỉ dùng cho AuctionRoom.processBid()
-                // để broadcast price đúng ra các viewer trong phòng ngay lập tức.
-                // AutoBot và GET_AUCTION_DETAIL luôn đọc lại từ DB.
+                // Cập nhật object Auction local CHỈ SAU KHI commit thành công
+                // để AuctionRoom.processBid() broadcast giá đúng ngay lập tức.
                 auction.setCurrentPrice(amount);
                 auction.setCurrentWinnerId(user.getId());
                 auction.setTotalBids(auction.getTotalBids() + 1);
@@ -166,24 +214,8 @@ public class BiddingService {
         }
     }
 
-    // ─── REJECT WIN (HỦY KÈEO) ───────────────────────────────────────────────
+    // ─── REJECT WIN ──────────────────────────────────────────────────────────
 
-    /**
-     * ✅ ĐÃ SỬA HOÀN TOÀN: Hủy kèo — phạt cọc 7%, hoàn 93%.
-     *
-     * Dòng tiền (1 transaction DB):
-     *   escrow_balance[admin] -= bidAmount   (giải phóng toàn bộ cọc)
-     *   system_revenue[admin] += 7%          (phí phạt vào doanh thu)
-     *   balance[winner]       += 93%         (hoàn tiền về ví)
-     *   auction_status        → "REJECTED"
-     *   + 2 bản ghi lịch sử: PENALTY + REFUND
-     *
-     * Không sync RAM vì hệ thống dùng DB làm source of truth.
-     *
-     * FIX STATUS: Chấp nhận cả "SOLD" lẫn "FINISHED"
-     *   AutoBot đặt "SOLD" khi phiên kết thúc có winner.
-     *   Code cũ check "FINISHED" → winner KHÔNG BAO GIỜ hủy được.
-     */
     public void rejectWin(User winner, int auctionId) {
         if (managerService == null)
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Chức năng yêu cầu ManagerService!");
@@ -193,7 +225,6 @@ public class BiddingService {
         if (auction.getCurrentWinnerId() == null || auction.getCurrentWinnerId() != winner.getId())
             throw new AuctionException(ErrorCode.UNAUTHORIZED.name(), "Bạn không phải người thắng phiên #" + auctionId + "!");
 
-        // ✅ FIX: Chấp nhận "SOLD" (autobot) VÀ "FINISHED" (edge case)
         String status = auction.getAuctionStatus();
         if (!"SOLD".equalsIgnoreCase(status) && !"FINISHED".equalsIgnoreCase(status))
             throw new AuctionException(ErrorCode.AUCTION_INVALID_STATE.name(),
@@ -207,16 +238,13 @@ public class BiddingService {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // ✅ processPenalty7Percent: trừ escrow_balance, +7% system_revenue, +93% balance winner
                 boolean ok = paymentDAO.processPenalty7Percent(conn, winner.getId(), adminId, bidAmount);
                 if (!ok)
                     throw new SQLException("processPenalty7Percent thất bại — escrow Admin#" + adminId + " không đủ?");
 
-                // Cập nhật trạng thái phiên
                 if (!auctionDAO.updateStatus(conn, auctionId, "REJECTED"))
                     throw new SQLException("Cập nhật status → REJECTED thất bại!");
 
-                // Ghi lịch sử
                 transactionDAO.createTransaction(conn, adminId, penaltyFee,
                         "PENALTY_REVENUE_AUCTION_" + auctionId, "SUCCESS");
                 transactionDAO.createTransaction(conn, winner.getId(), refundAmount,

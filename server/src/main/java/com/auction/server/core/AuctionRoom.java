@@ -81,14 +81,20 @@ public class AuctionRoom {
                     return;
                 }
 
+                // FIX: Lấy auction từ DB một lần duy nhất rồi truyền thẳng vào service,
+                // tránh placeBid() fetch lại lần 2 (double fetch không nhất quán).
+                // executeBidTransaction() bên trong vẫn tự đọc lại winner/price
+                // bằng FOR UPDATE trong transaction để đảm bảo nguyên tử.
                 Auction auction = biddingService.getManagerService().getAuctionOrThrow(auctionId);
-                biddingService.placeBid(user, auctionId, bidAmount);
+                biddingService.placeBidWithAuction(user, auction, bidAmount);
 
                 currentPrice.set(bidAmount);
                 currentWinnerId = userId;
 
                 String bidderName = user.getUsername();
-                Object[] broadcastPayload = {auctionId, bidAmount, bidderName};
+                // FIX: Thêm userId (payload[3]) vào broadcast để client đồng bộ currentWinnerId chính xác,
+                // không phụ thuộc vào so sánh username có thể bị sai khi tên trùng nhau
+                Object[] broadcastPayload = {auctionId, bidAmount, bidderName, userId};
 
                 Message broadcastMsg = new Message(ResponseCode.NEW_BID_UPDATE,
                         String.format("Giá mới: %,.0f đ (bởi %s)", bidAmount, bidderName),
@@ -187,8 +193,9 @@ public class AuctionRoom {
         viewers.clear();
     }
 
-    public double getCurrentPrice() { return currentPrice.get(); }
-    public int getAuctionId()       { return auctionId; }
+    public double getCurrentPrice()     { return currentPrice.get(); }
+    public int getAuctionId()           { return auctionId; }
+    public Integer getCurrentWinnerId() { return currentWinnerId; }
 
     public boolean containsViewer(ClientHandler sender) {
         return viewers != null && viewers.contains(sender);
