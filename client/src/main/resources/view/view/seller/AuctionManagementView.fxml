@@ -13,11 +13,11 @@
 
                     <VBox spacing="2">
                         <Label styleClass="title-text" text="Tạo phiên đấu giá mới" />
-                        <Label styleClass="subtitle-text" text="Chọn sản phẩm đã được admin duyệt để mở phiên đấu giá" />
+                        <Label styleClass="subtitle-text" text="Chọn sản phẩm đã thêm để mở phiên đấu giá" />
                     </VBox>
 
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <TextField fx:id="searchCreate" promptText="🔍  Tìm sản phẩm đã được duyệt..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="searchCreate" promptText="🔍  Tìm sản phẩm thêm..." styleClass="search-field" HBox.hgrow="ALWAYS" />
                         <Button styleClass="filter-btn" text="Lọc" />
                     </HBox>
 
@@ -31,18 +31,18 @@
 
                     <HBox alignment="CENTER_LEFT" spacing="10" styleClass="info-box">
                         <Label styleClass="info-icon" text="ℹ" />
-                        <Label styleClass="info-text" text="Chỉ sản phẩm đã được admin duyệt mới có thể tạo phiên đấu giá." wrapText="true" />
+                        <Label styleClass="info-text" text="Chỉ sản phẩm đã thêm mới có thể tạo phiên đấu giá cho admin duyệt." wrapText="true" />
                     </HBox>
 
                     <VBox fx:id="emptyCreate" alignment="CENTER" managed="false" spacing="8" styleClass="empty-box" visible="false">
                         <Label styleClass="empty-title" text="Không có sản phẩm nào sẵn sàng tạo phiên" />
-                        <Label styleClass="empty-subtitle" text="Hãy đăng sản phẩm và chờ admin duyệt trước." />
+                        <Label styleClass="empty-subtitle" text="Hãy đăng sản phẩm trước." />
                     </VBox>
 
                 </VBox>
             </ScrollPane>
 
-            <ScrollPane fx:id="panePending" fitToWidth="true" managed="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
+            <ScrollPane fx:id="panePending" fitToWidth="true" managed="false" prefHeight="680.0" prefWidth="900.0" styleClass="transparent-scroll" visible="false">
                 <VBox spacing="14" styleClass="tab-content">
 
                     <VBox spacing="2">

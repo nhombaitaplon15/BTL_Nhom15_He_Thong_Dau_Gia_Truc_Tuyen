@@ -234,7 +234,7 @@ public class The_Home_Page_Bidder_View_Controller {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/seller/The_Home_Page_Seller_View.fxml"));
                 Parent root = loader.load();
 
-                Stage stage = (Stage) txtSearch.getScene().getWindow();
+                Stage stage = (Stage) sidebarContainer.getScene().getWindow();
                 Scene scene = new Scene(root, 1280, 720);
 
                 stage.setScene(scene);
