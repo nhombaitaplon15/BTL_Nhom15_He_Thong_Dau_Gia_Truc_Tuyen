@@ -25,14 +25,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * BiddingHistoryController — ĐÃ SỬA CÁC LỖI:
+ * BiddingHistoryController — ĐÃ BỔ SUNG:
  *
- * BUG (handleReportIssue): Mở ReportIssueController nhưng KHÔNG gọi
- *   setIssueData(selected, currentUser) → controller không biết phiên nào
- *   và user là ai → txtSessionId trống → parseInt crash / báo cáo sai.
- *   → FIX: Gọi detailCtrl.setIssueData(selected, currentUser) sau khi load FXML
+ * 1. Lắng nghe WINNER_NOTIFICATION (realtime push từ server):
+ *    Khi phiên đấu giá kết thúc và user là người thắng, server gửi WINNER_NOTIFICATION
+ *    tới cá nhân người thắng. Controller này sẽ:
+ *    - Tự động cập nhật trạng thái dòng tương ứng trong bảng lịch sử thành
+ *      "WINNER - Chờ xác nhận" (dùng BidHistoryRow.setStatus() mới thêm).
+ *    - Refresh bảng để hiển thị ngay.
  *
- * Các phần còn lại (BiddingHistory, AuctionDetail) giữ nguyên vì đã đúng.
+ * 2. Lắng nghe AUCTION_ENDED (broadcast):
+ *    Cập nhật trạng thái dòng nếu đang xem màn hình lịch sử khi phiên kết thúc.
+ *
+ * 3. Column colStatus — thêm nhận dạng trạng thái "WINNER - Chờ xác nhận"
+ *    để hiển thị màu vàng/cam phân biệt.
  */
 public class BiddingHistoryController {
 
@@ -43,10 +49,10 @@ public class BiddingHistoryController {
     @FXML private TableView<BidHistoryRow> historyTable;
     @FXML private TableColumn<BidHistoryRow, Integer> colId;
     @FXML private TableColumn<BidHistoryRow, Integer> colAuctionId;
-    @FXML private TableColumn<BidHistoryRow, String> colItemName;
-    @FXML private TableColumn<BidHistoryRow, Double> colBidAmount;
-    @FXML private TableColumn<BidHistoryRow, String> colBidTime;
-    @FXML private TableColumn<BidHistoryRow, String> colStatus;
+    @FXML private TableColumn<BidHistoryRow, String>  colItemName;
+    @FXML private TableColumn<BidHistoryRow, Double>  colBidAmount;
+    @FXML private TableColumn<BidHistoryRow, String>  colBidTime;
+    @FXML private TableColumn<BidHistoryRow, String>  colStatus;
 
     private User currentUser;
     private MainContainerController mainContainer;
@@ -67,12 +73,23 @@ public class BiddingHistoryController {
     // ─── ĐĂNG KÝ / HỦY LISTENER ─────────────────────────────────────────────
 
     private void registerListeners() {
-        MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
-        MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, this::handleBidHistoryResult);
+        MessageRouter router = MessageRouter.getInstance();
+        router.unregister(ResponseCode.BID_HISTORY_RESULT);
+        router.unregister(ResponseCode.WINNER_NOTIFICATION);
+        router.unregister(ResponseCode.AUCTION_ENDED);
+
+        router.register(ResponseCode.BID_HISTORY_RESULT,  this::handleBidHistoryResult);
+        // ✅ MỚI: lắng nghe push cá nhân khi phiên kết thúc và user là winner
+        router.register(ResponseCode.WINNER_NOTIFICATION, this::handleWinnerNotification);
+        // ✅ MỚI: lắng nghe broadcast khi phiên kết thúc để cập nhật dòng thắng
+        router.register(ResponseCode.AUCTION_ENDED,       this::handleAuctionEndedBroadcast);
     }
 
     private void cleanupListeners() {
-        MessageRouter.getInstance().unregister(ResponseCode.BID_HISTORY_RESULT);
+        MessageRouter router = MessageRouter.getInstance();
+        router.unregister(ResponseCode.BID_HISTORY_RESULT);
+        router.unregister(ResponseCode.WINNER_NOTIFICATION);
+        router.unregister(ResponseCode.AUCTION_ENDED);
     }
 
     // ─── SETUP TABLE & SEARCH ────────────────────────────────────────────────
@@ -80,23 +97,21 @@ public class BiddingHistoryController {
     private void setupTable() {
         if (colId != null) colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colAuctionId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
-        colItemName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
+        colItemName .setCellValueFactory(new PropertyValueFactory<>("itemName"));
         colBidAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
-        colBidTime.setCellValueFactory(new PropertyValueFactory<>("bidTime"));
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        colBidTime  .setCellValueFactory(new PropertyValueFactory<>("bidTime"));
+        colStatus   .setCellValueFactory(new PropertyValueFactory<>("status"));
 
         colBidAmount.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Double amount, boolean empty) {
                 super.updateItem(amount, empty);
-                if (empty || amount == null) {
-                    setText(null); setStyle("");
-                } else {
-                    setText(String.format("%,.0f UETệ", amount));
-                    boolean selected = getTableRow() != null && getTableRow().isSelected();
-                    setStyle(selected ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
-                            : "-fx-text-fill: #1d4ed8; -fx-font-weight: bold;");
-                }
+                if (empty || amount == null) { setText(null); setStyle(""); return; }
+                setText(String.format("%,.0f UETệ", amount));
+                boolean selected = getTableRow() != null && getTableRow().isSelected();
+                setStyle(selected
+                        ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
+                        : "-fx-text-fill: #1d4ed8; -fx-font-weight: bold;");
             }
         });
 
@@ -108,29 +123,38 @@ public class BiddingHistoryController {
 
                 String upper = item.toUpperCase();
                 String display;
-                if (upper.contains("THẮNG") || upper.contains("WIN")) {
-                    display = "THẮNG CUỘC 🏆";
-                } else if (upper.contains("DẪN ĐẦU") || upper.contains("LEADING")) {
-                    display = "ĐANG DẪN ĐẦU";
-                } else if (upper.contains("THẤT BẠI") || upper.contains("LOSE") || upper.contains("ĐÈ GIÁ")) {
-                    display = "THẤT BẠI";
-                } else {
-                    display = item;
-                }
-                setText(display);
+                String style;
 
                 boolean selected = getTableRow() != null && getTableRow().isSelected();
-                if (selected) {
-                    setStyle("-fx-text-fill: white !important; -fx-font-weight: bold;");
-                } else if ("THẮNG CUỘC 🏆".equals(display)) {
-                    setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;");
-                } else if ("ĐANG DẪN ĐẦU".equals(display)) {
-                    setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;");
-                } else if ("THẤT BẠI".equals(display)) {
-                    setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
+
+                // ✅ MỚI: nhận dạng trạng thái WINNER chờ xác nhận
+                if (upper.contains("WINNER") || upper.contains("CHỜ XÁC NHẬN")) {
+                    display = "🏆 WINNER - Chờ xác nhận";
+                    style = selected
+                            ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #d97706; -fx-font-weight: bold;"; // Màu vàng/cam
+                } else if (upper.contains("THẮNG") || upper.contains("WIN")) {
+                    display = "THẮNG CUỘC 🏆";
+                    style = selected
+                            ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #16a34a; -fx-font-weight: bold;";
+                } else if (upper.contains("DẪN ĐẦU") || upper.contains("LEADING")) {
+                    display = "ĐANG DẪN ĐẦU";
+                    style = selected
+                            ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #059669; -fx-font-weight: bold;";
+                } else if (upper.contains("THẤT BẠI") || upper.contains("LOSE") || upper.contains("ĐÈ GIÁ")) {
+                    display = "THẤT BẠI";
+                    style = selected
+                            ? "-fx-text-fill: white !important; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #dc2626; -fx-font-weight: bold;";
                 } else {
-                    setStyle("");
+                    display = item;
+                    style = selected ? "-fx-text-fill: white !important; -fx-font-weight: bold;" : "";
                 }
+
+                setText(display);
+                setStyle(style);
             }
         });
 
@@ -177,14 +201,69 @@ public class BiddingHistoryController {
 
         Platform.runLater(() -> {
             historyList.clear();
-            if (rows != null && !rows.isEmpty()) {
-                historyList.addAll(rows);
-            }
+            if (rows != null && !rows.isEmpty()) historyList.addAll(rows);
             if (historyTable != null) {
                 historyTable.setItems(historyList);
                 historyTable.refresh();
             }
             System.out.println("✅ Lịch sử đặt giá: nhận " + (rows == null ? 0 : rows.size()) + " dòng.");
+        });
+    }
+
+    /**
+     * ✅ MỚI: Server push WINNER_NOTIFICATION cá nhân tới người thắng.
+     * Cập nhật trạng thái dòng thắng trong bảng thành "WINNER - Chờ xác nhận".
+     * Payload: Object[] {Integer auctionId, Double finalPrice, String itemName}
+     */
+    private void handleWinnerNotification(Message message) {
+        Platform.runLater(() -> {
+            try {
+                Object[] payload = (Object[]) message.getPayload();
+                int auctionId = (Integer) payload[0];
+
+                // Tìm dòng có auctionId trùng với giá cao nhất (dòng thắng)
+                historyList.stream()
+                        .filter(r -> r.getAuctionId() == auctionId)
+                        .max((a, b) -> Double.compare(a.getBidAmount(), b.getBidAmount()))
+                        .ifPresent(row -> row.setStatus("WINNER - Chờ xác nhận"));
+
+                if (historyTable != null) historyTable.refresh();
+                System.out.println("🏆 Đã cập nhật trạng thái WINNER cho phiên #" + auctionId);
+            } catch (Exception e) {
+                System.err.println("[BID_HISTORY] Lỗi handleWinnerNotification: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * ✅ MỚI: Lắng nghe broadcast AUCTION_ENDED (người đang ở màn hình lịch sử).
+     * Nếu user là winner của phiên kết thúc → cập nhật trạng thái dòng thắng.
+     * Payload: Object[] {auctionId, winnerUsername, finalPrice}
+     */
+    private void handleAuctionEndedBroadcast(Message message) {
+        Platform.runLater(() -> {
+            try {
+                Object payload = message.getPayload();
+                if (!(payload instanceof Object[])) return;
+                Object[] arr = (Object[]) payload;
+
+                if (arr.length < 2 || !(arr[0] instanceof Integer)) return;
+                int    auctionId      = (Integer) arr[0];
+                String winnerUsername = arr[1] instanceof String ? (String) arr[1] : null;
+
+                if (winnerUsername == null || currentUser == null) return;
+                if (!winnerUsername.equals(currentUser.getUsername())) return;
+
+                // Cập nhật trạng thái dòng thắng
+                historyList.stream()
+                        .filter(r -> r.getAuctionId() == auctionId)
+                        .max((a, b) -> Double.compare(a.getBidAmount(), b.getBidAmount()))
+                        .ifPresent(row -> row.setStatus("WINNER - Chờ xác nhận"));
+
+                if (historyTable != null) historyTable.refresh();
+            } catch (Exception e) {
+                System.err.println("[BID_HISTORY] Lỗi handleAuctionEndedBroadcast: " + e.getMessage());
+            }
         });
     }
 
@@ -242,7 +321,6 @@ public class BiddingHistoryController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ReportIssueView.fxml"));
             Parent root = loader.load();
 
-            // FIX BUG: Truyền dữ liệu phiên + user vào ReportIssueController
             ReportIssueController reportCtrl = loader.getController();
             if (reportCtrl != null) {
                 reportCtrl.setIssueData(selected, currentUser);

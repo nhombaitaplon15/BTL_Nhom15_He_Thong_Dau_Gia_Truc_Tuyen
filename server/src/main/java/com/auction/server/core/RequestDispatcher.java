@@ -459,10 +459,15 @@ public class RequestDispatcher {
      * Client gửi payload: Integer auctionId
      * Server lấy userId từ session, gọi BiddingService.rejectWin()
      */
+    /**
+     * ✅ ĐÃ SỬA: handleRejectWin
+     * - Sau khi hủy thành công, đọc lại số dư từ DB và push PROFILE_RESULT về client
+     *   để winner thấy ví được hoàn tiền ngay lập tức (realtime).
+     */
     private void handleRejectWin(ClientHandler client, Message request) {
         try {
             Integer auctionId = (Integer) request.getPayload();
-            Integer userId = client.getLoggedInUserId();
+            Integer userId    = client.getLoggedInUserId();
 
             if (auctionId == null || userId == null) {
                 client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED,
@@ -480,7 +485,14 @@ public class RequestDispatcher {
             biddingService.rejectWin(winner, auctionId);
             client.sendMessage(new Message(ResponseCode.REJECT_WIN_SUCCESS,
                     "Hủy kèo thành công! Đã hoàn tiền (trừ 7% phạt cọc).", null));
-            System.out.println("[DISPATCHER] User#" + userId + " đã hủy kèo phiên #" + auctionId);
+
+            // ✅ Push số dư mới về client ngay — đọc fresh từ DB sau khi tiền đã hoàn
+            User refreshed = userService.getUserById(userId);
+            if (refreshed != null) {
+                client.sendMessage(new Message(ResponseCode.PROFILE_RESULT, "OK", refreshed));
+            }
+
+            System.out.println("[DISPATCHER] User#" + userId + " hủy kèo phiên #" + auctionId + " thành công.");
         } catch (com.auction.common.exception.AuctionException ae) {
             client.sendMessage(new Message(ResponseCode.REJECT_WIN_FAILED, ae.getMessage(), null));
         } catch (Exception e) {
@@ -770,16 +782,37 @@ public class RequestDispatcher {
         }
     }
 
+    /**
+     * ✅ ĐÃ SỬA: handleAdminCreateTransaction (thực ra là "Bidder chấp nhận mua")
+     * - Verify người gọi đúng là winner của phiên (trong TransactionService)
+     * - Sau khi thanh toán thành công, push PROFILE_RESULT về winner để cập nhật UI ví ngay.
+     * - Tên hàm giữ nguyên để không phá RequestCode cũ.
+     */
     private void handleAdminCreateTransaction(ClientHandler client, Message request) {
         try {
             Object[] payload = (Object[]) request.getPayload(); // {auctionId, winnerId, price}
-            int auctionId  = (int)    payload[0];
-            int winnerId   = (int)    payload[1];
-            double price   = (double) payload[2];
+            int    auctionId = (int)    payload[0];
+            int    winnerId  = (int)    payload[1];
+            double price     = (double) payload[2];
+
+            // acceptAuctionPayment() bên trong verify winner + giải ngân nguyên tử
             transactionService.createTransactionFromAuction(auctionId, winnerId, price);
-            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_CREATED, "Giao dịch đã được tạo!", null));
+            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_CREATED,
+                    "Thanh toán thành công! 15% phí sàn đã khấu trừ, 85% đã chuyển người bán.", null));
+
+            // ✅ Push số dư mới về winner ngay — đọc fresh từ DB sau khi cọc giải ngân
+            User refreshed = userService.getUserById(winnerId);
+            if (refreshed != null) {
+                client.sendMessage(new Message(ResponseCode.PROFILE_RESULT, "OK", refreshed));
+            }
+
+            System.out.println("[DISPATCHER] Phiên #" + auctionId + ": Winner#" + winnerId + " đã chấp nhận mua.");
+        } catch (com.auction.common.exception.AuctionException ae) {
+            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_FAILED, ae.getMessage(), null));
         } catch (Exception e) {
-            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_FAILED, e.getMessage(), null));
+            System.err.println("[DISPATCHER] Lỗi ADMIN_CREATE_TRANSACTION: " + e.getMessage());
+            client.sendMessage(new Message(ResponseCode.ADMIN_TRANSACTION_FAILED,
+                    "Lỗi hệ thống khi thanh toán: " + e.getMessage(), null));
         }
     }
 

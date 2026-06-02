@@ -28,14 +28,28 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 
 /**
- * AuctionDetailController — Xem chi tiết phiên đấu giá từ màn hình Lịch sử.
+ * AuctionDetailController — ĐÃ HOÀN THIỆN TOÀN DIỆN:
  *
- * ĐÃ SỬA TOÀN DIỆN:
- * 1. Dùng RequestCode.GET_AUCTION_DETAIL / ResponseCode.AUCTION_DETAIL_RESULT thay vì
- *    lắng nghe nhầm BID_HISTORY_RESULT (server trả List<BidHistoryRow>, không phải Auction).
- * 2. Nút "Hủy kèo" dùng RequestCode.REJECT_WIN đúng chuẩn (truyền auctionId Integer).
- * 3. Nút "Xác nhận nhận hàng" dùng ADMIN_CREATE_TRANSACTION với payload đúng định dạng.
- * 4. Cleanup listener đầy đủ tránh memory leak.
+ * 1. Lắng nghe WINNER_NOTIFICATION realtime:
+ *    Nếu cửa sổ đang mở và server push WINNER_NOTIFICATION cho phiên này
+ *    → tự động hiện 2 nút Chấp nhận / Hủy mà không cần đóng mở lại.
+ *
+ * 2. Lắng nghe AUCTION_ENDED realtime:
+ *    Nếu user đang mở chi tiết phiên đang chạy và phiên kết thúc → cập nhật UI ngay.
+ *
+ * 3. Trạng thái "ĐANG CHỜ XÁC NHẬN MUA":
+ *    Sau khi phiên kết thúc và user là winner → lblStatus hiển thị
+ *    "🏆 WINNER — Chờ bạn xác nhận mua hàng" với màu vàng.
+ *
+ * 4. Khi nhấn "Chấp nhận mua":
+ *    - 15% phí sàn → admin, 85% → seller.
+ *    - Trạng thái → "ĐÃ XÁC NHẬN MUA — Chờ giao hàng".
+ *    - Ẩn 2 nút.
+ *
+ * 5. Khi nhấn "Hủy không mua":
+ *    - 7% vào ví admin (phạt cọc), 93% hoàn lại người mua.
+ *    - Trạng thái → "ĐÃ HỦY (phạt cọc 7%)".
+ *    - Ẩn 2 nút.
  */
 public class AuctionDetailController {
 
@@ -61,37 +75,36 @@ public class AuctionDetailController {
     }
 
     /**
-     * Được BiddingHistoryController.handleViewDetail() gọi.
-     * Gửi yêu cầu GET_AUCTION_DETAIL lên Server để lấy dữ liệu đầy đủ.
+     * Gọi từ BiddingHistoryController.handleViewDetail().
+     * Gửi GET_AUCTION_DETAIL lên server để lấy dữ liệu đầy đủ.
      */
     public void loadAuctionDetail(int auctionId, String fallbackName, User user) {
         this.currentUser = user;
 
         if (lblAuctionId != null) lblAuctionId.setText("#" + auctionId);
-        if (lblItemName != null) lblItemName.setText(fallbackName != null ? fallbackName : "Đang tải...");
-        if (lblStatus != null) lblStatus.setText("Đang tải dữ liệu...");
+        if (lblItemName  != null) lblItemName.setText(fallbackName != null ? fallbackName : "Đang tải...");
+        if (lblStatus    != null) lblStatus.setText("Đang tải dữ liệu...");
 
-        if (hboxWinnerActions != null) {
-            hboxWinnerActions.setVisible(false);
-            hboxWinnerActions.setManaged(false);
-        }
+        setWinnerActionsVisible(false);
 
-        // Làm sạch listener cũ, đăng ký mới
         cleanupListeners();
-        MessageRouter.getInstance().register(ResponseCode.AUCTION_DETAIL_RESULT, this::handleAuctionDetailResult);
-        MessageRouter.getInstance().register(ResponseCode.AUCTION_DETAIL_FAILED, this::handleAuctionDetailFailed);
-        MessageRouter.getInstance().register(ResponseCode.ADMIN_TRANSACTION_CREATED, this::handlePaySuccess);
-        MessageRouter.getInstance().register(ResponseCode.REJECT_WIN_SUCCESS, this::handleRejectWinSuccess);
-        MessageRouter.getInstance().register(ResponseCode.REJECT_WIN_FAILED, this::handleRejectWinFailed);
 
-        // ✅ SỬA: Gửi đúng request code mới thay vì FETCH_BID_HISTORY
+        MessageRouter router = MessageRouter.getInstance();
+        router.register(ResponseCode.AUCTION_DETAIL_RESULT,  this::handleAuctionDetailResult);
+        router.register(ResponseCode.AUCTION_DETAIL_FAILED,  this::handleAuctionDetailFailed);
+        router.register(ResponseCode.ADMIN_TRANSACTION_CREATED, this::handlePaySuccess);
+        router.register(ResponseCode.REJECT_WIN_SUCCESS,     this::handleRejectWinSuccess);
+        router.register(ResponseCode.REJECT_WIN_FAILED,      this::handleRejectWinFailed);
+        // ✅ MỚI: Lắng nghe push cá nhân winner & broadcast kết thúc phiên
+        router.register(ResponseCode.WINNER_NOTIFICATION,    this::handleWinnerPushNotification);
+        router.register(ResponseCode.AUCTION_ENDED,          this::handleAuctionEndedRealtime);
+
         SocketClient.getInstance().sendRequest(RequestCode.GET_AUCTION_DETAIL, auctionId);
     }
 
     // ─── HANDLERS ────────────────────────────────────────────────────────────
 
     private void handleAuctionDetailResult(Message message) {
-        // ✅ SỬA: Server giờ trả Auction object qua AUCTION_DETAIL_RESULT
         if (!(message.getPayload() instanceof Auction)) {
             Platform.runLater(() -> {
                 if (lblStatus != null) lblStatus.setText("Không thể tải dữ liệu phiên.");
@@ -103,20 +116,16 @@ public class AuctionDetailController {
         Item item = currentAuction.getItem();
 
         Platform.runLater(() -> {
-            if (lblAuctionId != null) lblAuctionId.setText("#" + currentAuction.getAuctionId());
-
-            if (lblCurrentPrice != null) {
+            if (lblAuctionId    != null) lblAuctionId.setText("#" + currentAuction.getAuctionId());
+            if (lblCurrentPrice != null)
                 lblCurrentPrice.setText(String.format("%,.0f UETệ", currentAuction.getCurrentPrice()));
-            }
-            if (lblStartTime != null && currentAuction.getStartTime() != null) {
+            if (lblStartTime != null && currentAuction.getStartTime() != null)
                 lblStartTime.setText(currentAuction.getStartTime().toString().replace("T", " "));
-            }
-            if (lblEndTime != null && currentAuction.getEndTime() != null) {
+            if (lblEndTime != null && currentAuction.getEndTime() != null)
                 lblEndTime.setText(currentAuction.getEndTime().toString().replace("T", " "));
-            }
 
             if (item != null) {
-                if (lblItemName != null) lblItemName.setText(item.getName());
+                if (lblItemName   != null) lblItemName.setText(item.getName());
                 if (lblDescription != null) lblDescription.setText(item.getDescription());
 
                 if (item.getImgItem() != null && !item.getImgItem().trim().isEmpty()) {
@@ -131,10 +140,9 @@ public class AuctionDetailController {
                 }
             }
 
-            // Kiểm tra hiển thị nút cho người thắng
             checkAndToggleWinnerActions(currentAuction, currentUser);
 
-            // Nếu phiên đang chạy, theo dõi realtime để ẩn/hiện nút sau khi kết thúc
+            // Theo dõi realtime nếu phiên đang chạy
             if (currentAuction.getEndTime() != null
                     && "RUNNING".equalsIgnoreCase(currentAuction.getAuctionStatus())) {
                 startRealtimeStatusTracker(currentAuction.getEndTime(), currentAuction, currentUser);
@@ -154,10 +162,17 @@ public class AuctionDetailController {
 
     private void handlePaySuccess(Message message) {
         Platform.runLater(() -> {
-            showNotification("Thành công", "Xác nhận nhận hàng thành công! Tiền đã được giải ngân.");
+            showNotification("Thành công",
+                    "Xác nhận mua hàng thành công!\n" +
+                            "15% phí sàn đã chuyển admin, 85% chuyển cho người bán.");
             if (currentAuction != null) {
                 currentAuction.setAuctionStatus("PAID");
-                checkAndToggleWinnerActions(currentAuction, currentUser);
+                if (lblStatus != null) {
+                    lblStatus.setText("✅ ĐÃ XÁC NHẬN MUA — Chờ giao hàng");
+                    lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; " +
+                            "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+                }
+                setWinnerActionsVisible(false);
             }
         });
     }
@@ -165,10 +180,16 @@ public class AuctionDetailController {
     private void handleRejectWinSuccess(Message message) {
         Platform.runLater(() -> {
             showNotification("Hủy thành công",
-                    "Bạn đã hủy nhận hàng. Tiền cọc bị phạt 7%, phần còn lại đã hoàn vào ví.");
+                    "Bạn đã hủy không mua.\n" +
+                            "7% phí phạt chuyển admin, 93% đã hoàn vào ví của bạn.");
             if (currentAuction != null) {
                 currentAuction.setAuctionStatus("REJECTED");
-                checkAndToggleWinnerActions(currentAuction, currentUser);
+                if (lblStatus != null) {
+                    lblStatus.setText("❌ ĐÃ HỦY KHÔNG MUA (phạt cọc 7%)");
+                    lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; " +
+                            "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+                }
+                setWinnerActionsVisible(false);
             }
         });
     }
@@ -176,7 +197,83 @@ public class AuctionDetailController {
     private void handleRejectWinFailed(Message message) {
         Platform.runLater(() -> {
             String reason = message.getMessage() != null ? message.getMessage() : "Lỗi không xác định.";
-            showNotification("Thất bại", "Không thể hủy kèo: " + reason);
+            showNotification("Thất bại", "Không thể hủy: " + reason);
+        });
+    }
+
+    /**
+     * ✅ MỚI: Nhận push WINNER_NOTIFICATION từ server khi phiên kết thúc.
+     * Payload: Object[] {auctionId, finalPrice, itemName}
+     * Nếu auctionId trùng → cập nhật UI hiện 2 nút và trạng thái "chờ xác nhận".
+     */
+    private void handleWinnerPushNotification(Message message) {
+        Platform.runLater(() -> {
+            try {
+                Object[] payload = (Object[]) message.getPayload();
+                int    auctionId  = (Integer) payload[0];
+                double finalPrice = (Double)  payload[1];
+
+                if (currentAuction == null || currentAuction.getAuctionId() != auctionId) return;
+
+                // Cập nhật trạng thái phiên trong RAM
+                currentAuction.setAuctionStatus("FINISHED");
+                currentAuction.setCurrentPrice(finalPrice);
+                if (currentUser != null) {
+                    currentAuction.setCurrentWinnerId(currentUser.getId());
+                }
+
+                // Hiển thị trạng thái và 2 nút
+                showWinnerPendingStatus(finalPrice, currentAuction.getAuctionId());
+                setWinnerActionsVisible(true);
+
+            } catch (Exception e) {
+                System.err.println("[DETAIL] Lỗi handleWinnerPushNotification: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * ✅ MỚI: Lắng nghe broadcast AUCTION_ENDED khi cửa sổ chi tiết đang mở.
+     * Payload: Object[] {auctionId, winnerUsername, finalPrice}
+     */
+    private void handleAuctionEndedRealtime(Message message) {
+        Platform.runLater(() -> {
+            try {
+                Object payload = message.getPayload();
+                if (!(payload instanceof Object[])) return;
+                Object[] arr = (Object[]) payload;
+
+                if (!(arr[0] instanceof Integer)) return;
+                int    auctionId      = (Integer) arr[0];
+                String winnerUsername = arr.length > 1 && arr[1] instanceof String ? (String) arr[1] : null;
+                double finalPrice     = arr.length > 2 && arr[2] instanceof Number ? ((Number) arr[2]).doubleValue() : 0;
+
+                if (currentAuction == null || currentAuction.getAuctionId() != auctionId) return;
+
+                currentAuction.setAuctionStatus("FINISHED");
+                currentAuction.setCurrentPrice(finalPrice);
+
+                boolean isWinner = winnerUsername != null && currentUser != null
+                        && winnerUsername.equals(currentUser.getUsername());
+
+                if (isWinner) {
+                    if (currentUser != null) currentAuction.setCurrentWinnerId(currentUser.getId());
+                    showWinnerPendingStatus(finalPrice, auctionId);
+                    setWinnerActionsVisible(true);
+                } else {
+                    if (lblStatus != null) {
+                        lblStatus.setText("ĐÃ KẾT THÚC — Bạn không thắng phiên này");
+                        lblStatus.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; " +
+                                "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+                    }
+                    setWinnerActionsVisible(false);
+                }
+
+                if (liveStatusTimeline != null) liveStatusTimeline.stop();
+
+            } catch (Exception e) {
+                System.err.println("[DETAIL] Lỗi handleAuctionEndedRealtime: " + e.getMessage());
+            }
         });
     }
 
@@ -185,10 +282,22 @@ public class AuctionDetailController {
     private void checkAndToggleWinnerActions(Auction auction, User user) {
         String status = auction.getAuctionStatus();
 
-        // Đã hoàn tất hoặc đã hủy — ẩn nút
-        if ("PAID".equalsIgnoreCase(status) || "SOLD".equalsIgnoreCase(status)
-                || "REJECTED".equalsIgnoreCase(status)) {
-            updateStatusStyle(status);
+        if ("PAID".equalsIgnoreCase(status) || "SOLD".equalsIgnoreCase(status)) {
+            if (lblStatus != null) {
+                lblStatus.setText("✅ ĐÃ XÁC NHẬN MUA — Chờ giao hàng");
+                lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; " +
+                        "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+            }
+            setWinnerActionsVisible(false);
+            return;
+        }
+
+        if ("REJECTED".equalsIgnoreCase(status)) {
+            if (lblStatus != null) {
+                lblStatus.setText("❌ ĐÃ HỦY KHÔNG MUA (phạt cọc 7%)");
+                lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; " +
+                        "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+            }
             setWinnerActionsVisible(false);
             return;
         }
@@ -199,45 +308,59 @@ public class AuctionDetailController {
                     && auction.getCurrentWinnerId().intValue() == user.getId();
 
             if (isWinner) {
-                LocalDateTime endTime = auction.getEndTime() != null ? auction.getEndTime() : LocalDateTime.now();
-                java.time.Duration passed = java.time.Duration.between(endTime, LocalDateTime.now());
+                java.time.Duration passed = java.time.Duration.between(
+                        auction.getEndTime() != null ? auction.getEndTime() : LocalDateTime.now(),
+                        LocalDateTime.now());
                 long hoursPassed = passed.toHours();
 
-                int assignedAdminId = ESCROW_ADMIN_IDS[auction.getAuctionId() % ESCROW_ADMIN_IDS.length];
-
                 if (hoursPassed < 24) {
-                    long totalMinLeft = (24 * 60) - passed.toMinutes();
-                    long hoursLeft = totalMinLeft / 60;
-                    long minsLeft = totalMinLeft % 60;
-
-                    if (lblStatus != null) {
-                        lblStatus.setText(String.format(
-                                "🎉 BẠN THẮNG! Tiền cọc tạm giữ tại Admin #%d — Còn %dh %dm để xác nhận",
-                                assignedAdminId, hoursLeft, minsLeft));
-                        lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; "
-                                + "-fx-background-radius: 5; -fx-padding: 6 12; -fx-font-weight: bold; "
-                                + "-fx-border-color: #f59e0b; -fx-border-width: 1; -fx-border-radius: 5;");
-                    }
+                    showWinnerPendingStatus(auction.getCurrentPrice(), auction.getAuctionId());
                     setWinnerActionsVisible(true);
                 } else {
                     if (lblStatus != null) {
-                        lblStatus.setText("❌ QUÁ HẠN 24H — HỆ THỐNG TỰ ĐỘNG PHONG TỎA VÍ CỌC");
-                        lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; "
-                                + "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+                        lblStatus.setText("❌ QUÁ HẠN 24H — Hệ thống tự động phong tỏa ví cọc");
+                        lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; " +
+                                "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
                     }
                     setWinnerActionsVisible(false);
                 }
             } else {
                 if (lblStatus != null) {
                     lblStatus.setText("ĐÃ KẾT THÚC — Bạn không thắng phiên này");
-                    lblStatus.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; "
-                            + "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+                    lblStatus.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; " +
+                            "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
                 }
                 setWinnerActionsVisible(false);
             }
         } else {
+            // Phiên đang chạy hoặc các trạng thái khác
             updateStatusStyle(status);
+            setWinnerActionsVisible(false);
         }
+    }
+
+    /**
+     * Hiển thị trạng thái "WINNER — Chờ xác nhận mua hàng" với đếm ngược 24h.
+     */
+    private void showWinnerPendingStatus(double finalPrice, int auctionId) {
+        if (lblStatus == null) return;
+
+        int assignedAdminId = ESCROW_ADMIN_IDS[auctionId % ESCROW_ADMIN_IDS.length];
+        LocalDateTime endTime = (currentAuction != null && currentAuction.getEndTime() != null)
+                ? currentAuction.getEndTime() : LocalDateTime.now();
+        java.time.Duration passed = java.time.Duration.between(endTime, LocalDateTime.now());
+        long totalMinLeft = (24 * 60) - passed.toMinutes();
+        if (totalMinLeft < 0) totalMinLeft = 0;
+        long hoursLeft = totalMinLeft / 60;
+        long minsLeft  = totalMinLeft % 60;
+
+        lblStatus.setText(String.format(
+                "🏆 WINNER — Chờ xác nhận mua hàng\n" +
+                        "Tiền cọc tạm giữ tại Admin #%d | Còn %dh %dm để quyết định",
+                assignedAdminId, hoursLeft, minsLeft));
+        lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #d97706; " +
+                "-fx-background-radius: 5; -fx-padding: 6 12; -fx-font-weight: bold; " +
+                "-fx-border-color: #f59e0b; -fx-border-width: 1; -fx-border-radius: 5;");
     }
 
     private void setWinnerActionsVisible(boolean visible) {
@@ -249,21 +372,17 @@ public class AuctionDetailController {
 
     private void updateStatusStyle(String status) {
         if (lblStatus == null) return;
-        if ("FINISHED".equalsIgnoreCase(status) || "CLOSED".equalsIgnoreCase(status)) {
-            lblStatus.setText("ĐÃ KẾT THÚC");
-            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else if ("PENDING".equalsIgnoreCase(status) || "WAITING_FOR_ADMIN".equalsIgnoreCase(status)) {
+        if ("PENDING".equalsIgnoreCase(status) || "WAITING_FOR_ADMIN".equalsIgnoreCase(status)) {
             lblStatus.setText("CHỜ KÍCH HOẠT");
-            lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else if ("SOLD".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
-            lblStatus.setText("ĐÃ THANH TOÁN THÀNH CÔNG ✅");
-            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else if ("REJECTED".equalsIgnoreCase(status)) {
-            lblStatus.setText("ĐÃ HỦY NHẬN HÀNG (PHẠT CỌC 7%)");
-            lblStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else {
+            lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #92400e; " +
+                    "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+        } else if ("RUNNING".equalsIgnoreCase(status)) {
             lblStatus.setText("ĐANG DIỄN RA 🔴");
-            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+            lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; " +
+                    "-fx-background-radius: 5; -fx-padding: 4 12; -fx-font-weight: bold;");
+        } else {
+            lblStatus.setText(status != null ? status : "");
+            lblStatus.setStyle("");
         }
     }
 
@@ -283,28 +402,31 @@ public class AuctionDetailController {
     // ─── FXML ACTIONS ────────────────────────────────────────────────────────
 
     /**
-     * Xác nhận nhận hàng — giải ngân tiền cọc qua Server.
+     * Chấp nhận mua: 15% phí sàn → admin, 85% → seller.
      */
     @FXML
     void handlePayAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
 
-        double price = currentAuction.getCurrentPrice();
-        double adminFee = price * 0.15;
+        double price         = currentAuction.getCurrentPrice();
+        double adminFee      = price * 0.15;
         double sellerReceived = price * 0.85;
-        int assignedAdminId = ESCROW_ADMIN_IDS[currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length];
+        int assignedAdminId  = ESCROW_ADMIN_IDS[currentAuction.getAuctionId() % ESCROW_ADMIN_IDS.length];
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                String.format("Xác nhận giải ngân?\n- Phí sàn (15%%): %,.0f UETệ\n- Người bán nhận (85%%): %,.0f UETệ\n(Ví tạm Admin #%d)",
-                        adminFee, sellerReceived, assignedAdminId),
+                String.format("Xác nhận MUA HÀNG?\n\n" +
+                                "💰 Giá thắng: %,.0f UETệ\n" +
+                                "📊 Phí sàn 15%%: %,.0f UETệ → Admin #%d\n" +
+                                "💵 Người bán nhận 85%%: %,.0f UETệ\n\n" +
+                                "Bạn chắc chắn muốn xác nhận mua?",
+                        price, adminFee, assignedAdminId, sellerReceived),
                 ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Xác nhận nhận hàng");
+        alert.setTitle("Xác nhận mua hàng");
         alert.setHeaderText(null);
 
         alert.showAndWait().ifPresent(resp -> {
             if (resp == ButtonType.YES) {
-                // payload: Object[] {auctionId, winnerId, finalPrice}
-                Object[] payload = new Object[]{
+                Object[] payload = {
                         currentAuction.getAuctionId(),
                         currentUser.getId(),
                         currentAuction.getCurrentPrice()
@@ -315,27 +437,29 @@ public class AuctionDetailController {
     }
 
     /**
-     * Hủy nhận hàng — phạt cọc 7%, hoàn 93% vào ví.
-     * ✅ SỬA: Dùng RequestCode.REJECT_WIN thay vì ADMIN_REJECT_TRANSACTION sai format.
+     * Hủy không mua: phạt cọc 7% → admin, hoàn 93% → ví người mua.
      */
     @FXML
     void handleCancelAuction(ActionEvent event) {
         if (currentAuction == null || currentUser == null) return;
 
-        double price = currentAuction.getCurrentPrice();
+        double price   = currentAuction.getCurrentPrice();
         double penalty = price * 0.07;
-        double refund = price * 0.93;
+        double refund  = price * 0.93;
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                String.format("Hủy nhận hàng sẽ:\n- Phạt cọc 7%%: %,.0f UETệ\n- Hoàn lại ví bạn 93%%: %,.0f UETệ\nBạn chắc chắn muốn hủy?",
-                        penalty, refund),
+                String.format("Xác nhận HỦY KHÔNG MUA?\n\n" +
+                                "💰 Giá thắng: %,.0f UETệ\n" +
+                                "❌ Phạt cọc 7%%: %,.0f UETệ → Admin\n" +
+                                "↩ Hoàn lại ví bạn 93%%: %,.0f UETệ\n\n" +
+                                "Bạn chắc chắn muốn hủy?",
+                        price, penalty, refund),
                 ButtonType.YES, ButtonType.NO);
-        alert.setTitle("Xác nhận hủy nhận hàng");
+        alert.setTitle("Xác nhận hủy không mua");
         alert.setHeaderText(null);
 
         alert.showAndWait().ifPresent(resp -> {
             if (resp == ButtonType.YES) {
-                // ✅ SỬA: Chỉ gửi auctionId, server tự lấy userId từ session
                 SocketClient.getInstance().sendRequest(RequestCode.REJECT_WIN, currentAuction.getAuctionId());
             }
         });
@@ -352,11 +476,14 @@ public class AuctionDetailController {
     // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private void cleanupListeners() {
-        MessageRouter.getInstance().unregister(ResponseCode.AUCTION_DETAIL_RESULT);
-        MessageRouter.getInstance().unregister(ResponseCode.AUCTION_DETAIL_FAILED);
-        MessageRouter.getInstance().unregister(ResponseCode.ADMIN_TRANSACTION_CREATED);
-        MessageRouter.getInstance().unregister(ResponseCode.REJECT_WIN_SUCCESS);
-        MessageRouter.getInstance().unregister(ResponseCode.REJECT_WIN_FAILED);
+        MessageRouter router = MessageRouter.getInstance();
+        router.unregister(ResponseCode.AUCTION_DETAIL_RESULT);
+        router.unregister(ResponseCode.AUCTION_DETAIL_FAILED);
+        router.unregister(ResponseCode.ADMIN_TRANSACTION_CREATED);
+        router.unregister(ResponseCode.REJECT_WIN_SUCCESS);
+        router.unregister(ResponseCode.REJECT_WIN_FAILED);
+        router.unregister(ResponseCode.WINNER_NOTIFICATION);
+        router.unregister(ResponseCode.AUCTION_ENDED);
     }
 
     private void showNotification(String title, String content) {
