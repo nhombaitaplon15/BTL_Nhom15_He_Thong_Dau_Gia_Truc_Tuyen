@@ -28,7 +28,7 @@ public class MainContainerController implements Initializable {
         if (lblBalance != null) lblBalance.setText("0 UETệ");
 
         // Tự động hiển thị trang Sàn Đấu Giá khi vừa mở ứng dụng lên
-        setPage("/view/The_Home_Page_Bidder_View.fxml");
+        setPage("/view/view/bidder/The_Home_Page_Bidder_View.fxml");
     }
 
     /**
@@ -84,13 +84,13 @@ public class MainContainerController implements Initializable {
     void onLiveMenuClick(ActionEvent event) {
         btnMenuLive.setStyle("-fx-background-color: #FFFFFF; -fx-text-fill: #2563EB; -fx-background-radius: 8;");
         btnMenuHistory.setStyle("-fx-background-color: transparent; -fx-text-fill: #FFFFFF;");
-        setPage("/view/The_Home_Page_Bidder_View.fxml");
+        setPage("/view/view/bidder/The_Home_Page_Bidder_View.fxml");
     }
     // Khi click vào nút "⏱ Lịch Sử Đặt Giá" trên Sidebar của bạn
     @FXML
     void onHistoryMenuClick(ActionEvent event) {
         btnMenuLive.setStyle("-fx-background-color: transparent; -fx-text-fill: #FFFFFF;");
         btnMenuHistory.setStyle("-fx-background-color: #FFFFFF; -fx-text-fill: #2563EB; -fx-background-radius: 8;");
-        setPage("/view/BiddingHistoryView.fxml");
+        setPage("/view/view/bidder/BiddingHistoryView.fxml");
     }
 }

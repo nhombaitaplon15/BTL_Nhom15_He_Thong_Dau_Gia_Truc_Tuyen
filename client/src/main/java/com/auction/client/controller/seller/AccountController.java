@@ -308,7 +308,7 @@ public class AccountController {
     SocketClient.getInstance().disconnect();
     try {
       javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-          getClass().getResource("/view/view/WelcomeView.fxml"));
+          getClass().getResource("/view/view/auth/LoginView.fxml"));
       javafx.scene.Parent root = loader.load();
       javafx.stage.Stage stage = (javafx.stage.Stage) btnProfile.getScene().getWindow();
       stage.setScene(new javafx.scene.Scene(root));

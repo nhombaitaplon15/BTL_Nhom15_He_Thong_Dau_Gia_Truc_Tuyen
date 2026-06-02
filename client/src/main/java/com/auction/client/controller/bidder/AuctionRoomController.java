@@ -1,9 +1,15 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.*;
+import com.auction.common.network.BidPlaceDTO;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
 import com.auction.server.dao.AuctionDAO;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.PaymentDAO;
-import com.auction.server.service.BiddingService ;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -26,7 +32,6 @@ import java.util.List;
 
 public class AuctionRoomController {
 
-    // 🎯 Đồng bộ 4 ID Admin để xác định Admin quản lý phòng
     private static final int[] ESCROW_ADMIN_IDS = {1, 2, 3, 4};
 
     @FXML private Label lblProductName;
@@ -47,44 +52,81 @@ public class AuctionRoomController {
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
     private final PaymentDAO paymentDAO = new PaymentDAO();
-    private final BiddingService biddingService = new BiddingService(null);
 
     private int activeAuctionId;
     private User currentOnlineUser;
     private double currentAuctionPrice;
     private Timeline roomCountdownTimeline;
 
+    @FXML
+    public void initialize() {
+        MessageRouter.getInstance().register(ResponseCode.BID_SUCCESS, this::handleBidSuccess);
+        MessageRouter.getInstance().register(ResponseCode.BID_FAILED, this::handleBidFailed);
+        MessageRouter.getInstance().register(ResponseCode.NEW_BID_UPDATE, this::handleNewBidUpdate);
+        MessageRouter.getInstance().register(ResponseCode.AUCTION_ENDED, this::handleAuctionEnded);
+    }
+
+    private void handleBidSuccess(Message msg) {
+        Platform.runLater(() -> {
+            txtBidAmount.clear();
+            showAlert("Thành công", "Đặt giá thành công!", Alert.AlertType.INFORMATION);
+            refreshRoomData();
+        });
+    }
+
+    private void handleBidFailed(Message msg) {
+        Platform.runLater(() -> showAlert("Thất bại", msg.getMessage() != null ? msg.getMessage() : "Lỗi đặt giá", Alert.AlertType.ERROR));
+    }
+
+    private void handleNewBidUpdate(Message msg) {
+        Platform.runLater(() -> {
+            Object[] payload = (Object[]) msg.getPayload();
+            int aId = (int) payload[0];
+            if (aId == activeAuctionId) {
+                refreshRoomData();
+            }
+        });
+    }
+
+    private void handleAuctionEnded(Message msg) {
+        Platform.runLater(() -> {
+            Object[] payload = (Object[]) msg.getPayload();
+            int aId = (int) payload[0];
+            if (aId == activeAuctionId) {
+                if (roomCountdownTimeline != null) roomCountdownTimeline.stop();
+                lblCountdown.setText("ĐÃ KẾT THÚC!");
+                lblCountdown.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 24px;");
+                btnPlaceBid.setDisable(true);
+            }
+        });
+    }
+
     public void loadAuctionDetail(int auctionId, String itemName, User user) {
         this.activeAuctionId = auctionId;
         this.currentOnlineUser = user;
 
         if (lblProductName != null) lblProductName.setText(itemName);
+
+        SocketClient.getInstance().sendRequest(RequestCode.JOIN_ROOM, auctionId);
+
         refreshRoomData();
     }
+
     private void refreshRoomData() {
         new Thread(() -> {
             try {
                 Auction auction = auctionDAO.getAuctionById(activeAuctionId);
-
                 double realBalance = paymentDAO.getBalance(currentOnlineUser.getId());
                 currentOnlineUser.setBalance(realBalance);
-
                 List<BiddingHistory> historyList = auctionDAO.getBiddingHistoryByAuctionId(activeAuctionId);
 
                 if (auction != null) {
                     this.currentAuctionPrice = auction.getCurrentPrice();
                     Item item = itemDAO.getItemById(auction.getItemId());
-
-                    // 🎯 ĐÃ SỬA LOGIC: Tính số tiền cọc của RIÊNG Bidder này đang bị Admin giữ
                     double bidderEscrowInThisRoom = 0;
 
-                    // Nếu người đang dẫn đầu phiên đấu giá chính là User đang đăng nhập này
-                    if (auction.getCurrentWinnerId() == currentOnlineUser.getId()) {
+                    if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() == currentOnlineUser.getId()) {
                         bidderEscrowInThisRoom = auction.getCurrentPrice();
-                        // Tiền cọc đang bị Admin đóng băng chính là mức giá cao nhất mà họ đã trả
-                    } else {
-                        bidderEscrowInThisRoom = 0;
-                        // Nếu bị người khác đè giá, tiền đã hoàn về ví chính nên ví tạm của họ bằng 0
                     }
 
                     final double finalEscrow = bidderEscrowInThisRoom;
@@ -92,10 +134,7 @@ public class AuctionRoomController {
                     Platform.runLater(() -> {
                         if (lblCurrentPrice != null) lblCurrentPrice.setText(String.format("%,.0f UETệ", auction.getCurrentPrice()));
                         if (lblStartPrice != null) lblStartPrice.setText(String.format("%,.0f UETệ", auction.getStartingPrice()));
-
                         if (lblUserBalance != null) lblUserBalance.setText(String.format("%,.0f UETệ", realBalance));
-
-                        // 🎯 HIỂN THỊ CHUẨN: Chỉ hiện số tiền cọc cá nhân của Bidder này đang nằm trong ví Admin
                         if (lblUserEscrow != null) {
                             lblUserEscrow.setText(String.format("Tiền cọc của bạn: %,.0f UETệ", finalEscrow));
                         }
@@ -103,7 +142,6 @@ public class AuctionRoomController {
                         if (item != null) {
                             if (lblProductName != null) lblProductName.setText(item.getName());
                             if (lblDescription != null) lblDescription.setText(item.getDescription());
-
                             loadProductProperties(item);
 
                             if (imgProduct != null && item.getImgItem() != null && !item.getImgItem().trim().isEmpty()) {
@@ -112,12 +150,19 @@ public class AuctionRoomController {
                                     if (!path.startsWith("/")) path = "/" + path;
                                     InputStream is = getClass().getResourceAsStream(path);
                                     if (is != null) imgProduct.setImage(new Image(is));
-                                } catch (Exception e) { e.printStackTrace(); }
+                                } catch (Exception e) {}
                             }
                         }
 
                         populateBidHistory(historyList);
                         startRoomCountdown(auction.getEndTime());
+
+                        if (!"RUNNING".equalsIgnoreCase(auction.getAuctionStatus())) {
+                            btnPlaceBid.setDisable(true);
+                            if (roomCountdownTimeline != null) roomCountdownTimeline.stop();
+                            lblCountdown.setText("ĐÃ KẾT THÚC!");
+                            lblCountdown.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 24px;");
+                        }
                     });
                 }
             } catch (Exception e) {
@@ -128,7 +173,6 @@ public class AuctionRoomController {
 
     private void populateBidHistory(List<BiddingHistory> historyList) {
         if (listHistoryContainer == null) return;
-
         listHistoryContainer.getChildren().clear();
 
         if (historyList == null || historyList.isEmpty()) {
@@ -142,8 +186,7 @@ public class AuctionRoomController {
 
         for (BiddingHistory bid : historyList) {
             HBox row = new HBox(10);
-            row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; " +
-                    "-fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
+            row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
 
             int bId = bid.getBidderId();
             String bidderName = "Người dùng #" + bId;
@@ -160,17 +203,14 @@ public class AuctionRoomController {
                             bidderName = rs.getString("username");
                         }
                     }
-                } catch (Exception e) {
-                    // Giữ nguyên fallback name nếu lỗi
-                }
+                } catch (Exception e) {}
             }
 
             Label lblUser = new Label(bidderName);
 
             if (bId == currentOnlineUser.getId()) {
                 lblUser.setStyle("-fx-text-fill: #0F172A; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
-                row.setStyle("-fx-padding: 8 12; -fx-background-color: #EFF6FF; -fx-background-radius: 8; " +
-                        "-fx-border-color: #BFDBFE; -fx-border-radius: 8; -fx-alignment: center-left;");
+                row.setStyle("-fx-padding: 8 12; -fx-background-color: #EFF6FF; -fx-background-radius: 8; -fx-border-color: #BFDBFE; -fx-border-radius: 8; -fx-alignment: center-left;");
             } else {
                 lblUser.setStyle("-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
             }
@@ -190,46 +230,6 @@ public class AuctionRoomController {
             row.getChildren().addAll(lblUser, rightContainer);
             listHistoryContainer.getChildren().add(row);
         }
-    }
-
-    public void addSingleBidToHistory(int bidderId, String username, double bidAmount) {
-        Platform.runLater(() -> {
-            if (bidAmount > this.currentAuctionPrice) {
-                this.currentAuctionPrice = bidAmount;
-                if (lblCurrentPrice != null) {
-                    lblCurrentPrice.setText(String.format("%,.0f UETệ", bidAmount));
-                }
-            }
-
-            if (!listHistoryContainer.getChildren().isEmpty() && listHistoryContainer.getChildren().get(0) instanceof Label) {
-                listHistoryContainer.getChildren().clear();
-            }
-
-            HBox row = new HBox(10);
-            row.setStyle("-fx-padding: 8 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-alignment: center-left;");
-
-            String displayName = (bidderId == currentOnlineUser.getId()) ? "Bạn (Tôi)" : username;
-            Label lblUser = new Label(displayName);
-
-            if (bidderId == currentOnlineUser.getId()) {
-                lblUser.setStyle("-fx-text-fill: #0F172A; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
-                row.setStyle("-fx-padding: 8 12; -fx-background-color: #EFF6FF; -fx-background-radius: 8; -fx-border-color: #BFDBFE; -fx-border-radius: 8; -fx-alignment: center-left;");
-            } else {
-                lblUser.setStyle("-fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 13px; -fx-min-width: 120px;");
-                row.setStyle("-fx-padding: 8 12; -fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #E2E8F0; -fx-border-radius: 8; -fx-alignment: center-left;");
-            }
-
-            Label lblPrice = new Label(String.format("%,.0f UETệ", bidAmount));
-            lblPrice.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold; -fx-font-size: 13px;");
-
-            HBox rightContainer = new HBox();
-            javafx.scene.layout.HBox.setHgrow(rightContainer, javafx.scene.layout.Priority.ALWAYS);
-            rightContainer.setStyle("-fx-alignment: center-right;");
-            rightContainer.getChildren().add(lblPrice);
-
-            row.getChildren().addAll(lblUser, rightContainer);
-            listHistoryContainer.getChildren().add(0, row);
-        });
     }
 
     private void loadProductProperties(Item item) {
@@ -297,6 +297,14 @@ public class AuctionRoomController {
     @FXML
     void handleBackToMarket(ActionEvent event) {
         if (roomCountdownTimeline != null) roomCountdownTimeline.stop();
+
+        SocketClient.getInstance().sendRequest(RequestCode.LEAVE_ROOM, activeAuctionId);
+
+        MessageRouter.getInstance().unregister(ResponseCode.BID_SUCCESS);
+        MessageRouter.getInstance().unregister(ResponseCode.BID_FAILED);
+        MessageRouter.getInstance().unregister(ResponseCode.NEW_BID_UPDATE);
+        MessageRouter.getInstance().unregister(ResponseCode.AUCTION_ENDED);
+
         Stage stage = (Stage) lblProductName.getScene().getWindow();
         stage.close();
     }
@@ -317,30 +325,7 @@ public class AuctionRoomController {
                 return;
             }
 
-            Auction auction = auctionDAO.getAuctionById(activeAuctionId);
-            if (auction == null) {
-                showAlert("Lỗi", "Không tìm thấy thông tin phiên đấu giá này!", Alert.AlertType.ERROR);
-                return;
-            }
-
-            if (!"RUNNING".equalsIgnoreCase(auction.getAuctionStatus())) {
-                showAlert("Lỗi", "Phiên đấu giá này đã kết thúc hoặc chưa bắt đầu!", Alert.AlertType.ERROR);
-                return;
-            }
-
-            try {
-                biddingService.placeBidDirectFromDB(currentOnlineUser, auction.getAuctionId(), bidAmount);
-                showAlert("Thành công", "Đặt giá thành công! Số tiền cũ của người trước đã được hoàn trả, tài khoản hệ thống Admin đã đóng băng giữ cọc phiên này.", Alert.AlertType.INFORMATION);
-                txtBidAmount.clear();
-
-            } catch (com.auction.common.exception.AuctionException ae) {
-                showAlert("Thất bại", "Lỗi hệ thống: " + ae.getMessage(), Alert.AlertType.ERROR);
-            } catch (Exception ex) {
-                showAlert("Thất bại", "Giao dịch không thành công. Vui lòng kiểm tra lại số dư ví chính!", Alert.AlertType.ERROR);
-                ex.printStackTrace();
-            }
-
-            refreshRoomData();
+            SocketClient.getInstance().sendRequest(RequestCode.PLACE_BID, new BidPlaceDTO(activeAuctionId, bidAmount));
 
         } catch (NumberFormatException e) {
             showAlert("Lỗi định dạng", "Vui lòng nhập số tiền hợp lệ!", Alert.AlertType.ERROR);

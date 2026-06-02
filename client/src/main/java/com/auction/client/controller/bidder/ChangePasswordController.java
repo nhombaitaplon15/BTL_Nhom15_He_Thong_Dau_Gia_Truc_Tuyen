@@ -1,7 +1,12 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.User;
-import com.auction.server.service.UserService;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,7 +18,6 @@ import javafx.stage.Stage;
 
 public class ChangePasswordController {
 
-    private final UserService userService = new UserService();
     private User currentUser;
 
     @FXML private PasswordField txtOldPassword;
@@ -21,15 +25,35 @@ public class ChangePasswordController {
     @FXML private PasswordField txtConfirmPassword;
 
     @FXML
+    public void initialize() {
+        MessageRouter.getInstance().register(ResponseCode.PASSWORD_CHANGED, this::handlePasswordChanged);
+        MessageRouter.getInstance().register(ResponseCode.PASSWORD_CHANGE_FAILED, this::handlePasswordChangeFailed);
+    }
+
     public void setUserData(User user) {
         this.currentUser = user;
+    }
+
+    private void handlePasswordChanged(Message msg) {
+        Platform.runLater(() -> {
+            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Thay đổi mật khẩu tài khoản thành công!");
+            if (txtOldPassword != null) txtOldPassword.clear();
+            if (txtNewPassword != null) txtNewPassword.clear();
+            if (txtConfirmPassword != null) txtConfirmPassword.clear();
+        });
+    }
+
+    private void handlePasswordChangeFailed(Message msg) {
+        Platform.runLater(() -> {
+            showAlert(Alert.AlertType.ERROR, "Thất bại", msg.getMessage() != null ? msg.getMessage() : "Đổi mật khẩu thất bại!");
+        });
     }
 
     @FXML
     void handleUpdatePassword(ActionEvent event) {
         String oldPass = txtOldPassword != null ? txtOldPassword.getText() : "";
         String newPass = txtNewPassword != null ? txtNewPassword.getText() : "";
-        String confirmPass = txtConfirmPassword.getText();
+        String confirmPass = txtConfirmPassword != null ? txtConfirmPassword.getText() : "";
 
         if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, "Lỗi nhập liệu", "Vui lòng nhập đầy đủ các trường mật khẩu!");
@@ -41,24 +65,15 @@ public class ChangePasswordController {
             return;
         }
 
-        try {
-            // GỌI CHÍNH XÁC HÀM TRONG USERSERVICE CỦA EM
-            userService.handleChangePassword(currentUser, oldPass, newPass, confirmPass);
-
-            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Thay đổi mật khẩu tài khoản thành công!");
-
-            // Xóa sạch chữ trên form sau khi đổi thành công
-            if (txtOldPassword != null) txtOldPassword.clear();
-            if (txtNewPassword != null) txtNewPassword.clear();
-            txtConfirmPassword.clear();
-
-        } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Thất bại", e.getMessage());
-        }
+        String[] payload = new String[]{oldPass, newPass, confirmPass};
+        SocketClient.getInstance().sendRequest(RequestCode.CHANGE_PASSWORD, payload);
     }
 
     @FXML
     void handleBackToProfile(ActionEvent event) {
+        MessageRouter.getInstance().unregister(ResponseCode.PASSWORD_CHANGED);
+        MessageRouter.getInstance().unregister(ResponseCode.PASSWORD_CHANGE_FAILED);
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ProfileView.fxml"));
             Parent root = loader.load();

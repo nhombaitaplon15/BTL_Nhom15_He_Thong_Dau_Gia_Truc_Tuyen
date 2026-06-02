@@ -117,7 +117,7 @@ public class AuctionDetailController {
     private void checkAndToggleWinnerActions(Auction auction, User user) {
         String status = auction.getAuctionStatus();
 
-        if ("PAID".equalsIgnoreCase(status) || "SOLD".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status)) {
+        if ("SOLD".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status)) {
             updateStatusStyle(status);
             if (hboxWinnerActions != null) {
                 hboxWinnerActions.setVisible(false);
@@ -160,7 +160,7 @@ public class AuctionDetailController {
                         hboxWinnerActions.setVisible(false);
                         hboxWinnerActions.setManaged(false);
                     }
-                    autoRejectWinOverdue(); // Nhường việc xử phạt cho Server
+                    autoRejectWinOverdue();
                 }
             } else {
                 if (lblStatus != null) {
@@ -192,7 +192,7 @@ public class AuctionDetailController {
         } else if ("PENDING".equalsIgnoreCase(status) || "WAITING_FOR_ADMIN".equalsIgnoreCase(status)) {
             lblStatus.setText("CHỜ KÍCH HOẠT");
             lblStatus.setStyle("-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
-        } else if ("SOLD".equalsIgnoreCase(status) || "PAID".equalsIgnoreCase(status)) {
+        } else if ("SOLD".equalsIgnoreCase(status)) {
             lblStatus.setText("ĐÃ THANH TOÁN THÀNH CÔNG");
             lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
         } else if ("REJECTED".equalsIgnoreCase(status)) {
@@ -203,6 +203,7 @@ public class AuctionDetailController {
             lblStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-background-radius: 5; -fx-padding: 4 12 4 12; -fx-font-weight: bold;");
         }
     }
+
 
     private void startRealtimeStatusTracker(LocalDateTime endTime, Auction auction, User user) {
         if (liveStatusTimeline != null) { liveStatusTimeline.stop(); }
@@ -246,7 +247,7 @@ public class AuctionDetailController {
 
     private void handlePaymentSuccess(Message msg) {
         Platform.runLater(() -> {
-            if (currentAuction != null) currentAuction.setAuctionStatus("PAID");
+            if (currentAuction != null) currentAuction.setAuctionStatus("SOLD");
             checkAndToggleWinnerActions(currentAuction, currentUser);
             showNotification("Thành công", "Giao dịch giải ngân thành công! Vật phẩm đã chính thức thuộc về bạn.");
         });

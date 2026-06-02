@@ -1,10 +1,18 @@
 package com.auction.client.controller.bidder;
+
+import com.auction.client.core.MessageRouter;
+import com.auction.client.core.SocketClient;
 import com.auction.common.model.User;
+import com.auction.common.network.Message;
+import com.auction.common.network.RequestCode;
+import com.auction.common.network.ResponseCode;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -18,36 +26,67 @@ public class ProfileController {
     @FXML private TextField txtPhone;
 
     @FXML
+    public void initialize() {
+        MessageRouter.getInstance().register(ResponseCode.PROFILE_RESULT, this::handleProfileResult);
+        MessageRouter.getInstance().register(ResponseCode.PROFILE_UPDATED, this::handleProfileUpdated);
+    }
+
+    private void handleProfileResult(Message msg) {
+        Platform.runLater(() -> {
+            User freshUser = (User) msg.getPayload();
+            if (freshUser != null) {
+                this.currentUser = freshUser;
+                if (txtUsername != null) {
+                    txtUsername.setText(freshUser.getUsername());
+                    txtUsername.setEditable(false);
+                }
+                if (txtFullName != null) {
+                    txtFullName.setText(freshUser.getUsername());
+                    txtFullName.setEditable(false);
+                }
+                if (txtEmail != null) {
+                    txtEmail.setText(freshUser.getEmail());
+                    txtEmail.setEditable(true);
+                }
+                if (txtPhone != null) {
+                    txtPhone.setText(freshUser.getPhone());
+                    txtPhone.setEditable(true);
+                }
+            }
+        });
+    }
+
+    private void handleProfileUpdated(Message msg) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Thành công");
+            alert.setHeaderText(null);
+            alert.setContentText("Cập nhật thông tin cá nhân thành công!");
+            alert.showAndWait();
+        });
+    }
+
+    @FXML
     public void setUserData(User user) {
         if (user == null) return;
         this.currentUser = user;
 
-        // Đổ thông tin thật từ DB lên form giao diện
-        if (txtUsername != null) {
-            txtUsername.setText(user.getUsername());
-            txtUsername.setEditable(false); // Khóa không cho sửa
-        }
-        if (txtFullName != null) {
-            txtFullName.setText(user.getUsername());
-            txtFullName.setEditable(false); // Khóa không cho sửa
-        }
-        if (txtEmail != null) {
-            txtEmail.setText(user.getEmail());
-            txtEmail.setEditable(false); // Khóa không cho sửa
-        }
-        if (txtPhone != null) {
-            txtPhone.setText(user.getPhone());
-            txtPhone.setEditable(false); // Khóa không cho sửa
-        }
+        SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
     }
 
     @FXML
     void handleUpdateProfile(ActionEvent event) {
-        System.out.println(">>> Hệ thống cấu hình không cho phép chỉnh sửa thông tin cá nhân.");
+        if (currentUser == null) return;
+
+        if (txtEmail != null) currentUser.setEmail(txtEmail.getText());
+        if (txtPhone != null) currentUser.setPhone(txtPhone.getText());
+
+        SocketClient.getInstance().sendRequest(RequestCode.UPDATE_PROFILE, currentUser);
     }
 
     @FXML
     void handleChangePassword(ActionEvent event) {
+        cleanupHandlers();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/ChangePasswordView.fxml"));
             Parent root = loader.load();
@@ -67,6 +106,7 @@ public class ProfileController {
 
     @FXML
     void handleBackToHome(ActionEvent event) {
+        cleanupHandlers();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));
             Parent root = loader.load();
@@ -82,5 +122,10 @@ public class ProfileController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void cleanupHandlers() {
+        MessageRouter.getInstance().unregister(ResponseCode.PROFILE_RESULT);
+        MessageRouter.getInstance().unregister(ResponseCode.PROFILE_UPDATED);
     }
 }

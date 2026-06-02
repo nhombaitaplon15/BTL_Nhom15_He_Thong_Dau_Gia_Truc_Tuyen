@@ -7,7 +7,7 @@ public class Auction implements Serializable {
     private int auctionId;
     private int itemId;
     private int sellerId;
-    private String auctionStatus; // WAITING_FOR_ADMIN,OPEN, RUNNING, FISHEID/SOLD, REJECTED, ENDED
+    private String auctionStatus; // WAITING_FOR_ADMIN,OPEN, RUNNING, FINISHED, SOLD / REJECTED
     private double startingPrice;
     private double currentPrice;
     private int totalBids;

@@ -226,7 +226,7 @@ public class TransactionService {
             boolean success = paymentDAO.processAcceptPayment(conn, auction.getSellerId(), assignedAdminId, auction.getCurrentPrice());
 
             if (success) {
-                auctionDAO.updateStatus(auctionId, "PAID");
+                auctionDAO.updateStatus(auctionId, "SOLD");
                 conn.commit();
             } else {
                 conn.rollback();

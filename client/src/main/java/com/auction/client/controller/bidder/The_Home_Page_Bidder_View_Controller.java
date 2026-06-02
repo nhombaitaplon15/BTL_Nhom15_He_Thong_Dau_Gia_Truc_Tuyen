@@ -52,6 +52,8 @@ public class The_Home_Page_Bidder_View_Controller {
 
     private final Consumer<Message> onSwitchRoleSuccess = this::handleSwitchRoleSuccess;
     private final Consumer<Message> onSwitchRoleFailed = this::handleSwitchRoleFailed;
+    private final Consumer<Message> onNewBidUpdate = this::handleNewBidUpdate;
+    private final Consumer<Message> onAuctionEnded = this::handleAuctionEnded;
 
     public void setMainContainer(MainContainerController mainContainer) {
         this.mainContainer = mainContainer;
@@ -61,11 +63,53 @@ public class The_Home_Page_Bidder_View_Controller {
     public void initialize() {
         MessageRouter.getInstance().register(ResponseCode.SWITCH_ROLE_SUCCESS, onSwitchRoleSuccess);
         MessageRouter.getInstance().register(ResponseCode.SWITCH_ROLE_FAILED, onSwitchRoleFailed);
+        MessageRouter.getInstance().register(ResponseCode.NEW_BID_UPDATE, onNewBidUpdate);
+        MessageRouter.getInstance().register(ResponseCode.AUCTION_ENDED, onAuctionEnded);
     }
 
     private void cleanupHandlers() {
         MessageRouter.getInstance().unregister(ResponseCode.SWITCH_ROLE_SUCCESS);
         MessageRouter.getInstance().unregister(ResponseCode.SWITCH_ROLE_FAILED);
+        MessageRouter.getInstance().unregister(ResponseCode.NEW_BID_UPDATE);
+        MessageRouter.getInstance().unregister(ResponseCode.AUCTION_ENDED);
+    }
+
+    private void handleNewBidUpdate(Message msg) {
+        Platform.runLater(() -> {
+            try {
+                Object[] payload = (Object[]) msg.getPayload();
+                int auctionId = (int) payload[0];
+                double newPrice = (double) payload[1];
+
+                for (ItemCardController controller : activeCardControllers) {
+                    if (controller.getAuctionId() == auctionId) {
+                        controller.updateLivePrice(newPrice);
+                        updateWalletUI();
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void handleAuctionEnded(Message msg) {
+        Platform.runLater(() -> {
+            try {
+                Object[] payload = (Object[]) msg.getPayload();
+                int auctionId = (int) payload[0];
+
+                for (ItemCardController controller : activeCardControllers) {
+                    if (controller.getAuctionId() == auctionId) {
+                        controller.markAsEnded();
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public void setUserData(User user) {
