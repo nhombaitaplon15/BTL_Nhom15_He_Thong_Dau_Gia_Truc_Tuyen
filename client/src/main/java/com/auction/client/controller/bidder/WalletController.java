@@ -72,7 +72,7 @@ public class WalletController {
 
         if (lblLargeBalance != null) {
             DecimalFormat formatter = new DecimalFormat("#,###");
-            lblLargeBalance.setText(formatter.format(currentUser.getBalance()) + " đ");
+            lblLargeBalance.setText(formatter.format(currentUser.getBalance()) + " UETệ");
             System.out.println(">>> Đã nạp số dư hệ thống: " + currentUser.getBalance());
         }
     }
