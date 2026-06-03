@@ -48,7 +48,7 @@ public class ProductsCardController {
       itemNameLabel.setText(item.getName());
       startPriceLabel.setText("Khởi điểm: " + VN_FMT.format(item.getStartingPrice()) + "UETệ");
 
-      loadImage(item.getImgItem());
+      CardUtils.loadImage(imgProduct, item.getImgItem());
 
       primaryButton.setOnAction(e -> handleChiTietButtonClick());
 
@@ -144,20 +144,6 @@ public class ProductsCardController {
       System.err.println("ProductsCardController.setData() lỗi ở SP: "
           + dto.getItem().getName());
       e.printStackTrace();
-    }
-  }
-
-  private void loadImage(String imagePathFromDB) {
-    if (imgProduct == null) return;
-    if (imagePathFromDB != null && !imagePathFromDB.trim().isEmpty()) {
-      File imageFile = new File(imagePathFromDB);
-      if (imageFile.exists()) {
-        // TỐI ƯU: Truyền true để JavaFX load ảnh bằng luồng nền (Background Thread), giúp hết giật lag khi cuộn danh sách
-        Image image = new Image(imageFile.toURI().toString(), true);
-        imgProduct.setImage(image);
-      } else {
-        System.out.println("Lỗi: Không tìm thấy file ảnh tại đường dẫn: " + imagePathFromDB);
-      }
     }
   }
 
