@@ -138,4 +138,5 @@ public class BiddingHistoryDAO {
         }
         return list;
     }
+
 }

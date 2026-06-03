@@ -3,6 +3,7 @@ package com.auction.server.service;
 import com.auction.common.model.Electronics;
 import com.auction.common.model.Item;
 import com.auction.common.exception.AuctionException;
+import com.auction.server.dao.DBConnection;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.service.ItemService;
 import org.junit.jupiter.api.*;
@@ -11,6 +12,8 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -154,6 +157,29 @@ class ItemServiceTest {
                 when(itemDAO.getItemById(1)).thenReturn(makeItem(1, "Laptop", 15_000_000));
                 when(itemDAO.deleteItem(1)).thenReturn(false);
                 assertThrows(AuctionException.class, () -> itemService.deleteItem(1));
+            }
+        }
+    }
+    @Nested @DisplayName("addItem - Giao dịch và SQL")
+    class AddItemTransactionTests {
+
+        @Test @DisplayName("addItem: Rollback khi insertItem gặp lỗi SQLException")
+        void addItem_rollbackOnException() throws Exception {
+            Item item = makeItem(0, "Laptop", 10_000_000);
+
+            // Mock connection và quản lý tĩnh DBConnection
+            Connection mockConn = mock(Connection.class);
+            try (MockedStatic<DBConnection> dbMock = mockStatic(DBConnection.class)) {
+                dbMock.when(DBConnection::getConnection).thenReturn(mockConn);
+
+                // Giả lập insertItem ném ra ngoại lệ
+                when(itemDAO.insertItem(eq(mockConn), any())).thenThrow(new SQLException("Lỗi DB"));
+
+                assertThrows(AuctionException.class, () -> itemService.addItem(item));
+
+                // Kiểm tra rollback được gọi
+                verify(mockConn).rollback();
+                verify(mockConn, never()).commit();
             }
         }
     }

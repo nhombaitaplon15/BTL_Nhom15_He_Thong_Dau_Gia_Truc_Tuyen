@@ -76,4 +76,16 @@ class ClientSessionTest {
     assertNull(session.getCurrentUser(), "User trong session phải bị xóa thành null");
     assertEquals(-1, session.getUserId(), "ID phải reset về -1");
   }
+  @Test
+  void testGettersWhenUserIsNull_ShouldReturnDefaultValues() {
+    // Đảm bảo session sạch
+    session.setCurrentUser(null);
+
+    // Kiểm tra trực tiếp các getter khi currentUser là null
+    assertDoesNotThrow(() -> {
+      assertEquals(-1, session.getUserId());
+      assertEquals("Unknown", session.getUsername());
+      assertEquals("", session.getRole());
+    }, "Các phương thức getter không được phép ném ra Exception khi currentUser là null");
+  }
 }

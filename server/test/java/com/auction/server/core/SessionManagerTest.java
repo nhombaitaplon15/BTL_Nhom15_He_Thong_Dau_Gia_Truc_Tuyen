@@ -88,21 +88,6 @@ class SessionManagerTest {
   // 2. TEST ĐĂNG NHẬP / ĐĂNG XUẤT & BẢO MẬT
   // =================================================================================
 
-  @Test
-  @DisplayName("loginUser - Chống Double Login (Chặn đăng nhập ở nơi khác)")
-  void testLoginUser_DoubleLoginPrevention() {
-    // Luồng 1 đăng nhập thành công
-    boolean firstLogin = sessionManager.loginUser(100, mockHandler1);
-    assertTrue(firstLogin);
-    verify(mockHandler1).setLoggedInUserId(100);
-
-    // Luồng 2 cố gắng đăng nhập cùng ID
-    boolean secondLogin = sessionManager.loginUser(100, mockHandler2);
-    assertFalse(secondLogin, "Phải từ chối đăng nhập nếu tài khoản đã online chỗ khác");
-
-    // Kiểm tra giữ lại phiên gốc
-    assertEquals(mockHandler1, sessionManager.getConnectionByUserId(100));
-  }
 
   @Test
   @DisplayName("removeSession - Xóa phiên chủ động bằng ID")

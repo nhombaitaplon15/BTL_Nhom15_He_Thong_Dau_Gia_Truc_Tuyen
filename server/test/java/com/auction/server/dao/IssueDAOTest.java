@@ -1,5 +1,6 @@
 package com.auction.server.dao;
 
+import com.auction.common.model.IssueRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,9 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -79,5 +79,34 @@ class IssueDAOTest {
     boolean result = issueDAO.insertIssue(3, 300, "PAYMENT", "Lỗi trừ tiền ví");
 
     assertFalse(result, "Hàm phải bắt lỗi catch và trả về false thay vì làm sập hệ thống");
+  }
+  @Test
+  @DisplayName("hasIssues - Trả về true khi có tồn tại báo cáo")
+  void testHasIssues_Found() throws SQLException {
+    ResultSet mockRs = mock(ResultSet.class);
+    when(mockPreparedStatement.executeQuery()).thenReturn(mockRs);
+    when(mockRs.next()).thenReturn(true); // Tìm thấy ít nhất 1 dòng
+
+    boolean result = issueDAO.hasIssues(100);
+    assertTrue(result);
+    verify(mockPreparedStatement).setInt(1, 100);
+  }
+  @Test
+  @DisplayName("getAllIssues - Mapping dữ liệu từ ResultSet chính xác")
+  void testGetAllIssues_Success() throws SQLException {
+    ResultSet mockRs = mock(ResultSet.class);
+    when(mockPreparedStatement.executeQuery()).thenReturn(mockRs);
+    when(mockRs.next()).thenReturn(true, false); // Có 1 dòng
+
+    when(mockRs.getInt("id")).thenReturn(1);
+    when(mockRs.getInt("user_id")).thenReturn(10);
+    when(mockRs.getInt("auction_id")).thenReturn(100);
+    when(mockRs.getString("issue_type")).thenReturn("SPAM");
+    when(mockRs.getTimestamp("created_at")).thenReturn(Timestamp.valueOf(java.time.LocalDateTime.now()));
+
+    List<IssueRecord> list = issueDAO.getAllIssues();
+
+    assertEquals(1, list.size());
+    assertEquals("SPAM", list.get(0).getIssueType());
   }
 }

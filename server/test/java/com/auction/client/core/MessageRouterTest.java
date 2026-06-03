@@ -120,6 +120,19 @@ class MessageRouterTest {
     // WHEN & THEN: Định tuyến tin nhắn.
     // Bộ định tuyến Router phải có cơ chế try-catch bọc quanh để bảo vệ ứng dụng Client không bị sập (crash)
     assertDoesNotThrow(() -> router.route(mockMessage),
-        "Router phải tự catch exception của handler để tránh làm sập luồng nhận tin nhắn chính");
+            "Router phải tự catch exception của handler để tránh làm sập luồng nhận tin nhắn chính");
+  }
+  @Test
+  void testMultiHandlerRegistration() {
+    Consumer<Message> handler1 = mock(Consumer.class);
+    Consumer<Message> handler2 = mock(Consumer.class);
+    router.register(mockCodeA, handler1);
+    router.register(mockCodeA, handler2);
+    when(mockMessage.getResponseCode()).thenReturn(mockCodeA);
+
+    router.route(mockMessage);
+
+    verify(handler1).accept(mockMessage);
+    verify(handler2).accept(mockMessage);
   }
 }

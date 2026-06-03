@@ -168,4 +168,28 @@ class BidDAOTest {
 
     assertNull(timeStr, "Hàm phải trả về null để caller tự xử lý fallback bằng endTime");
   }
+  @Test
+  @DisplayName("getBidHistory - Trả về list rỗng khi cả bảng chính và fallback đều lỗi")
+  void testGetBidHistory_AllFail() throws SQLException {
+    // Giả lập cả 2 query đều throw exception
+    when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("DB error"));
+
+    List<BidDAO.BidRow> result = bidDAO.getBidHistory(1);
+
+    assertTrue(result.isEmpty());
+  }
+  @Test
+  @DisplayName("getBidHistory - Xử lý Timestamp bằng null")
+  void testGetBidHistory_NullTimestamp() throws SQLException {
+    when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+    when(mockResultSet.next()).thenReturn(true, false);
+
+    // Giả lập Timestamp null
+    when(mockResultSet.getTimestamp("bid_time")).thenReturn(null);
+    when(mockResultSet.getString("bidder_name")).thenReturn("test_user");
+
+    List<BidDAO.BidRow> result = bidDAO.getBidHistory(1);
+
+    assertEquals("—", result.get(0).bidTime()); // Đảm bảo trả về "—"
+  }
 }

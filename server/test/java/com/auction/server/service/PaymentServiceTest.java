@@ -1,6 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.common.exception.AuctionException;
+import com.auction.server.dao.DBConnection;
 import com.auction.server.dao.PaymentDAO;
 import com.auction.server.dao.TransactionDAO;
 import com.auction.server.service.PaymentService;
@@ -10,6 +11,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -153,6 +155,47 @@ class PaymentServiceTest {
         void systemFeeRate_is15Percent() {
             double rate = 0.15;
             assertEquals(0.15, rate, 0.001);
+        }
+    }
+    @Nested @DisplayName("Test nghiệp vụ thành công (Happy Path)")
+    class SuccessFlowTests {
+
+        @Test @DisplayName("holdFunds thành công: gọi đúng các bước DB")
+        void holdFunds_success() throws Exception {
+            // Mock connection
+            Connection mockConn = mock(Connection.class);
+            try (MockedStatic<DBConnection> dbMock = mockStatic(DBConnection.class)) {
+                dbMock.when(DBConnection::getConnection).thenReturn(mockConn);
+
+                when(paymentDAO.getBalance(2)).thenReturn(1_000_000.0);
+                when(paymentDAO.updateBalance(eq(mockConn), eq(2), eq(500_000.0), eq("-"))).thenReturn(true);
+                when(paymentDAO.updateAdminFunds(eq(mockConn), eq(1), eq(500_000.0), eq("+"), eq(0.0))).thenReturn(true);
+
+                assertDoesNotThrow(() -> paymentService.holdFunds(2, 500_000, 1));
+
+                verify(mockConn).commit(); // Quan trọng: xác nhận giao dịch đã được commit
+                verify(transDAO).createTransaction(eq(mockConn), eq(2), eq(500_000.0), anyString(), eq("SUCCESS"));
+            }
+        }
+    }
+    @Nested @DisplayName("Test cơ chế Rollback")
+    class RollbackTests {
+
+        @Test @DisplayName("releaseFunds thất bại ở bước cộng tiền Seller -> Rollback")
+        void releaseFunds_rollbackOnFailure() throws Exception {
+            Connection mockConn = mock(Connection.class);
+            try (MockedStatic<DBConnection> dbMock = mockStatic(DBConnection.class)) {
+                dbMock.when(DBConnection::getConnection).thenReturn(mockConn);
+
+                // Bước 1 Admin thành công, nhưng Bước 2 Seller thất bại
+                when(paymentDAO.updateAdminFunds(any(), anyInt(), anyDouble(), anyString(), anyDouble())).thenReturn(true);
+                when(paymentDAO.updateBalance(any(), anyInt(), anyDouble(), eq("+"))).thenReturn(false);
+
+                assertThrows(AuctionException.class, () -> paymentService.releaseFunds(2, 1000, 1));
+
+                verify(mockConn).rollback(); // Đảm bảo đã rollback
+                verify(mockConn, never()).commit();
+            }
         }
     }
 }

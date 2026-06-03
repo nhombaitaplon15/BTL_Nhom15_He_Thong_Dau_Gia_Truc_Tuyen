@@ -161,4 +161,15 @@ class BiddingHistoryDAOTest {
     assertNotNull(result, "Dù lỗi xảy ra, hàm không được crash mà phải trả về một danh sách để tránh sập UI");
     assertTrue(result.isEmpty(), "Danh sách trả về phải trống khi gặp lỗi ngoại lệ");
   }
+  @Test
+  @DisplayName("getHistoryByAuction - Map chính xác số tiền cực lớn")
+  void testGetHistoryByAuction_LargeAmount() throws SQLException {
+    when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+    when(mockResultSet.next()).thenReturn(true, false);
+    when(mockResultSet.getDouble("bid_amount")).thenReturn(999999999.99);
+
+    List<BidHistoryRow> result = biddingHistoryDAO.getHistoryByAuction(45);
+
+    assertEquals(999999999.99, result.get(0).getBidAmount());
+  }
 }
