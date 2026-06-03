@@ -431,9 +431,9 @@ public class The_Transaction_Page_Admin_View_Controller implements Initializable
     private void setStatus(String msg) { Platform.runLater(() -> { if (lblStatusBar != null) lblStatusBar.setText(msg); }); }
 
     private String formatMoney(double amount) {
-        if (amount >= 1_000_000_000) return String.format("%.2f tỷ đ",  amount / 1_000_000_000.0);
-        if (amount >= 1_000_000)     return String.format("%.0f tr đ",   amount / 1_000_000.0);
-        return String.format("%,.0f đ", amount);
+        if (amount >= 1_000_000_000) return String.format("%.2f tỷ uetệ",  amount / 1_000_000_000.0);
+        if (amount >= 1_000_000)     return String.format("%.0f tr uetệ",   amount / 1_000_000.0);
+        return String.format("%,.0f uetệ", amount);
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
