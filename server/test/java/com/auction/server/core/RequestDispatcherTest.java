@@ -223,4 +223,65 @@ class RequestDispatcherTest {
     verify(mockClientHandler).sendMessage(responseCaptor.capture());
     assertEquals(ResponseCode.ERROR_MESSAGE, responseCaptor.getValue().getResponseCode());
   }
+  @Test
+  @DisplayName("ADMIN_APPROVE_AUCTION - Thành công và thông báo cho Seller")
+  void testDispatch_AdminApproveAuction_Success() {
+    Auction mockAuction = mock(Auction.class);
+    when(mockAuction.getSellerId()).thenReturn(20);
+
+    when(mockMessage.getRequestCode()).thenReturn(RequestCode.ADMIN_APPROVE_AUCTION);
+    when(mockMessage.getPayload()).thenReturn(1);
+    when(mockAdminService.approveAuction(1)).thenReturn(true);
+    when(mockManagerService.getAuctionOrThrow(1)).thenReturn(mockAuction);
+
+    dispatcher.dispatch(mockClientHandler, mockMessage);
+
+    verify(mockAuctionRoomManagerInstance).openRoom(mockAuction);
+    // Kiểm tra đã gửi message thông báo cho seller
+    verify(mockSessionManagerInstance).sendToUserIfOnline(eq(20), any(Message.class));
+  }
+
+  @Test
+  @DisplayName("ADMIN_BLOCK_AUCTION - Test logic xóa sau 5 phút (Simulate thread)")
+  void testDispatch_AdminBlockAuction_Success() {
+    when(mockMessage.getRequestCode()).thenReturn(RequestCode.ADMIN_BLOCK_AUCTION);
+    when(mockMessage.getPayload()).thenReturn(10);
+    when(mockAdminService.blockAuction(10, "")).thenReturn(true);
+
+    dispatcher.dispatch(mockClientHandler, mockMessage);
+
+    verify(mockAuctionRoomManagerInstance).closeRoom(10);
+    verify(mockClientHandler).sendMessage(any(Message.class));
+  }
+
+  @Test
+  @DisplayName("HANDLE_ADMIN_BAN_USER - Xử lý ngoại lệ khi DAO lỗi")
+  void testDispatch_AdminBanUser_Exception() {
+    when(mockMessage.getRequestCode()).thenReturn(RequestCode.ADMIN_BAN_USER);
+    when(mockMessage.getPayload()).thenReturn(5);
+    // Giả lập Service ném lỗi
+    doThrow(new RuntimeException("DB Error")).when(mockUserService).banUser(5);
+
+    dispatcher.dispatch(mockClientHandler, mockMessage);
+
+    // Kiểm tra phản hồi lỗi về client
+    ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+    verify(mockClientHandler).sendMessage(captor.capture());
+    assertEquals(ResponseCode.ERROR_MESSAGE, captor.getValue().getResponseCode());
+  }
+
+  @Test
+  @DisplayName("ADMIN_CREATE_TRANSACTION - Xử lý payload không hợp lệ")
+  void testDispatch_AdminCreateTransaction_MalformedPayload() {
+    when(mockMessage.getRequestCode()).thenReturn(RequestCode.ADMIN_CREATE_TRANSACTION);
+    // Gửi sai định dạng (thiếu payload hoặc sai kiểu)
+    when(mockMessage.getPayload()).thenReturn("wrong_type");
+
+    dispatcher.dispatch(mockClientHandler, mockMessage);
+
+    // Đảm bảo không bị crash và báo lỗi
+    ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+    verify(mockClientHandler).sendMessage(captor.capture());
+    assertEquals(ResponseCode.ADMIN_TRANSACTION_FAILED, captor.getValue().getResponseCode());
+  }
 }

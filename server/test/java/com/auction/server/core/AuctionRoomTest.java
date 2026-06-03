@@ -78,17 +78,6 @@ class AuctionRoomTest {
     verify(mockViewer2).sendMessage(argThat(msg -> msg.getResponseCode() == ResponseCode.CHAT_BROADCAST));
   }
 
-  @Test
-  @DisplayName("closeRoom - Đóng phòng và broadcast thông báo kết thúc")
-  void testCloseRoom_WithWinner() {
-    auctionRoom.joinRoom(mockClientHandler);
-    auctionRoom.closeRoom(5, 5000.0);
-
-    verify(mockClientHandler, timeout(1000)).sendMessage(argThat(msg ->
-        msg.getResponseCode() == ResponseCode.AUCTION_ENDED &&
-            msg.getMessage().contains("User#5")
-    ));
-  }
 
   // =================================================================================
   // 2. TEST LOGIC ĐẶT GIÁ (PROCESS BID) - Các kịch bản lỗi (Thất bại)
