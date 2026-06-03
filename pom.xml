@@ -60,6 +60,15 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>client/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>server/src/main/resources</directory>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
