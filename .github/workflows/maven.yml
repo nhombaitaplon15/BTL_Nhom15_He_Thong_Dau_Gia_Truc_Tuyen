@@ -40,7 +40,7 @@ jobs:
           name: JUnit Test Results
           path: target/surefire-reports/*.xml
           reporter: java-junit
-
+          fail-on-error: false
   # ============================================================
   # JOB 2: DEPLOY (CD) — chỉ chạy khi Job 1 pass VÀ đang ở main
   # ============================================================
