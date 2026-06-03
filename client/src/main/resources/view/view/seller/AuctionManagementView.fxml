@@ -136,7 +136,7 @@
 
                     <VBox spacing="2">
                         <Label styleClass="title-text" text="Phiên đã kết thúc" />
-                        <Label styleClass="subtitle-text" text="Lịch sử phiên — FINISHED · PAID · CANCELED" />
+                        <Label styleClass="subtitle-text" text="Lịch sử phiên — FINISHED · SOLD · REJECTED" />
                     </VBox>
 
                     <HBox alignment="CENTER_LEFT" spacing="8">

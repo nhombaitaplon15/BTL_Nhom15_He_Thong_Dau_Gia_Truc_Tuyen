@@ -22,25 +22,23 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class LoginController {
     @FXML private TextField txtUsername;
     @FXML private PasswordField txtPassword;
 
-    // Các hàm lắng nghe phản hồi từ Server thông qua Socket
     private final Consumer<Message> onLoginSuccess = this::handleLoginSuccess;
     private final Consumer<Message> onLoginFailed = this::handleLoginFailed;
 
     @FXML
     public void initialize() {
-        // Đăng ký nhận tín hiệu phản hồi đăng nhập khi khởi tạo màn hình
         MessageRouter.getInstance().register(ResponseCode.LOGIN_SUCCESS, onLoginSuccess);
         MessageRouter.getInstance().register(ResponseCode.LOGIN_FAILED, onLoginFailed);
     }
 
     private void cleanupHandlers() {
-        // Dọn dẹp bộ nhớ: Hủy đăng ký khi rời khỏi màn hình Đăng Nhập
         MessageRouter.getInstance().unregister(ResponseCode.LOGIN_SUCCESS);
         MessageRouter.getInstance().unregister(ResponseCode.LOGIN_FAILED);
     }
@@ -75,28 +73,35 @@ public class LoginController {
 
         System.out.println("🔄 Đang gửi yêu cầu đăng nhập qua Socket cho User: " + username);
         System.out.println(">>> [DEBUG CLIENT] Chuẩn bị gửi lên Server | Tài khoản: [" + username + "] - Mật khẩu: [" + password + "]");
-        // Gói dữ liệu và gửi thẳng qua Socket (Nhờ Server kiểm tra thay vì tự kiểm tra)
-        LoginDTO loginData = new LoginDTO(username, password);
-        SocketClient.getInstance().sendRequest(RequestCode.LOGIN, loginData);
 
-        // (Không thực hiện chuyển trang ở đây, mà chờ tín hiệu từ Server ở hàm handleLoginSuccess bên dưới)
+        LoginDTO loginData = new LoginDTO(username, password);
+
+        CompletableFuture.runAsync(() -> {
+            // --- ĐOẠN CODE THÊM MỚI ---
+            // Kiểm tra nếu Socket đang mất kết nối (do vừa đăng xuất xong) thì gọi kết nối lại
+            if (!SocketClient.getInstance().isConnected()) {
+                System.out.println("[CLIENT] Đang khôi phục lại kết nối Socket...");
+                SocketClient.getInstance().connect();
+
+                // Đợi một chút để Socket thực sự sẵn sàng trước khi gửi request
+                try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+            }
+            // -------------------------
+
+            SocketClient.getInstance().sendRequest(RequestCode.LOGIN, loginData);
+        });
     }
 
-    // Server phản hồi Đăng Nhập Thành Công
     private void handleLoginSuccess(Message msg) {
         Platform.runLater(() -> {
             User user = (User) msg.getPayload();
             System.out.println("🎉 Đăng nhập thành công! Quyền: " + user.getRole());
 
-            // Lưu thông tin người dùng vào Session
             ClientSession.getInstance().setCurrentUser(user);
-
-            // Tiến hành chuyển trang
             chuyenTrangChu(user.getRole(), user);
         });
     }
 
-    // Server phản hồi Đăng Nhập Thất Bại (Sai mật khẩu, bị khoá...)
     private void handleLoginFailed(Message msg) {
         Platform.runLater(() -> {
             String errorMsg = msg.getMessage() != null ? msg.getMessage() : "Tài khoản hoặc mật khẩu không chính xác!";
@@ -139,7 +144,6 @@ public class LoginController {
                 homeController.setUserData(user);
             }
 
-            // Lấy giao diện hiển thị hiện tại qua trường txtUsername
             Stage stage = (Stage) txtUsername.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
 

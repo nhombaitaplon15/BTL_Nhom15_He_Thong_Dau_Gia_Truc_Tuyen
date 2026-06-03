@@ -12,6 +12,7 @@ import com.auction.server.dao.BidDAO.BidRow;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -20,25 +21,13 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-
-/**
- * AuctionDetailController — Refactored với Networking.
- *
- * THAY ĐỔI:
- *  - Xóa AuctionDAO, BidDAO, UserDAO (không gọi DB trực tiếp từ client)
- *  - loadBidHistory() → gửi FETCH_BID_HISTORY qua SocketClient
- *  - onCancelAuction() → gửi SELLER_CANCEL_AUCTION thay vì auctionDAO.updateStatus()
- *  - Lắng nghe NEW_BID_UPDATE realtime: cập nhật giá + lịch sử bid khi đang mở view
- *  - Lắng nghe AUCTION_ENDED: đổi UI sang kết quả cuối
- *  - Lắng nghe AUCTION_TIME_EXTENDED: reset countdown
- *  - Lắng nghe SELLER_CANCEL_SUCCESS / FAILED để phản hồi huỷ phiên
- *  - cleanupHandlers() + stopTimer() được gọi khi đóng dialog
- */
 public class AuctionDetailController {
 
   // ── HEADER ──
@@ -108,7 +97,7 @@ public class AuctionDetailController {
   private Timeline       countdownTimer;
 
   private static final DateTimeFormatter DT_FMT    = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-  private static final DateTimeFormatter SHORT_FMT  = DateTimeFormatter.ofPattern("dd/MM · HH:mm");
+  private static final DateTimeFormatter SHORT_FMT = DateTimeFormatter.ofPattern("dd/MM · HH:mm");
 
   // ── Handler references ──
   private Consumer<Message> onNewBid;
@@ -145,100 +134,112 @@ public class AuctionDetailController {
       case "OPEN"              -> setupOpenView();
       case "RUNNING"           -> setupRunningView();
       case "FINISHED"          -> setupFinishedView(false);
-      case "PAID"              -> setupFinishedView(true);
-      case "CANCELED"          -> setupCanceledView();
+      case "PAID", "SOLD"      -> setupFinishedView(true);
+      case "CANCELED", "REJECTED" -> setupCanceledView();
       default                  -> setupPendingView();
     }
   }
 
   // ════════════════════════════════════════
-  // ĐĂNG KÝ / HUỶ HANDLER
+  // ĐĂNG KÝ / HUỶ HANDLER (Sử dụng Platform.runLater để cập nhật UI)
   // ════════════════════════════════════════
 
   private void registerNetworkHandlers() {
     int auctionId = currentAuction.getAuctionId();
 
     onNewBid = msg -> {
-      try {
-        Object[] data    = (Object[]) msg.getPayload();
-        int id           = Integer.parseInt(data[0].toString());
-        if (id != auctionId) return;
-        double newPrice  = Double.parseDouble(data[1].toString());
-        String winner    = String.valueOf(data[2]);
+      Platform.runLater(() -> {
+        try {
+          Object[] data    = (Object[]) msg.getPayload();
+          int id           = Integer.parseInt(data[0].toString());
+          if (id != auctionId) return;
+          double newPrice  = Double.parseDouble(data[1].toString());
+          String winner    = String.valueOf(data[2]);
 
-        // Cập nhật giá hiện tại
-        currentAuction.setCurrentPrice(newPrice);
-        currentAuction.setTotalBids(currentAuction.getTotalBids() + 1);
+          // Cập nhật giá hiện tại
+          currentAuction.setCurrentPrice(newPrice);
+          currentAuction.setTotalBids(currentAuction.getTotalBids() + 1);
 
-        lblCurrentPrice.setText(CardUtils.formatMoney(newPrice) + "đ");
-        lblBidCount    .setText(currentAuction.getTotalBids() + " lượt bid");
-        lblTotalBids   .setText(String.valueOf(currentAuction.getTotalBids()));
+          lblCurrentPrice.setText(CardUtils.formatMoney(newPrice) + "UETệ");
+          lblBidCount    .setText(currentAuction.getTotalBids() + " lượt bid");
+          lblTotalBids   .setText(String.valueOf(currentAuction.getTotalBids()));
 
-        showWarning("success", "🔔 " + winner + " vừa bid "
-            + CardUtils.formatMoney(newPrice) + "đ — Tổng "
-            + currentAuction.getTotalBids() + " lượt bid");
+          showWarning("success", "🔔 " + winner + " vừa bid "
+              + CardUtils.formatMoney(newPrice) + "UETệ — Tổng "
+              + currentAuction.getTotalBids() + " lượt bid");
 
-        // Reload lịch sử bid
-        loadBidHistory();
+          // Reload lịch sử bid
+          loadBidHistory();
 
-      } catch (Exception e) {
-        System.err.println("[DETAIL] Lỗi NEW_BID_UPDATE: " + e.getMessage());
-      }
+        } catch (Exception e) {
+          System.err.println("[DETAIL] Lỗi NEW_BID_UPDATE: " + e.getMessage());
+        }
+      });
     };
 
     onAuctionEnded = msg -> {
-      try {
-        Object[] data = (Object[]) msg.getPayload();
-        int id = Integer.parseInt(data[0].toString());
-        if (id != auctionId) return;
-        stopTimer();
-        currentAuction.setAuctionStatus("FINISHED");
-        applyStatusPill("FINISHED");
-        showWarning("warning", "⏳ Phiên đã kết thúc. Đang chờ thanh toán.");
-        // Reload để có winner info
-        setupFinishedView(false);
-      } catch (Exception e) {
-        System.err.println("[DETAIL] Lỗi AUCTION_ENDED: " + e.getMessage());
-      }
+      Platform.runLater(() -> {
+        try {
+          Object[] data = (Object[]) msg.getPayload();
+          int id = Integer.parseInt(data[0].toString());
+          if (id != auctionId) return;
+          stopTimer();
+          currentAuction.setAuctionStatus("FINISHED");
+          applyStatusPill("FINISHED");
+          showWarning("warning", "⏳ Phiên đã kết thúc. Đang chờ thanh toán.");
+          // Reload để có winner info
+          setupFinishedView(false);
+        } catch (Exception e) {
+          System.err.println("[DETAIL] Lỗi AUCTION_ENDED: " + e.getMessage());
+        }
+      });
     };
 
     onTimeExtended = msg -> {
-      try {
-        Object[] data = (Object[]) msg.getPayload();
-        int id = Integer.parseInt(data[0].toString());
-        if (id != auctionId) return;
-        if (data[1] instanceof LocalDateTime newEnd) {
-          currentAuction.setEndTime(newEnd);
-          lblEndTimeShort.setText(newEnd.format(SHORT_FMT));
-          long totalSecs = ChronoUnit.SECONDS.between(
-              currentAuction.getStartTime(), newEnd);
-          startCountdown(newEnd, totalSecs);
-          showWarning("info", "⏱ Phiên được gia hạn! Kết thúc lúc "
-              + newEnd.format(DT_FMT));
+      Platform.runLater(() -> {
+        try {
+          Object[] data = (Object[]) msg.getPayload();
+          int id = Integer.parseInt(data[0].toString());
+          if (id != auctionId) return;
+          if (data[1] instanceof LocalDateTime newEnd) {
+            currentAuction.setEndTime(newEnd);
+            lblEndTimeShort.setText(newEnd.format(SHORT_FMT));
+            long totalSecs = ChronoUnit.SECONDS.between(
+                currentAuction.getStartTime(), newEnd);
+            startCountdown(newEnd, totalSecs);
+            showWarning("info", "⏱ Phiên được gia hạn! Kết thúc lúc "
+                + newEnd.format(DT_FMT));
+          }
+        } catch (Exception e) {
+          System.err.println("[DETAIL] Lỗi TIME_EXTENDED: " + e.getMessage());
         }
-      } catch (Exception e) {
-        System.err.println("[DETAIL] Lỗi TIME_EXTENDED: " + e.getMessage());
-      }
+      });
     };
 
     onBidHistory = msg -> {
-      if (!(msg.getPayload() instanceof java.util.List<?> list)) return;
-      @SuppressWarnings("unchecked")
-      var rows = (java.util.List<BidRow>) list;
-      listBidHistory.getItems().setAll(rows);
-      if (lblBidders != null) lblBidders.setText(rows.size() + " người");
+      Platform.runLater(() -> {
+        if (!(msg.getPayload() instanceof java.util.List<?> list)) return;
+        @SuppressWarnings("unchecked")
+        var rows = (java.util.List<BidRow>) list;
+        listBidHistory.getItems().setAll(rows);
+        if (lblBidders != null) lblBidders.setText(rows.size() + " người");
+      });
     };
 
     onCancelSuccess = msg -> {
-      AlertUtils.success("Đã huỷ phiên thành công!");
-      cleanupHandlers();
-      onBack();
+      Platform.runLater(() -> {
+        AlertUtils.success("Đã huỷ phiên thành công!");
+        cleanupHandlers();
+        onBack();
+      });
     };
 
     onCancelFailed = msg -> {
-      String reason = msg.getMessage() != null ? msg.getMessage() : "Vui lòng thử lại.";
-      AlertUtils.error("Huỷ thất bại: " + reason);
-      if (btnCancelAuction != null) btnCancelAuction.setDisable(false);
+      Platform.runLater(() -> {
+        String reason = msg.getMessage() != null ? msg.getMessage() : "Vui lòng thử lại.";
+        AlertUtils.error("Huỷ thất bại: " + reason);
+        if (btnCancelAuction != null) btnCancelAuction.setDisable(false);
+      });
     };
 
     MessageRouter r = MessageRouter.getInstance();
@@ -280,7 +281,7 @@ public class AuctionDetailController {
         ? currentItem.getDescription() : "");
     lblStartingPrice.setText("Khởi điểm: "
         + CardUtils.formatMoney(currentAuction.getStartingPrice()) + "đ");
-    lblCurrentPrice .setText(CardUtils.formatMoney(currentAuction.getCurrentPrice()) + "đ");
+    lblCurrentPrice .setText(CardUtils.formatMoney(currentAuction.getCurrentPrice()) + "UETệ");
     lblBidCount     .setText(currentAuction.getTotalBids() + " lượt bid");
     String priceColor = "PAID".equals(currentAuction.getAuctionStatus()) ? "#43A047" : "#D7A859";
     lblCurrentPrice.setStyle("-fx-font-size:18;-fx-font-weight:bold;-fx-text-fill:" + priceColor + ";");
@@ -376,14 +377,14 @@ public class AuctionDetailController {
   }
 
   // ════════════════════════════════════════
-  // LOAD DỮ LIỆU QUA NETWORK (thay vì DAO)
+  // LOAD DỮ LIỆU QUA NETWORK (Đẩy vào luồng nền)
   // ════════════════════════════════════════
 
   private void loadBidHistory() {
-    // Server nhận FETCH_BID_HISTORY (payload: Integer auctionId)
-    // trả về BID_HISTORY_RESULT (payload: List<BidRow>)
-    SocketClient.getInstance().sendRequest(
-        RequestCode.FETCH_BID_HISTORY, currentAuction.getAuctionId());
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(
+          RequestCode.FETCH_BID_HISTORY, currentAuction.getAuctionId());
+    });
   }
 
   private void loadWinnerInfo() {
@@ -400,8 +401,6 @@ public class AuctionDetailController {
     if (lblWinnerTime  != null) lblWinnerTime.setText(
         currentAuction.getEndTime() != null
             ? "Kết thúc lúc " + currentAuction.getEndTime().format(DT_FMT) : "—");
-    // Nếu muốn tên username: server cần trả về trong SELLER_AUCTIONS_RESULT hoặc
-    // thêm 1 request riêng GET_PROFILE với userId
   }
 
   // ════════════════════════════════════════
@@ -459,12 +458,13 @@ public class AuctionDetailController {
         "Sản phẩm: " + currentItem.getName());
     if (!confirmed) return;
 
-    // Disable nút tránh double-click trong lúc chờ server
     if (btnCancelAuction != null) btnCancelAuction.setDisable(true);
 
-    // Gửi yêu cầu huỷ qua network — SELLER_CANCEL_SUCCESS/FAILED sẽ xử lý tiếp
-    SocketClient.getInstance().sendRequest(
-        RequestCode.SELLER_CANCEL_AUCTION, currentAuction.getAuctionId());
+    // Gửi yêu cầu huỷ qua network (Luồng nền)
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(
+          RequestCode.SELLER_CANCEL_AUCTION, currentAuction.getAuctionId());
+    });
   }
 
   @FXML private void onViewDetail() {
@@ -473,20 +473,13 @@ public class AuctionDetailController {
   }
 
   @FXML private void onFollow() {
-    // JOIN_ROOM để nhận realtime bid (nếu chưa join)
-    SocketClient.getInstance().sendRequest(
-        RequestCode.JOIN_ROOM, currentAuction.getAuctionId());
+    // Luồng nền
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(
+          RequestCode.JOIN_ROOM, currentAuction.getAuctionId());
+    });
     AlertUtils.info("Đã bắt đầu theo dõi phiên #" + currentAuction.getAuctionId());
   }
-
-  @FXML private void onViewChart()    { AlertUtils.info("Biểu đồ giá đang phát triển."); }
-  @FXML private void onExportReport() { AlertUtils.info("Xuất báo cáo đang phát triển."); }
-  @FXML private void onRemindPayment() { AlertUtils.success("Đã gửi nhắc thanh toán tới người thắng!"); }
-  @FXML private void onContactWinner() {
-    if (currentAuction.getCurrentWinnerId() == null) return;
-    AlertUtils.info("Mở kênh liên hệ với người thắng #" + currentAuction.getCurrentWinnerId());
-  }
-
 
 
   // ════════════════════════════════════════
@@ -500,8 +493,8 @@ public class AuctionDetailController {
       case "OPEN"              -> { text = "OPEN";       bg = "#E3F2FD"; fg = "#1565C0"; }
       case "RUNNING"           -> { text = "🟢 RUNNING"; bg = "#E8F5E9"; fg = "#1B5E20"; }
       case "FINISHED"          -> { text = "FINISHED";   bg = "#FFF3E0"; fg = "#E65100"; }
-      case "PAID"              -> { text = "✓ PAID";     bg = "#E8F5E9"; fg = "#2E7D32"; }
-      case "CANCELED"          -> { text = "CANCELED";   bg = "#FFEBEE"; fg = "#B71C1C"; }
+      case "SOLD"              -> { text = "✓ SOLD";     bg = "#E8F5E9"; fg = "#2E7D32"; }
+      case "REJECTED"          -> { text = "REJECTED";   bg = "#FFEBEE"; fg = "#B71C1C"; }
       default                  -> { text = status;       bg = "#F5F0E8"; fg = "#6B5E4A"; }
     }
     lblStatusPill.setText(text);

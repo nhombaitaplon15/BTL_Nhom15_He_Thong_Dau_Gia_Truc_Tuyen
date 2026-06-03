@@ -36,8 +36,23 @@ public class ItemFactory {
             case "ELECTRONICS" -> new Electronics(id, name, desc, price, cond, sellerId, img, created,
                     rs.getString("brand"), rs.getString("model"), rs.getInt("warranty_months"));
 
-            case "ART" -> new Art(id, name, desc, price, cond, sellerId, img, created,
-                    rs.getString("artist"), rs.getInt("year_created"), rs.getString("medium"), rs.getBoolean("has_certificate"));
+            case "ART" -> {
+                // 1. Lấy dữ liệu lên dưới dạng chuỗi
+                String certStr = rs.getString("has_certificate");
+
+                // 2. Chuyển đổi an toàn: gán true nếu là "true", "t", hoặc "1"
+                boolean hasCert = false;
+                if (certStr != null) {
+                    certStr = certStr.trim().toLowerCase();
+                    if (certStr.equals("true") || certStr.equals("t") || certStr.equals("1")) {
+                        hasCert = true;
+                    }
+                }
+
+                // 3. Dùng yield để trả về đối tượng Art
+                yield new Art(id, name, desc, price, cond, sellerId, img, created,
+                    rs.getString("artist"), rs.getInt("year_created"), rs.getString("medium"), hasCert);
+            }
 
             default -> throw new IllegalArgumentException("Loại hàng lạ: " + type);
         };

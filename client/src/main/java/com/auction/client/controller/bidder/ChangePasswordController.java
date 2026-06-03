@@ -16,6 +16,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 
+import java.util.concurrent.CompletableFuture;
+
 public class ChangePasswordController {
 
     private User currentUser;
@@ -66,7 +68,9 @@ public class ChangePasswordController {
         }
 
         String[] payload = new String[]{oldPass, newPass, confirmPass};
-        SocketClient.getInstance().sendRequest(RequestCode.CHANGE_PASSWORD, payload);
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.CHANGE_PASSWORD, payload);
+        });
     }
 
     @FXML

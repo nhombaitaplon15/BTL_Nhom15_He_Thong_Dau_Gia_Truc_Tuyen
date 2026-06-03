@@ -1,5 +1,6 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.controller.seller.CardUtils;
 import com.auction.common.model.Item;
 import com.auction.common.model.User;
 import com.auction.common.model.Auction;
@@ -21,8 +22,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.concurrent.CompletableFuture;
 
 public class ItemCardController {
     @FXML private ImageView imgItem;
@@ -59,15 +62,8 @@ public class ItemCardController {
             currentPrice.setText(String.format("Giá hiện tại: %,.0f UETệ", currentPriceVal));
         }
 
-        try {
-            if (item.getImgItem() != null && !item.getImgItem().trim().isEmpty()) {
-                String imagePath = item.getImgItem().trim();
-                if (!imagePath.startsWith("/")) imagePath = "/" + imagePath;
-                InputStream is = getClass().getResourceAsStream(imagePath);
-                if (is != null) imgItem.setImage(new Image(is));
-            }
-        } catch (Exception e) {
-            System.out.println("Lỗi tải ảnh: " + item.getName());
+        if (imgItem != null && item != null) {
+            CardUtils.loadImage(imgItem, item.getImgItem());
         }
 
         if (endTime != null && LocalDateTime.now().isAfter(endTime)) {
@@ -100,35 +96,36 @@ public class ItemCardController {
                 timeRemaining.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
                 countdownTimeline.stop();
 
-                Platform.runLater(() -> {
+                CompletableFuture.runAsync(() -> {
                     try {
                         auctionDAO.closeAuctionAndDetermineWinner(currentAuctionId);
                         Auction completedAuction = auctionDAO.getAuctionById(currentAuctionId);
 
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("KẾT THÚC PHIÊN ĐẤU GIÁ");
-                        alert.setHeaderText("Phiên đấu giá cho [" + currentItem.getName() + "] đã khép lại!");
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("KẾT THÚC PHIÊN ĐẤU GIÁ");
+                            alert.setHeaderText("Phiên đấu giá cho [" + currentItem.getName() + "] đã khép lại!");
 
-                        if (completedAuction != null && completedAuction.getCurrentWinnerId() != null) {
-                            int winnerId = completedAuction.getCurrentWinnerId();
-                            double finalPrice = completedAuction.getCurrentPrice();
+                            if (completedAuction != null && completedAuction.getCurrentWinnerId() != null) {
+                                int winnerId = completedAuction.getCurrentWinnerId();
+                                double finalPrice = completedAuction.getCurrentPrice();
 
-                            if (currentUser != null && winnerId == currentUser.getId()) {
-                                alert.setAlertType(Alert.AlertType.INFORMATION);
-                                alert.setContentText("CHÚC MỪNG BẠN! Bạn đã thắng phiên đấu giá với mức giá "
-                                    + String.format("%,.0f UETệ", finalPrice) + ".\nVật phẩm đã thuộc sở hữu của bạn!");
+                                if (currentUser != null && winnerId == currentUser.getId()) {
+                                    alert.setAlertType(Alert.AlertType.INFORMATION);
+                                    alert.setContentText("CHÚC MỪNG BẠN! Bạn đã thắng phiên đấu giá với mức giá "
+                                        + String.format("%,.0f UETệ", finalPrice) + ".\nVật phẩm đã thuộc sở hữu của bạn!");
+                                } else {
+                                    alert.setAlertType(Alert.AlertType.WARNING);
+                                    alert.setContentText("Chúc bạn may mắn lần sau!\nVật phẩm đã được bán thành công cho thành viên #"
+                                        + winnerId + " với mức giá " + String.format("%,.0f UETệ", finalPrice) + ".");
+                                }
                             } else {
-                                alert.setAlertType(Alert.AlertType.WARNING);
-                                alert.setContentText("Chúc bạn may mắn lần sau!\nVật phẩm đã được bán thành công cho thành viên #"
-                                    + winnerId + " với mức giá " + String.format("%,.0f UETệ", finalPrice) + ".");
+                                alert.setAlertType(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Phiên đấu giá kết thúc mà không có thành viên nào tham gia trả giá.");
                             }
-                        } else {
-                            alert.setAlertType(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Phiên đấu giá kết thúc mà không có thành viên nào tham gia trả giá.");
-                        }
-                        alert.showAndWait();
-                        removeCardFromUI();
-
+                            alert.show();
+                            removeCardFromUI();
+                        });
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -197,6 +194,7 @@ public class ItemCardController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/AuctionRoomView.fxml"));
             Parent root = loader.load();
 
+            // Nếu dự án của bạn khác package, IDE có thể báo đỏ dòng dưới, hãy import cho đúng nhé
             AuctionRoomController roomController = loader.getController();
             if (roomController != null) {
                 roomController.loadAuctionDetail(currentAuctionId, currentItem.getName(), currentUser);
@@ -208,6 +206,25 @@ public class ItemCardController {
             stage.setTitle("Sàn Đấu Giá Trực Chiến Live - Phiên #" + currentAuctionId);
             stage.setResizable(true);
             stage.setMaximized(true);
+
+            // --- ĐOẠN MÃ ĐƯỢC THÊM MỚI ---
+            // Lắng nghe sự kiện khi người dùng tắt cửa sổ phòng đấu giá
+            // Lắng nghe sự kiện stage đóng để cập nhật giá (bản vá Turn 1)
+            stage.setOnHidden(windowEvent -> {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Auction updatedAuction = new com.auction.server.dao.AuctionDAO().getAuctionById(currentAuctionId);
+                        if (updatedAuction != null) {
+                            Platform.runLater(() -> {
+                                updateLivePrice(updatedAuction.getCurrentPrice());
+                            });
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            });
+
             stage.show();
 
         } catch (Exception e) {

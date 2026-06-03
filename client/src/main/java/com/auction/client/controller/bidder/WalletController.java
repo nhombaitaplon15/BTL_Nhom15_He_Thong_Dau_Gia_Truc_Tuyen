@@ -19,6 +19,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import java.text.DecimalFormat;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class WalletController {
@@ -36,7 +37,6 @@ public class WalletController {
     private final String BLUE_STYLE = "-fx-background-color: #2563EB; -fx-text-fill: WHITE; -fx-background-radius: 8 0 0 8; -fx-cursor: hand; -fx-font-weight: bold;";
     private final String GRAY_STYLE = "-fx-background-color: #F1F5F9; -fx-text-fill: #64748B; -fx-background-radius: 0 8 8 0; -fx-cursor: hand; -fx-font-weight: bold;";
 
-    // Các biến lắng nghe phản hồi từ Server
     private final Consumer<Message> onDepositSuccess = this::handleDepositSuccess;
     private final Consumer<Message> onDepositFailed = this::handleDepositFailed;
     private final Consumer<Message> onWithdrawSuccess = this::handleWithdrawSuccess;
@@ -46,7 +46,6 @@ public class WalletController {
     public void initialize() {
         highlightDepositTab();
         registerHandlers();
-        System.out.println(">>> [OK] Màn hình Giao dịch tài chính đã khởi tạo thành công!");
     }
 
     private void registerHandlers() {
@@ -64,16 +63,12 @@ public class WalletController {
     }
 
     public void setUserData(User user) {
-        if (user == null) {
-            System.out.println(">>> [LỖI] Dữ liệu User truyền sang bị NULL!");
-            return;
-        }
+        if (user == null) return;
         this.currentUser = user;
 
         if (lblLargeBalance != null) {
             DecimalFormat formatter = new DecimalFormat("#,###");
             lblLargeBalance.setText(formatter.format(currentUser.getBalance()) + " UETệ");
-            System.out.println(">>> Đã nạp số dư hệ thống: " + currentUser.getBalance());
         }
     }
 
@@ -118,9 +113,11 @@ public class WalletController {
 
             String actionTypeText = btnSubmit.getText();
 
-            // Gửi dữ liệu lên Server qua SocketClient thay vì xử lý trực tiếp
+            // Đẩy Socket lên luồng nền
             if (actionTypeText.contains("Nạp")) {
-                SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
+                CompletableFuture.runAsync(() -> {
+                    SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
+                });
             }
             else if (actionTypeText.contains("Rút")) {
                 if (currentUser.getBalance() < amount) {
@@ -134,16 +131,15 @@ public class WalletController {
                     return;
                 }
 
-                // Gửi request rút tiền. Ghi chú: Hiện Server của bạn đang nhận Double amount.
-                SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
+                CompletableFuture.runAsync(() -> {
+                    SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
+                });
             }
 
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", "Số tiền nhập vào phải là số hợp lệ!");
         }
     }
-
-    // --- Các hàm xử lý phản hồi từ Server (Chạy trên UI Thread) ---
 
     private void handleDepositSuccess(Message msg) {
         Platform.runLater(() -> {
@@ -169,12 +165,9 @@ public class WalletController {
         Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Rút tiền thất bại", msg.getMessage()));
     }
 
-    // --------------------------------------------------------------
-
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
-            // Hủy lắng nghe dữ liệu để dọn dẹp bộ nhớ trước khi chuyển trang
             unregisterHandlers();
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));

@@ -10,7 +10,7 @@ import com.auction.server.core.AuctionRoomManager;
 public class AuctionServer {
     private static final int PORT = 8888;
     // CachedThreadPool tái sử dụng thread cho client, scale tốt cho hàng vạn connection I/O
-    private final ExecutorService clientPool = Executors.newCachedThreadPool();
+    private final ExecutorService clientPool = Executors.newVirtualThreadPerTaskExecutor();
     private boolean isRunning = false;
 
     public void start() {

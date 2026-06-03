@@ -7,6 +7,7 @@ import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
 import com.auction.common.network.AuctionItemDTO;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -21,18 +22,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * ProductsTabController — Refactored với Networking.
- *
- * THAY ĐỔI:
- *  - Xóa AuctionDAO + Task/Thread thủ công
- *  - Gửi SELLER_GET_MY_AUCTIONS qua SocketClient, nhận SELLER_AUCTIONS_RESULT qua MessageRouter
- *  - Filter local trên cache thay vì query DB lại
- *  - Realtime: tự refresh khi nhận SELLER_AUCTION_APPROVED / REJECTED / SOLD
- */
 public class ProductsTabController implements Initializable {
 
   @FXML private VBox      productListVBox;
@@ -43,27 +36,23 @@ public class ProductsTabController implements Initializable {
   private String dbStatus;
   private List<AuctionItemDTO> cachedData = List.of();
 
-  // Handler reference để unregister
   private Consumer<Message> onAuctionsResult;
   private final Consumer<Message> onApproved = msg -> requestData();
   private final Consumer<Message> onRejected = msg -> requestData();
   private final Consumer<Message> onSold     = msg -> requestData();
 
   int myId = ClientSession.getInstance().getUserId();
+
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    // init() được gọi sau khi load
   }
 
-  /**
-   * Phải gọi ngay sau loader.getController() để truyền context.
-   */
   public void init(int sellerId, ProductsCardController.CardType type) {
     this.cardType = type;
     this.dbStatus = switch (type) {
       case AUCTIONING -> "RUNNING";
       case PENDING    -> "WAITING_FOR_ADMIN";
-      case SOLD       -> "ENDED";
+      case SOLD       -> "ENDED"; // Cần xử lý gom trạng thái ở handleAuctionsResult
     };
 
     onAuctionsResult = this::handleAuctionsResult;
@@ -92,27 +81,34 @@ public class ProductsTabController implements Initializable {
     r.unregister(ResponseCode.SELLER_AUCTION_SOLD);
   }
 
-  // ════════════════════════════════════════
-  // REQUEST + HANDLE
-  // ════════════════════════════════════════
-
   private void requestData() {
     showLoading();
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    // TỐI ƯU: Đẩy luồng mạng xuống Background
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    });
   }
 
   @SuppressWarnings("unchecked")
   private void handleAuctionsResult(Message message) {
     if (!(message.getPayload() instanceof List<?> list)) return;
-    cachedData = ((List<AuctionItemDTO>) list).stream()
-        .filter(a -> dbStatus.equalsIgnoreCase(a.getAuction().getAuctionStatus()))
-        .collect(Collectors.toList());
-    filterAndDisplay(searchField.getText().trim());
-  }
 
-  // ════════════════════════════════════════
-  // FILTER + RENDER
-  // ════════════════════════════════════════
+    // TỐI ƯU: Bọc vào Platform.runLater vì hàm này sẽ chỉnh sửa UI thông qua filterAndDisplay
+    Platform.runLater(() -> {
+      cachedData = ((List<AuctionItemDTO>) list).stream()
+          .filter(a -> {
+            String s = a.getAuction().getAuctionStatus();
+            if (cardType == ProductsCardController.CardType.SOLD) {
+              return "SOLD".equalsIgnoreCase(s) || "FINISHED".equalsIgnoreCase(s)
+                  || "PAID".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s)
+                  || "REJECTED".equalsIgnoreCase(s);
+            }
+            return dbStatus.equalsIgnoreCase(s);
+          })
+          .collect(Collectors.toList());
+      filterAndDisplay(searchField.getText().trim());
+    });
+  }
 
   private void filterAndDisplay(String keyword) {
     List<AuctionItemDTO> filtered = (keyword == null || keyword.isBlank())
@@ -144,9 +140,11 @@ public class ProductsTabController implements Initializable {
   }
 
   private void showLoading() {
-    productListVBox.getChildren().setAll(
-        new ProgressIndicator(),
-        new Label("Đang tải dữ liệu..."));
+    Platform.runLater(() -> {
+      productListVBox.getChildren().setAll(
+          new ProgressIndicator(),
+          new Label("Đang tải dữ liệu..."));
+    });
   }
 
   private String emptyMessage() {

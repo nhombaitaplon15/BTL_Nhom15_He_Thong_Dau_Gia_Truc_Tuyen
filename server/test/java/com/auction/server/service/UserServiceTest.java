@@ -163,14 +163,14 @@ class UserServiceTest {
         void switchRole_bidderToSeller() {
             User bidder = makeUser(1, "user1", "pass1234", "1@gmail.com", "0901234567", "ACTIVE", "BIDDER", 0);
             when(userDAO.updateRole(1, "SELLER")).thenReturn(true);
-            userService.handleSwitchRole(bidder);
+            userService.handleSwitchRole(bidder,"BIDDER");
             assertEquals("SELLER", bidder.getRole());
         }
 
         @Test @DisplayName("Admin không được đổi vai trò")
         void switchRole_adminForbidden() {
             User admin = makeUser(1, "admin", "pass1234", "1@gmail.com", "0901234567", "ACTIVE", "ADMIN", 0);
-            assertThrows(AuctionException.class, () -> userService.handleSwitchRole(admin));
+            assertThrows(AuctionException.class, () -> userService.handleSwitchRole(admin,"BIDDER"));
             verifyNoInteractions(userDAO);
         }
     }

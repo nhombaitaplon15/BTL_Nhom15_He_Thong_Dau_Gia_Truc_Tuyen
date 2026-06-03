@@ -14,6 +14,7 @@ import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class CancelAuctionController {
@@ -27,7 +28,6 @@ public class CancelAuctionController {
   private AuctionItemDTO auctionItem;
   private Runnable onSuccessCallback;
 
-  // Handler Realtime
   private final Consumer<Message> onCancelSuccess = this::handleCancelSuccess;
   private final Consumer<Message> onCancelFailed = this::handleCancelFailed;
 
@@ -60,7 +60,10 @@ public class CancelAuctionController {
   private void onConfirmCancel() {
     btnConfirmCancel.setDisable(true);
     btnConfirmCancel.setText("Đang xử lý...");
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_CANCEL_AUCTION, auctionItem.getAuction().getAuctionId());
+
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_CANCEL_AUCTION, auctionItem.getAuction().getAuctionId());
+    });
   }
 
   @FXML

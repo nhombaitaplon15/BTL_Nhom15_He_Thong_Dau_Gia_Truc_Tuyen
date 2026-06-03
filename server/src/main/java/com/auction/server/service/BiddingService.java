@@ -102,23 +102,31 @@ public class BiddingService {
 
     /** TRANSACTION DÒNG TIỀN NGUYÊN TỬ (Giữ nguyên thuật toán Admin Escrow của bạn bạn) */
     private void executeBidTransaction(User user, Auction auction, double amount) {
-        try (Connection conn = DBConnection.getConnection()) { // Dùng DBConnection thống nhất
+        try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                // BƯỚC 1: HOÀN TIỀN CHO NGƯỜI ĐANG GIỮ GIÁ CAO NHẤT CŨ (NẾU CÓ)
+                int assignedAdminId = ADMIN_IDS[auction.getAuctionId() % ADMIN_IDS.length];
+
                 if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
                     int oldWinnerId = auction.getCurrentWinnerId();
                     double oldPrice = auction.getCurrentPrice();
-                    // Bước B: Hoàn tiền cho người thắng cũ (nếu có)
-                    // ĐÃ SỬA: Chặn đứng "Bóng ma User 0", chỉ hoàn tiền nếu ID người thắng > 0
-                    if (auction.getCurrentWinnerId() != null && auction.getCurrentWinnerId() > 0) {
-                        if (!paymentDAO.updateBalance(conn, auction.getCurrentWinnerId(), auction.getCurrentPrice(), "+")) {
-                            throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + auction.getCurrentWinnerId() + ")");
+
+                    if (!paymentDAO.updateBalance(conn, oldWinnerId, oldPrice, "+")) {
+                        throw new SQLException("Lỗi hoàn tiền cho người giữ giá cũ (ID: " + oldWinnerId + ")");
+                    }
+
+                    transactionDAO.createTransaction(conn, oldWinnerId, oldPrice, "REFUND_OUTBID_" + auction.getAuctionId(), "SUCCESS");
+
+                    String sqlSubtractAdminEscrow = "UPDATE users SET escrow_balance = escrow_balance - ? WHERE user_id = ?";
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(sqlSubtractAdminEscrow)) {
+                        ps.setDouble(1, oldPrice);
+                        ps.setInt(2, assignedAdminId);
+                        if (ps.executeUpdate() <= 0) {
+                            throw new SQLException("Không thể rút tiền từ ví tạm của Admin để hoàn trả!");
                         }
                     }
                 }
 
-                // BƯỚC 2: TRỪ TIỀN NGƯỜI ĐẶT MỚI VÀ TĂNG VÍ TẠM ADMIN QUẢN LÝ PHÒNG
                 String sqlCheckBalance = "SELECT balance FROM users WHERE user_id = ? AND balance >= ?";
                 try (java.sql.PreparedStatement ps = conn.prepareStatement(sqlCheckBalance)) {
                     ps.setInt(1, user.getId());
@@ -134,9 +142,8 @@ public class BiddingService {
                     throw new SQLException("Lỗi hệ thống khi thực hiện trừ ví chính!");
                 }
 
-                int assignedAdminId = ADMIN_IDS[auction.getAuctionId() % ADMIN_IDS.length];
+                transactionDAO.createTransaction(conn, user.getId(), amount, "BID_PLACED_" + auction.getAuctionId(), "SUCCESS");
 
-                // Nạp tiền đặt giá mới vào ví tạm giữ cọc (escrow_balance) của Admin
                 String sqlAddAdminEscrow = "UPDATE users SET escrow_balance = escrow_balance + ? WHERE user_id = ?";
                 try (java.sql.PreparedStatement ps = conn.prepareStatement(sqlAddAdminEscrow)) {
                     ps.setDouble(1, amount);
@@ -146,21 +153,16 @@ public class BiddingService {
                     }
                 }
 
-                transactionDAO.createTransaction(conn, user.getId(), amount, "BID_PLACED_" + auction.getAuctionId(), "SUCCESS");
-
-                // BƯỚC 3: CẬP NHẬT GIÁ VÀ WINNER MỚI VÀO BẢNG AUCTIONS
                 if (!auctionDAO.updateBid(conn, auction.getAuctionId(), user.getId(), amount)) {
                     throw new SQLException("Cập nhật giá mới vào phiên thất bại!");
                 }
 
-                // Xử lý Anti-sniping
                 LocalDateTime newEndTime = calculateAntiSniping(auction.getEndTime());
                 if (newEndTime != null) {
                     auctionDAO.updateEndTime(conn, auction.getAuctionId(), newEndTime);
                     auction.setEndTime(newEndTime);
                 }
 
-                // BƯỚC 4: Lưu lịch sử đấu giá động vật phẩm
                 String itemName = "Vật phẩm đấu giá #" + auction.getItemId();
                 try {
                     ItemDAO itemDAO = new ItemDAO();
@@ -168,15 +170,12 @@ public class BiddingService {
                     if (realItem != null) {
                         itemName = realItem.getName();
                     }
-                } catch (Exception e) {
-                    System.out.println("[WARN] Không tìm thấy tên vật phẩm, dùng tên mặc định.");
-                }
+                } catch (Exception e) {}
 
                 biddingHistoryDAO.saveBidRecordWithConnection(conn, auction.getAuctionId(), itemName, user.getId(), user.getUsername(), amount);
 
-                conn.commit(); // Xác nhận chốt thành công toàn vẹn dòng tiền!
+                conn.commit();
 
-                // Cập nhật bộ nhớ RAM phục vụ hiển thị Socket realtime
                 auction.setCurrentPrice(amount);
                 auction.setCurrentWinnerId(user.getId());
                 auction.setTotalBids(auction.getTotalBids() + 1);
@@ -189,7 +188,6 @@ public class BiddingService {
             throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Lỗi kết nối Database!");
         }
     }
-
     public void rejectWin(User winner, int auctionId) {
         if (managerService == null) throw new AuctionException(ErrorCode.INTERNAL_ERROR.name(), "Chức năng yêu cầu ManagerService!");
         Auction auction = managerService.getAuctionOrThrow(auctionId);

@@ -193,3 +193,19 @@
     -fx-background-radius: 8px;
     -fx-cursor: hand;
 }
+.combo-box-custom .list-view {
+    -fx-background-color: white;
+    -fx-border-color: #D4C9B0;
+    -fx-border-width: 0.5px;
+}
+
+.combo-box-custom .list-cell {
+    -fx-background-color: white;
+    -fx-text-fill: #1A2B4A;
+    -fx-padding: 6 10 6 10;
+}
+
+.combo-box-custom .list-cell:filled:hover {
+    -fx-background-color: #F5F0E8;
+    -fx-text-fill: #1A2B4A;
+}

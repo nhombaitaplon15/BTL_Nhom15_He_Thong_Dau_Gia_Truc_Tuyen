@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class TransactionHistoryController {
@@ -38,7 +39,6 @@ public class TransactionHistoryController {
 
     private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // Lắng nghe dữ liệu trả về từ Server
     private final Consumer<Message> onTransactionsResult = this::handleTransactionsResult;
 
     @FXML
@@ -49,7 +49,6 @@ public class TransactionHistoryController {
         colTime.setCellValueFactory(cellData -> cellData.getValue().timeProperty());
         colStatus.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
 
-        // Đăng ký nhận kết quả giao dịch
         MessageRouter.getInstance().register(ResponseCode.TRANSACTIONS_RESULT, onTransactionsResult);
     }
 
@@ -61,8 +60,10 @@ public class TransactionHistoryController {
     }
 
     private void loadRealTransactionData() {
-        // Gửi yêu cầu qua Socket thay vì gọi thẳng DAO
-        SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, currentUser.getId());
+        // Đẩy tác vụ lấy lịch sử giao dịch sang luồng nền
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, currentUser.getId());
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -113,7 +114,6 @@ public class TransactionHistoryController {
     @FXML
     void handleBackToHome(ActionEvent event) {
         try {
-            // Huỷ đăng ký router để tránh rò rỉ bộ nhớ khi rời trang
             MessageRouter.getInstance().unregister(ResponseCode.TRANSACTIONS_RESULT);
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/view/bidder/The_Home_Page_Bidder_View.fxml"));

@@ -34,13 +34,19 @@
                 </columnConstraints>
 
                 <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="form-label" text="Ngày bắt đầu" />
-                    <DatePicker fx:id="dtpStartTime" maxWidth="Infinity" styleClass="form-input-date" />
+                    <Label styleClass="form-label" text="Ngày/Giờ bắt đầu" />
+                    <HBox spacing="8">
+                        <DatePicker fx:id="dtpStartTime" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="form-input-date" />
+                        <TextField fx:id="txtStartTime" prefWidth="75" promptText="HH:mm" styleClass="form-input" />
+                    </HBox>
                 </VBox>
 
                 <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                    <Label styleClass="form-label" text="Ngày kết thúc" />
-                    <DatePicker fx:id="dtpEndTime" maxWidth="Infinity" styleClass="form-input-date" />
+                    <Label styleClass="form-label" text="Ngày/Giờ kết thúc" />
+                    <HBox spacing="8">
+                        <DatePicker fx:id="dtpEndTime" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="form-input-date" />
+                        <TextField fx:id="txtEndTime" prefWidth="75" promptText="HH:mm" styleClass="form-input" />
+                    </HBox>
                 </VBox>
 
                 <VBox prefHeight="47.0" prefWidth="224.0" spacing="4" GridPane.columnSpan="2" GridPane.rowIndex="1">
@@ -55,12 +61,12 @@
 
                 <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="3">
                     <Label styleClass="form-label" text="Kích hoạt Anti-snipe (giây cuối)" />
-                    <Button mnemonicParsing="false" prefHeight="30.0" prefWidth="243.0" styleClass="form-input" text="60 giây" />
+                    <Button mnemonicParsing="false" prefHeight="30.0" prefWidth="243.0" styleClass="form-input" text="30 giây" />
                 </VBox>
 
                 <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="3">
                     <Label styleClass="form-label" text="Gia hạn thêm (giây)" />
-                    <Button mnemonicParsing="false" prefHeight="29.0" prefWidth="243.0" styleClass="form-input" text="60 giây" />
+                    <Button mnemonicParsing="false" prefHeight="29.0" prefWidth="243.0" styleClass="form-input" text="30 giây" />
                 </VBox>
                 <rowConstraints>
                     <RowConstraints />

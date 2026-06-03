@@ -6,6 +6,7 @@ import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
 import com.auction.common.network.AuctionItemDTO;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -14,15 +15,6 @@ import javafx.scene.shape.Circle;
 
 import java.util.function.Consumer;
 
-/**
- * AuctionOpenCardController — Refactored với Networking.
- *
- * THAY ĐỔI:
- *  - Xóa ItemService (setData nhận AuctionItemDAO thay vì chỉ Auction để có Item)
- *  - Lắng nghe NEW_BID_UPDATE realtime để cập nhật giá + bid count trực tiếp trên card
- *  - Lắng nghe AUCTION_TIME_EXTENDED để reset countdown khi phiên được gia hạn
- *  - stopTimer() gọi cả unregister để dọn handler khi cell bị recycle
- */
 public class AuctionOpenCardController extends BaseTimerCardController {
 
   @FXML private ImageView imgProduct;
@@ -32,93 +24,80 @@ public class AuctionOpenCardController extends BaseTimerCardController {
   @FXML private Label     lblPriceCur;
   @FXML private Label     lblBidCount;
   @FXML private Label     lblCountdown;
-  @FXML private Circle    dotTimer;
   @FXML private Button    btnDetail;
+  @FXML private Circle    dotTimer;
+
+  private Runnable onDetailCallback;
+  private int currentAuctionId = -1;
+
+  private Consumer<Message> onNewBid;
+  private Consumer<Message> onTimeExtended;
 
   @Override protected Label  getLblCountdown() { return lblCountdown; }
   @Override protected Circle getDotTimer()     { return dotTimer; }
 
-  private Runnable onDetailCallback;
-  private int      currentAuctionId = -1;
-
-  // Handler references
-  private Consumer<Message> onNewBid;
-  private Consumer<Message> onTimeExtended;
-
-  /**
-   * Nhận AuctionItemDAO để có đủ Item (tên, ảnh, giá) + Auction (trạng thái, bid).
-   * Không gọi DB / ItemService nữa.
-   */
   public void setData(AuctionItemDTO dto) {
-    Item    item    = dto.getItem();
+    Item item = dto.getItem();
     Auction auction = dto.getAuction();
     currentAuctionId = auction.getAuctionId();
 
-    lblName    .setText(item.getName());
-    lblMeta    .setText(item.getItemType() + " • Mở lúc " + auction.getStartTime());
-    lblPriceStart.setText("Khởi điểm: " + CardUtils.formatMoney(item.getStartingPrice()) + " UETệ");
-    lblPriceCur  .setText(CardUtils.formatMoney(auction.getCurrentPrice()) + " UETệ");
-    lblBidCount  .setText(auction.getTotalBids() + " lượt bid");
+    if (lblName != null) lblName.setText(item.getName());
+    if (lblMeta != null) lblMeta.setText(item.getItemType() + " · Sắp diễn ra");
+    if (lblPriceStart != null) lblPriceStart.setText("Khởi điểm: " + CardUtils.formatMoney(item.getStartingPrice()) + " UETệ");
+    if (lblPriceCur != null) lblPriceCur.setText("Hiện tại: " + CardUtils.formatMoney(auction.getCurrentPrice()) + " UETệ");
+    if (lblBidCount != null) lblBidCount.setText(auction.getTotalBids() + " lượt bid");
 
     CardUtils.loadImage(imgProduct, item.getImgItem());
+
+    //setLblCountdown(lblCountdown);
     startCountdown(auction.getEndTime());
 
     registerRealtimeHandlers();
   }
-
-  /** Backward-compat: vẫn hoạt động nếu code cũ truyền Auction + tên item */
-  public void setData(Auction auction) {
-    currentAuctionId = auction.getAuctionId();
-    lblPriceCur  .setText(CardUtils.formatMoney(auction.getCurrentPrice()) + " UETệ");
-    lblBidCount  .setText(auction.getTotalBids() + " lượt bid");
-    startCountdown(auction.getEndTime());
-    registerRealtimeHandlers();
-  }
-
-  // ════════════════════════════════════════
-  // REALTIME HANDLERS
-  // ════════════════════════════════════════
 
   private void registerRealtimeHandlers() {
     onNewBid = msg -> {
-      try {
-        Object[] data = (Object[]) msg.getPayload();
-        int    auctionId = Integer.parseInt(data[0].toString());
-        double newPrice  = Double.parseDouble(data[1].toString());
-        if (auctionId != currentAuctionId) return;
-
-        lblPriceCur.setText(CardUtils.formatMoney(newPrice) + " UETệ");
-        // Tăng bid count
+      Platform.runLater(() -> {
         try {
-          int cur = Integer.parseInt(lblBidCount.getText().replaceAll("[^\\d]", ""));
-          lblBidCount.setText((cur + 1) + " lượt bid");
-        } catch (NumberFormatException ignored) {}
+          Object[] data = (Object[]) msg.getPayload();
+          int auctionId = Integer.parseInt(data[0].toString());
+          if (auctionId != currentAuctionId) return;
 
-      } catch (Exception e) {
-        System.err.println("[OPEN_CARD] Lỗi xử lý NEW_BID_UPDATE: " + e.getMessage());
-      }
+          double newPrice = Double.parseDouble(data[1].toString());
+          if (lblPriceCur != null) lblPriceCur.setText("Hiện tại: " + CardUtils.formatMoney(newPrice) + " UETệ");
+
+          try {
+            String currentBidsStr = lblBidCount.getText().replaceAll("[^0-9]", "");
+            int curBids = currentBidsStr.isEmpty() ? 0 : Integer.parseInt(currentBidsStr);
+            if (lblBidCount != null) lblBidCount.setText((curBids + 1) + " lượt bid");
+          } catch (Exception ignored) {}
+
+        } catch (Exception e) {
+          System.err.println("[OPEN_CARD] Lỗi xử lý NEW_BID_UPDATE: " + e.getMessage());
+        }
+      });
     };
 
     onTimeExtended = msg -> {
-      try {
-        Object[] data = (Object[]) msg.getPayload();
-        int auctionId = Integer.parseInt(data[0].toString());
-        if (auctionId != currentAuctionId) return;
-        // data[1] là LocalDateTime newEndTime
-        if (data[1] instanceof java.time.LocalDateTime newEnd) {
-          startCountdown(newEnd); // reset countdown với thời gian mới
+      Platform.runLater(() -> {
+        try {
+          Object[] data = (Object[]) msg.getPayload();
+          int auctionId = Integer.parseInt(data[0].toString());
+          if (auctionId != currentAuctionId) return;
+
+          if (data[1] instanceof java.time.LocalDateTime newEnd) {
+            startCountdown(newEnd);
+          }
+        } catch (Exception e) {
+          System.err.println("[OPEN_CARD] Lỗi xử lý TIME_EXTENDED: " + e.getMessage());
         }
-      } catch (Exception e) {
-        System.err.println("[OPEN_CARD] Lỗi xử lý TIME_EXTENDED: " + e.getMessage());
-      }
+      });
     };
 
-    MessageRouter r = MessageRouter.getInstance();
-    r.register(ResponseCode.NEW_BID_UPDATE,        onNewBid);
-    r.register(ResponseCode.AUCTION_TIME_EXTENDED, onTimeExtended);
+    MessageRouter.getInstance().register(ResponseCode.NEW_BID_UPDATE, onNewBid);
+    MessageRouter.getInstance().register(ResponseCode.AUCTION_TIME_EXTENDED, onTimeExtended);
   }
 
-  /** Override stopTimer để unregister handler khi cell bị recycle */
   @Override
   public void stopTimer() {
     super.stopTimer();
@@ -126,9 +105,8 @@ public class AuctionOpenCardController extends BaseTimerCardController {
   }
 
   private void unregisterHandlers() {
-    MessageRouter r = MessageRouter.getInstance();
-    r.unregister(ResponseCode.NEW_BID_UPDATE);
-    r.unregister(ResponseCode.AUCTION_TIME_EXTENDED);
+    MessageRouter.getInstance().unregister(ResponseCode.NEW_BID_UPDATE);
+    MessageRouter.getInstance().unregister(ResponseCode.AUCTION_TIME_EXTENDED);
   }
 
   public void setOnDetailCallback(Runnable cb) { this.onDetailCallback = cb; }

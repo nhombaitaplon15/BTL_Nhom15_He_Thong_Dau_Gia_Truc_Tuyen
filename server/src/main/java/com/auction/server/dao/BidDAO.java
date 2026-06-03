@@ -4,7 +4,7 @@ import java.sql.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.io.Serializable;
 /**
  * DAO cho bảng bidding_history (và fallback sang transactions nếu cần).
  * Đã cập nhật theo cấu trúc database mới (không cần JOIN với bảng users).
@@ -19,8 +19,7 @@ public class BidDAO {
   // ------------------------------------------------------------------ //
   //  Inner record — dữ liệu 1 dòng bid history (thay BidRow trong ctrl) //
   // ------------------------------------------------------------------ //
-  public record BidRow(int rank, String username, double amount, String bidTime) {}
-
+  public record BidRow(int rank, String username, double amount, String bidTime) implements Serializable {}
   // ------------------------------------------------------------------ //
   //  Lấy lịch sử bid                                                    //
   // ------------------------------------------------------------------ //

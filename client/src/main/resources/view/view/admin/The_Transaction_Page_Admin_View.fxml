@@ -110,11 +110,6 @@
                                             <!-- DATE FILTER -->
                                             <DatePicker fx:id="dpFilter" prefHeight="36.0" prefWidth="150.0" promptText="Lọc Ngày" style="-fx-background-color: rgba(255,255,255,0.9); -fx-border-color: transparent; -fx-border-radius: 10;" />
 
-                                            <!-- EXPORT -->
-                                            <Button mnemonicParsing="false" prefHeight="36.0" style="-fx-background-color: rgba(255,255,255,0.2); -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.5); -fx-border-radius: 10;" text="📥 Xuất báo cáo">
-                                                <font><Font name="Times New Roman Bold" size="13.0" /></font>
-                                                <padding><Insets left="14.0" right="14.0" /></padding>
-                                            </Button>
                                         </children>
                                     </HBox>
 

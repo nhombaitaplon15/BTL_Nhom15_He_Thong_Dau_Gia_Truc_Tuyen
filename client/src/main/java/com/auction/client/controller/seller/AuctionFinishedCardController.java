@@ -6,6 +6,7 @@ import com.auction.common.model.Item;
 import com.auction.common.network.Message;
 import com.auction.common.network.ResponseCode;
 import com.auction.common.network.AuctionItemDTO;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -13,14 +14,6 @@ import javafx.scene.image.ImageView;
 
 import java.util.function.Consumer;
 
-/**
- * AuctionFinishedCardController — Refactored với Networking.
- *
- * THAY ĐỔI:
- *  - Xóa ItemService — nhận AuctionItemDAO để có Item sẵn
- *  - Lắng nghe ADMIN_TRANSACTION_APPROVED realtime: đổi badge sang "PAID"
- *    (Admin duyệt thanh toán → Seller thấy ngay trên card)
- */
 public class AuctionFinishedCardController {
 
   @FXML private ImageView imgProduct;
@@ -37,12 +30,8 @@ public class AuctionFinishedCardController {
   private Runnable onViewCallback;
   private int      currentAuctionId = -1;
 
-  // Handler reference
   private Consumer<Message> onTransactionApproved;
 
-  /**
-   * Nhận AuctionItemDAO — không gọi DB.
-   */
   public void setData(AuctionItemDTO dto) {
     Item    item    = dto.getItem();
     Auction auction = dto.getAuction();
@@ -56,20 +45,14 @@ public class AuctionFinishedCardController {
     registerRealtimeHandlers(auction);
   }
 
-  /** Backward-compat: vẫn nhận Auction trực tiếp (không có Item) */
   public void setData(Auction auction) {
     currentAuctionId = auction.getAuctionId();
     applyStatusView(auction);
     registerRealtimeHandlers(auction);
   }
 
-  // ════════════════════════════════════════
-  // RENDER THEO TRẠNG THÁI
-  // ════════════════════════════════════════
-
   private void applyStatusView(Auction auction) {
     switch (auction.getAuctionStatus()) {
-
       case "SOLD" -> {
         lblMeta.setText("Kết thúc " + auction.getEndTime()
             + " · Người thắng: " + auction.getCurrentWinnerId());
@@ -77,11 +60,10 @@ public class AuctionFinishedCardController {
         lblPriceFinal.setStyle("-fx-font-size:15;-fx-font-weight:bold;-fx-text-fill:#43A047;");
         lblSubStatus .setText("✓ Đã thanh toán");
         lblSubStatus .setStyle("-fx-font-size:10.5;-fx-text-fill:#2E7D32;");
-        lblStatusPill.setText("PAID");
+        lblStatusPill.setText("SOLD");
         lblStatusPill.setStyle(pillStyle("#E8F5E9", "#2E7D32"));
         CardUtils.setVisible(btnRemind, false);
       }
-
       case "FINISHED" -> {
         lblMeta.setText("Kết thúc " + auction.getEndTime()
             + " · Người thắng: " + auction.getCurrentWinnerId());
@@ -93,41 +75,35 @@ public class AuctionFinishedCardController {
         lblStatusPill.setStyle(pillStyle("#FFF3E0", "#E65100"));
         CardUtils.setVisible(btnRemind, true);
       }
-
-      case "CANCELED" -> {
+      case "REJECTED" -> {
         lblMeta.setText("Kết thúc " + auction.getEndTime() + " · Không có người thắng");
         lblPriceFinal.setText("Không có bid");
         lblPriceFinal.setStyle("-fx-font-size:13;-fx-font-weight:normal;-fx-text-fill:#A08C6E;");
         lblSubStatus .setText("");
-        lblStatusPill.setText("CANCELED");
+        lblStatusPill.setText("REJECTED");
         lblStatusPill.setStyle(pillStyle("#FFEBEE", "#B71C1C"));
         CardUtils.setVisible(btnRemind, false);
       }
     }
   }
 
-  // ════════════════════════════════════════
-  // REALTIME: Admin duyệt thanh toán → badge đổi sang PAID
-  // ════════════════════════════════════════
-
   private void registerRealtimeHandlers(Auction auction) {
     onTransactionApproved = msg -> {
-      // Payload: Integer transactionId — cần mapping auctionId nếu server hỗ trợ
-      // Hiện tại: khi nhận ADMIN_TRANSACTION_APPROVED mà phiên đang FINISHED,
-      // cập nhật badge sang PAID (phương án đơn giản nhất)
-      if (!"FINISHED".equalsIgnoreCase(auction.getAuctionStatus())) return;
-      lblStatusPill.setText("✓ PAID");
-      lblStatusPill.setStyle(pillStyle("#E8F5E9", "#2E7D32"));
-      lblSubStatus .setText("✓ Đã thanh toán");
-      lblSubStatus .setStyle("-fx-font-size:10.5;-fx-text-fill:#2E7D32;");
-      CardUtils.setVisible(btnRemind, false);
+      // ĐÃ SỬA: Bọc vào Platform.runLater để tránh lỗi Not on FX application thread
+      Platform.runLater(() -> {
+        if (!"FINISHED".equalsIgnoreCase(auction.getAuctionStatus())) return;
+        lblStatusPill.setText("✓ PAID");
+        lblStatusPill.setStyle(pillStyle("#E8F5E9", "#2E7D32"));
+        lblSubStatus .setText("✓ Đã thanh toán");
+        lblSubStatus .setStyle("-fx-font-size:10.5;-fx-text-fill:#2E7D32;");
+        CardUtils.setVisible(btnRemind, false);
+      });
     };
 
     MessageRouter.getInstance().register(
         ResponseCode.ADMIN_TRANSACTION_APPROVED, onTransactionApproved);
   }
 
-  /** GỌI KHI CELL BỊ RECYCLE */
   public void cleanupHandlers() {
     MessageRouter.getInstance().unregister(ResponseCode.ADMIN_TRANSACTION_APPROVED);
   }

@@ -114,3 +114,10 @@
     -fx-text-fill: #333333; /* Màu chữ đậm cho dễ đọc */
     -fx-font-weight: normal; /* Đổi thành bold nếu muốn in đậm */
 }
+.table-row-cell:selected {
+    -fx-background-color: #E8EEF7;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: #1A2B4A;
+}

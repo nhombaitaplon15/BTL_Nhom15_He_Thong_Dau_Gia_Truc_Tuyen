@@ -23,7 +23,12 @@ public class Vehicle extends Item {
         this.fuelType = fuelType;
         this.licensePlate = licensePlate;
     }
-    public String getMake() {
+
+  public Vehicle() {
+    super();
+  }
+
+  public String getMake() {
         return make;
     }
     public void setMake(String make) {

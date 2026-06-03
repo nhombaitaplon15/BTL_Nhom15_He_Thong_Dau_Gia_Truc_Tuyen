@@ -16,6 +16,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.concurrent.CompletableFuture;
+
 public class ProfileController {
 
     private User currentUser;
@@ -71,7 +73,10 @@ public class ProfileController {
         if (user == null) return;
         this.currentUser = user;
 
-        SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
+        // ĐẨY VÀO LUỒNG NỀN
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, null);
+        });
     }
 
     @FXML
@@ -81,7 +86,10 @@ public class ProfileController {
         if (txtEmail != null) currentUser.setEmail(txtEmail.getText());
         if (txtPhone != null) currentUser.setPhone(txtPhone.getText());
 
-        SocketClient.getInstance().sendRequest(RequestCode.UPDATE_PROFILE, currentUser);
+        // ĐẨY VÀO LUỒNG NỀN ĐỂ KHÔNG ĐƠ NÚT LƯU
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.UPDATE_PROFILE, currentUser);
+        });
     }
 
     @FXML

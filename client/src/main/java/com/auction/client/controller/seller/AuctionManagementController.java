@@ -19,79 +19,38 @@ import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class AuctionManagementController {
 
-  // ══ SIDEBAR BUTTONS ══
-  @FXML private HBox btnCreate;
-  @FXML private HBox btnPending;
-  @FXML private HBox btnOpen;
-  @FXML private HBox btnRunning;
-  @FXML private HBox btnFinished;
-
-  // ══ CONTENT PANES ══
-  @FXML private ScrollPane paneCreate;
-  @FXML private ScrollPane panePending;
-  @FXML private ScrollPane paneOpen;
-  @FXML private ScrollPane paneRunning;
-  @FXML private ScrollPane paneFinished;
-
-  // ══ LISTVIEW ══
+  @FXML private HBox btnCreate, btnPending, btnOpen, btnRunning, btnFinished;
+  @FXML private ScrollPane paneCreate, panePending, paneOpen, paneRunning, paneFinished;
   @FXML private ListView<Item> listCreate;
-  @FXML private ListView<AuctionItemDTO> listPending;
-  @FXML private ListView<AuctionItemDTO> listOpen;
-  @FXML private ListView<AuctionItemDTO> listRunning;
-  @FXML private ListView<AuctionItemDTO> listFinished;
+  @FXML private ListView<AuctionItemDTO> listPending, listOpen, listRunning, listFinished;
+  @FXML private Label lblCreate, lblPending, badgePending, lblOpen, badgeOpen, lblRunning, badgeRunning, lblFinished;
+  @FXML private TextField searchCreate, searchPending, searchOpen, searchRunning, searchFinished;
+  @FXML private VBox emptyCreate, emptyPending, emptyOpen, emptyRunning, emptyFinished;
 
-  // ══ LABELS & BADGES ══
-  @FXML private Label lblCreate;
-  @FXML private Label lblPending;
-  @FXML private Label badgePending;
-  @FXML private Label lblOpen;
-  @FXML private Label badgeOpen;
-  @FXML private Label lblRunning;
-  @FXML private Label badgeRunning;
-  @FXML private Label lblFinished;
-
-  // ══ SEARCH FIELDS ══
-  @FXML private TextField searchCreate;
-  @FXML private TextField searchPending;
-  @FXML private TextField searchOpen;
-  @FXML private TextField searchRunning;
-  @FXML private TextField searchFinished;
-
-  // ══ EMPTY STATE ══
-  @FXML private VBox emptyCreate;
-  @FXML private VBox emptyPending;
-  @FXML private VBox emptyOpen;
-  @FXML private VBox emptyRunning;
-  @FXML private VBox emptyFinished;
-
-  // ── Cache data từ server ──
   private List<Item> cachedItems = List.of();
   private List<AuctionItemDTO> cachedAuctions = List.of();
 
   private boolean isItemsLoaded = false;
   private boolean isAuctionsLoaded = false;
 
-  // ── Handler references (cần để unregister) ──
   private final Consumer<Message> onItemsResult = this::handleItemsResult;
   private final Consumer<Message> onAuctionsResult = this::handleAuctionsResult;
   private final Consumer<Message> onCancelSuccess = this::handleCancelSuccess;
-  private final Consumer<Message> onCancelFailed = msg -> AlertUtils.error("Huỷ phiên thất bại: " + msg.getMessage());
+  private final Consumer<Message> onCancelFailed = msg -> Platform.runLater(() -> AlertUtils.error("Huỷ phiên thất bại: " + msg.getMessage()));
   private final Consumer<Message> onCreateSuccess = this::handleAuctionCreated;
-  private final Consumer<Message> onCreateFailed = msg -> AlertUtils.error("Tạo phiên thất bại: " + msg.getMessage());
+  private final Consumer<Message> onCreateFailed = msg -> Platform.runLater(() -> AlertUtils.error("Tạo phiên thất bại: " + msg.getMessage()));
   private final Consumer<Message> onAuctionApproved = msg -> refreshAllData();
   private final Consumer<Message> onAuctionRejected = msg -> refreshAllData();
   private final Consumer<Message> onAuctionSold = msg -> refreshAllData();
 
   int myId = ClientSession.getInstance().getUserId();
 
-  // ════════════════════════════════════════════════════
-  // INITIALIZE
-  // ════════════════════════════════════════════════════
   @FXML
   public void initialize() {
     setupCellFactories();
@@ -113,9 +72,6 @@ public class AuctionManagementController {
     refreshAllData();
   }
 
-  // ════════════════════════════════════════════════════
-  // ĐĂNG KÝ / HUỶ HANDLER
-  // ════════════════════════════════════════════════════
   private void registerNetworkHandlers() {
     MessageRouter r = MessageRouter.getInstance();
     r.register(ResponseCode.SELLER_ITEMS_RESULT, onItemsResult);
@@ -142,19 +98,15 @@ public class AuctionManagementController {
     r.unregister(ResponseCode.SELLER_AUCTION_SOLD);
   }
 
-  // ════════════════════════════════════════════════════
-  // GỬI REQUEST LÊN SERVER
-  // ════════════════════════════════════════════════════
   private void refreshAllData() {
     isItemsLoaded = false;
     isAuctionsLoaded = false;
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_ITEMS, myId);
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    // ĐÃ SỬA: Đẩy tác vụ mạng xuống luồng nền
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_ITEMS, myId);
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    });
   }
-
-  // ════════════════════════════════════════════════════
-  // XỬ LÝ RESPONSE TỪ SERVER
-  // ════════════════════════════════════════════════════
 
   @SuppressWarnings("unchecked")
   private void handleItemsResult(Message msg) {
@@ -185,16 +137,12 @@ public class AuctionManagementController {
   }
 
   private void handleCancelSuccess(Message msg) {
-    refreshAllData();
+    Platform.runLater(this::refreshAllData);
   }
 
   private void handleAuctionCreated(Message msg) {
     Platform.runLater(this::refreshAllData);
   }
-
-  // ════════════════════════════════════════════════════
-  // FILTER LOCAL
-  // ════════════════════════════════════════════════════
 
   private void filterCreateLocal(String keyword) {
     List<Integer> activeItemIds = cachedAuctions.stream()
@@ -238,7 +186,8 @@ public class AuctionManagementController {
         .filter(a -> {
           String s = a.getAuction().getAuctionStatus();
           return "SOLD".equalsIgnoreCase(s) || "FINISHED".equalsIgnoreCase(s)
-              || "PAID".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s);
+              || "PAID".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s)
+              || "REJECTED".equalsIgnoreCase(s);
         })
         .filter(a -> keyword == null || keyword.isBlank()
             || a.getItem().getName().toLowerCase().contains(keyword.toLowerCase()))
@@ -249,14 +198,10 @@ public class AuctionManagementController {
     toggleEmpty(emptyFinished, listFinished, filtered.isEmpty());
   }
 
-  // ════════════════════════════════════════════════════
-  // CELL FACTORIES
-  // ════════════════════════════════════════════════════
   private void setupCellFactories() {
     listCreate.setCellFactory(lv -> new ListCell<>() {
       private Node graphic;
       private AuctionCreateCardController ctrl;
-
       {
         try {
           FXMLLoader loader = new FXMLLoader(
@@ -268,7 +213,6 @@ public class AuctionManagementController {
           e.printStackTrace();
         }
       }
-
       @Override
       protected void updateItem(Item item, boolean empty) {
         super.updateItem(item, empty);
@@ -358,9 +302,6 @@ public class AuctionManagementController {
     };
   }
 
-  // ════════════════════════════════════════════════════
-  // SWITCH TAB
-  // ════════════════════════════════════════════════════
   private void switchTab(HBox activeBtn, ScrollPane activePane) {
     for (ScrollPane p : new ScrollPane[]{paneCreate, panePending, paneOpen, paneRunning, paneFinished}) {
       p.setVisible(false);
@@ -392,10 +333,6 @@ public class AuctionManagementController {
         .ifPresent(lbl -> lbl.setStyle("-fx-text-fill:" + hexColor + ";-fx-font-size:12;"));
   }
 
-  // ════════════════════════════════════════════════════
-  // ACTION HANDLERS
-  // ════════════════════════════════════════════════════
-
   private void openCreateDialog(Item item) {
     if (item == null) return;
     try {
@@ -410,11 +347,7 @@ public class AuctionManagementController {
       dialog.setTitle("Tạo phiên đấu giá — " + item.getName());
       dialog.setScene(new javafx.scene.Scene(root));
 
-      // Hàm showAndWait() sẽ tạm dừng luồng chạy tại đây cho đến khi cửa sổ dialog đóng lại.
       dialog.showAndWait();
-
-      // FIX: Ngay sau khi dialog đóng (dù người dùng tạo thành công hay ấn huỷ bỏ),
-      // hệ thống sẽ gọi lấy lại toàn bộ danh sách phiên và sản phẩm tự động!
       refreshAllData();
 
     } catch (IOException e) {
@@ -431,7 +364,7 @@ public class AuctionManagementController {
 
       EditAuctionController ctrl = loader.getController();
       ctrl.setAuctionData(item);
-      ctrl.setOnSuccessCallback(() -> refreshAllData());
+      ctrl.setOnSuccessCallback(this::refreshAllData);
 
       javafx.stage.Stage dialog = new javafx.stage.Stage();
       dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
@@ -491,9 +424,6 @@ public class AuctionManagementController {
         + auctionItem.getItem().getName());
   }
 
-  // ════════════════════════════════════════════════════
-  // HELPERS
-  // ════════════════════════════════════════════════════
   private void toggleEmpty(VBox emptyBox, ListView<?> listView, boolean isEmpty) {
     if (emptyBox == null) return;
     emptyBox.setVisible(isEmpty);

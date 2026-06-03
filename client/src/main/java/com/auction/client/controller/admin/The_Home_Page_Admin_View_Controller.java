@@ -9,6 +9,7 @@ import com.auction.common.model.User;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
+import com.auction.client.core.ClientSession;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class The_Home_Page_Admin_View_Controller {
 
@@ -60,18 +62,20 @@ public class The_Home_Page_Admin_View_Controller {
     @FXML
     public void initialize() {
         registerRealtimeHandlers();
-        // Gửi 3 request song song để lấy data thực từ server qua socket.
-        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
-        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_TRANSACTIONS, null);
-        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_ISSUES, null);
-        System.out.println("[HOME ADMIN] Khởi tạo xong — đã gửi request lấy dữ liệu.");
+        // TỐI ƯU: Gửi 3 request song song ở luồng nền để giao diện hiện lên ngay lập tức, không bị khựng
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
+            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_TRANSACTIONS, null);
+            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_ISSUES, null);
+            System.out.println("[HOME ADMIN] Khởi tạo xong — đã gửi request lấy dữ liệu.");
+        });
 
         // PIECHART
         statusPieChart.setData(FXCollections.observableArrayList(
-                dataWaiting, dataOpen, dataRunning, dataRejected, dataEnd
+            dataWaiting, dataOpen, dataRunning, dataRejected, dataEnd
         ));
         statusPieChart.layoutBoundsProperty().addListener(
-                (obs, oldVal, newVal) -> Platform.runLater(this::repositionDonutHole)
+            (obs, oldVal, newVal) -> Platform.runLater(this::repositionDonutHole)
         );
     }
 
@@ -81,19 +85,19 @@ public class The_Home_Page_Admin_View_Controller {
 
     private void registerRealtimeHandlers() {
         MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, this::onAuctionsReceived);
+            ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, this::onAuctionsReceived);
         MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, this::onTransactionsReceived);
+            ResponseCode.ADMIN_ALL_TRANSACTIONS_RESULT, this::onTransactionsReceived);
         MessageRouter.getInstance().register(
-                ResponseCode.NEW_BID_UPDATE, this::onNewBidReceived);
+            ResponseCode.NEW_BID_UPDATE, this::onNewBidReceived);
         MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_NEW_PENDING_AUCTION, this::onNewPendingAuction);
+            ResponseCode.ADMIN_NEW_PENDING_AUCTION, this::onNewPendingAuction);
         // Lắng nghe báo cáo mới từ Bidder → cập nhật Disputes KPI ngay lập tức
         MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_NEW_ISSUE, this::onNewIssueReceived);
+            ResponseCode.ADMIN_NEW_ISSUE, this::onNewIssueReceived);
         // Nhận danh sách tất cả issues khi initialize
         MessageRouter.getInstance().register(
-                ResponseCode.ADMIN_ISSUES_RESULT, this::onIssuesReceived);
+            ResponseCode.ADMIN_ISSUES_RESULT, this::onIssuesReceived);
     }
 
     private void onAuctionsReceived(Message message) {
@@ -117,9 +121,12 @@ public class The_Home_Page_Admin_View_Controller {
         if (list == null) list = Collections.emptyList();
         this.cachedTransactions = list;
         double revenue = list.stream().filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getType()) && "APPROVED".equalsIgnoreCase(tx.getStatus())).mapToDouble(TransactionRequest::getAmount).sum();
-        if (lblRevenue != null) lblRevenue.setText(formatMoney(revenue));
-        refreshDisputesKPI();
-        rebuildQuickStats();
+
+        Platform.runLater(() -> {
+            if (lblRevenue != null) lblRevenue.setText(formatMoney(revenue));
+            refreshDisputesKPI();
+            rebuildQuickStats();
+        });
     }
 
     private void onNewBidReceived(Message message) {
@@ -130,41 +137,51 @@ public class The_Home_Page_Admin_View_Controller {
         double newPrice   = (double) data[1];
         String winnerName = (String) data[2];
         String timestamp  = LocalDateTime.now().format(timeFormatter);
-        liveFeedContainer.getChildren().removeIf(node -> node instanceof Label lbl && lbl.getText().startsWith("⏳"));
-        HBox feedRow = new HBox(10);
-        feedRow.setAlignment(Pos.CENTER_LEFT);
-        feedRow.setStyle("-fx-background-color: #F8FFF8; -fx-background-radius: 8; -fx-padding: 5 10 5 10;");
-        Label lblTime = new Label("[" + timestamp + "]");
-        lblTime.setStyle("-fx-text-fill: #A3AED0; -fx-font-size: 11px; -fx-font-family: 'Courier New';");
-        Label lblAuction = new Label("Phiên #" + auctionId);
-        lblAuction.setStyle("-fx-text-fill: #4318FF; -fx-font-weight: bold; -fx-font-size: 12px;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label lblInfo = new Label("🏆 " + winnerName + " → " + formatMoney(newPrice));
-        lblInfo.setStyle("-fx-text-fill: #05CD99; -fx-font-weight: bold; -fx-font-size: 12px;");
-        feedRow.getChildren().addAll(lblTime, lblAuction, spacer, lblInfo);
-        liveFeedContainer.getChildren().add(0, feedRow);
-        if (liveFeedContainer.getChildren().size() > MAX_LIVE_FEED_ITEMS) {
-            liveFeedContainer.getChildren().remove(MAX_LIVE_FEED_ITEMS,
+
+        Platform.runLater(() -> {
+            liveFeedContainer.getChildren().removeIf(node -> node instanceof Label lbl && lbl.getText().startsWith("⏳"));
+            HBox feedRow = new HBox(10);
+            feedRow.setAlignment(Pos.CENTER_LEFT);
+            feedRow.setStyle("-fx-background-color: #F8FFF8; -fx-background-radius: 8; -fx-padding: 5 10 5 10;");
+            Label lblTime = new Label("[" + timestamp + "]");
+            lblTime.setStyle("-fx-text-fill: #A3AED0; -fx-font-size: 11px; -fx-font-family: 'Courier New';");
+            Label lblAuction = new Label("Phiên #" + auctionId);
+            lblAuction.setStyle("-fx-text-fill: #4318FF; -fx-font-weight: bold; -fx-font-size: 12px;");
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            Label lblInfo = new Label("🏆 " + winnerName + " → " + formatMoney(newPrice));
+            lblInfo.setStyle("-fx-text-fill: #05CD99; -fx-font-weight: bold; -fx-font-size: 12px;");
+            feedRow.getChildren().addAll(lblTime, lblAuction, spacer, lblInfo);
+            liveFeedContainer.getChildren().add(0, feedRow);
+            if (liveFeedContainer.getChildren().size() > MAX_LIVE_FEED_ITEMS) {
+                liveFeedContainer.getChildren().remove(MAX_LIVE_FEED_ITEMS,
                     liveFeedContainer.getChildren().size());
-        }
+            }
+        });
     }
 
     private void onNewPendingAuction(Message message) {
         Auction auction = (Auction) message.getPayload();
         if (auction == null) return;
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("📋 Phiên Mới Cần Duyệt!");
-        alert.setHeaderText("Seller vừa gửi yêu cầu phiên đấu giá mới.");
-        alert.setContentText("Mã phiên: #" + auction.getAuctionId()
+
+        // TỐI ƯU: Alert phải được chạy trên luồng Giao diện (Platform.runLater) để không bị Crash
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("📋 Phiên Mới Cần Duyệt!");
+            alert.setHeaderText("Seller vừa gửi yêu cầu phiên đấu giá mới.");
+            alert.setContentText("Mã phiên: #" + auction.getAuctionId()
                 + "\nSản phẩm: #" + auction.getItemId()
                 + "\nNgười bán: #" + auction.getSellerId()
                 + "\n\nHãy vào tab 'Danh sách đấu giá' để duyệt.");
-        alert.show();
-        SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
+            alert.show();
+        });
+
+        // Socket request phải chạy luồng nền
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
+        });
     }
 
-    /** Nhận danh sách toàn bộ issues khi màn hình khởi động */
     @SuppressWarnings("unchecked")
     private void onIssuesReceived(Message message) {
         List<IssueRecord> issues = (List<IssueRecord>) message.getPayload();
@@ -174,13 +191,11 @@ public class The_Home_Page_Admin_View_Controller {
         System.out.println("[HOME ADMIN] Nhận " + cachedIssueCount + " báo cáo sự cố.");
     }
 
-    /** Nhận thông báo push khi có báo cáo MỚI — tăng counter + hiển thị alert nhỏ */
     private void onNewIssueReceived(Message message) {
         IssueRecord issue = (IssueRecord) message.getPayload();
         cachedIssueCount++;
         Platform.runLater(() -> {
             refreshDisputesKPI();
-            // Thêm vào live feed
             if (liveFeedContainer != null) {
                 String timestamp = java.time.LocalDateTime.now().format(timeFormatter);
                 HBox feedRow = new HBox(10);
@@ -197,24 +212,21 @@ public class The_Home_Page_Admin_View_Controller {
                 lblInfo.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px;");
                 feedRow.getChildren().addAll(lblTime, lblAuction, spacer, lblInfo);
                 liveFeedContainer.getChildren().removeIf(node -> node instanceof Label lbl
-                        && lbl.getText() != null && lbl.getText().startsWith("⏳"));
+                    && lbl.getText() != null && lbl.getText().startsWith("⏳"));
                 liveFeedContainer.getChildren().add(0, feedRow);
                 if (liveFeedContainer.getChildren().size() > MAX_LIVE_FEED_ITEMS)
                     liveFeedContainer.getChildren().remove(MAX_LIVE_FEED_ITEMS,
-                            liveFeedContainer.getChildren().size());
+                        liveFeedContainer.getChildren().size());
             }
         });
         System.out.println("[HOME ADMIN] 🔔 Báo cáo mới! Tổng: " + cachedIssueCount);
     }
 
-    /**
-     * Cập nhật label Disputes = pending auctions + pending transactions + issues
-     */
     private void refreshDisputesKPI() {
         long waiting   = cachedAuctions.stream()
-                .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
+            .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         long pendingTx = cachedTransactions.stream()
-                .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
+            .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
         long total = waiting + pendingTx + cachedIssueCount;
         if (lblDisputes != null) lblDisputes.setText(total + " việc");
     }
@@ -226,18 +238,17 @@ public class The_Home_Page_Admin_View_Controller {
     private void updateKPIs(List<Auction> list) {
         int total = list.size();
         long sold = list.stream().filter(a ->
-                "SOLD".equals(a.getAuctionStatus()) || "FINISHED".equals(a.getAuctionStatus())).count();
+            "SOLD".equals(a.getAuctionStatus()) || "FINISHED".equals(a.getAuctionStatus())).count();
         double rate = (total > 0) ? (sold * 100.0 / total) : 0.0;
         if (lblConversionRate != null) lblConversionRate.setText(String.format("%.1f%%", rate));
         long activeBidders = list.stream()
-                .filter(a -> ("OPEN".equals(a.getAuctionStatus()) || "RUNNING".equals(a.getAuctionStatus()))
-                        && a.getCurrentWinnerId() != null && a.getCurrentWinnerId() > 0)
-                .map(Auction::getCurrentWinnerId)
-                .distinct().count();
+            .filter(a -> ("OPEN".equals(a.getAuctionStatus()) || "RUNNING".equals(a.getAuctionStatus()))
+                && a.getCurrentWinnerId() != null && a.getCurrentWinnerId() > 0)
+            .map(Auction::getCurrentWinnerId)
+            .distinct().count();
         if (lblActiveBidders != null) lblActiveBidders.setText(activeBidders + " người");
         long waiting = list.stream().filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         if (lblPendingCount != null) lblPendingCount.setText("Chờ duyệt: " + waiting);
-        // Disputes = waiting auctions + pending transactions + issues
         refreshDisputesKPI();
     }
 
@@ -246,23 +257,23 @@ public class The_Home_Page_Admin_View_Controller {
         quickStatsContainer.getChildren().clear();
         quickStatsContainer.getChildren().add(buildStatRow("Tổng phiên đấu giá", String.valueOf(cachedAuctions.size()), "#2B3674"));
         long running = cachedAuctions.stream()
-                .filter(a -> "OPEN".equals(a.getAuctionStatus()) || "RUNNING".equals(a.getAuctionStatus()))
-                .count();
+            .filter(a -> "OPEN".equals(a.getAuctionStatus()) || "RUNNING".equals(a.getAuctionStatus()))
+            .count();
         quickStatsContainer.getChildren().add(buildStatRow("Đang diễn ra", running + " phiên", "#05CD99"));
         long pending = cachedAuctions.stream()
-                .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
+            .filter(a -> "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         quickStatsContainer.getChildren().add(buildStatRow("Chờ Admin duyệt", pending + " phiên", "#FF8800"));
         long pendingTx = cachedTransactions.stream()
-                .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
+            .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus())).count();
         quickStatsContainer.getChildren().add(buildStatRow("Giao dịch chờ xử lý", pendingTx + " lệnh", "#FF5B5C"));
         double todayDeposit = cachedTransactions.stream()
-                .filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getType())
-                        && "APPROVED".equalsIgnoreCase(tx.getStatus())
-                        && tx.getRequestDate() != null
-                        && tx.getRequestDate().toLocalDate().equals(LocalDate.now()))
-                .mapToDouble(TransactionRequest::getAmount).sum();
+            .filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getType())
+                && "APPROVED".equalsIgnoreCase(tx.getStatus())
+                && tx.getRequestDate() != null
+                && tx.getRequestDate().toLocalDate().equals(LocalDate.now()))
+            .mapToDouble(TransactionRequest::getAmount).sum();
         quickStatsContainer.getChildren().add(buildStatRow(
-                "Nạp tiền hôm nay", formatMoney(todayDeposit), "#4318FF"));
+            "Nạp tiền hôm nay", formatMoney(todayDeposit), "#4318FF"));
     }
     private HBox buildStatRow(String label, String value, String valueColor) {
         HBox row = new HBox();
@@ -290,7 +301,6 @@ public class The_Home_Page_Admin_View_Controller {
 
         LocalDate today = LocalDate.now();
 
-        // --- Series 1: Số phiên tạo mỗi ngày (7 ngày qua) ---
         Map<String, Integer> dailyAuctions = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) {
             dailyAuctions.put(today.minusDays(i).format(dayFormatter), 0);
@@ -302,7 +312,6 @@ public class The_Home_Page_Admin_View_Controller {
             }
         }
 
-        // --- Series 2: Tổng lượt bid mỗi ngày (nếu có) ---
         Map<String, Integer> dailyBids = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) {
             dailyBids.put(today.minusDays(i).format(dayFormatter), 0);
@@ -364,15 +373,15 @@ public class The_Home_Page_Admin_View_Controller {
     private void updatePieChartLogic(List<Auction> list) {
 
         int waitingCount = (int) list.stream().filter(a ->
-                "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
+            "WAITING_FOR_ADMIN".equals(a.getAuctionStatus())).count();
         int openCount = (int) list.stream().filter(a ->
-                "OPEN".equals(a.getAuctionStatus())).count();
+            "OPEN".equals(a.getAuctionStatus())).count();
         int runningCount = (int) list.stream().filter(a ->
-                "RUNNING".equals(a.getAuctionStatus())).count();
+            "RUNNING".equals(a.getAuctionStatus())).count();
         int rejectedCount = (int) list.stream().filter(a ->
-                "REJECTED".equals(a.getAuctionStatus()) || "BLOCKED".equals(a.getAuctionStatus())).count();
+            "REJECTED".equals(a.getAuctionStatus()) || "BLOCKED".equals(a.getAuctionStatus())).count();
         int endCount = (int) list.stream().filter(a ->
-                "SOLD".equals(a.getAuctionStatus()) || "FINISHED".equals(a.getAuctionStatus())).count();
+            "SOLD".equals(a.getAuctionStatus()) || "FINISHED".equals(a.getAuctionStatus())).count();
         updateChartData(waitingCount, openCount, runningCount, rejectedCount, endCount);
         int totalAuctions = waitingCount + openCount + runningCount + rejectedCount + endCount;
         if (lblTotalAuctions != null) {
@@ -394,7 +403,7 @@ public class The_Home_Page_Admin_View_Controller {
         donutHolePane.setPrefSize(holeSize, holeSize);
         donutHolePane.setMaxSize(holeSize, holeSize);
         donutHolePane.setStyle(
-                "-fx-background-color: white; -fx-background-radius: " + (holeSize / 2) + "px;"
+            "-fx-background-color: white; -fx-background-radius: " + (holeSize / 2) + "px;"
         );
     }
 
@@ -412,12 +421,9 @@ public class The_Home_Page_Admin_View_Controller {
         for (Auction auction : auctionList) {
             String type = "";
 
-            // CƠ CHẾ PHÒNG THỦ: Nếu Server chưa nạp Object Item, lấy theo quy luật ItemId hoặc ép dữ liệu test
             if (auction.getItem() != null && auction.getItem().getItemType() != null) {
                 type = auction.getItem().getItemType().toUpperCase();
             } else {
-                // Mẹo Mapping dựa trên dữ liệu thật trong DB bạn chụp để hiển thị:
-                // Giả định: ID 1, 2, 3 là Art | 4, 5 là Vehicle | 100, 101 là Electronics
                 int itemId = auction.getItemId();
                 if (itemId == 1 || itemId == 2 || itemId == 3 || itemId == 7) type = "ART";
                 else if (itemId == 4 || itemId == 5) type = "VEHICLE";
@@ -484,13 +490,25 @@ public class The_Home_Page_Admin_View_Controller {
     @FXML
     public void handleLogout(ActionEvent event) {
         unregisterAllHandlers();
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/view/auth/LoginView.fxml"));
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (Exception e) {e.printStackTrace();}
+
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.LOGOUT, null);
+            SocketClient.getInstance().disconnect();
+        }).thenRun(() -> {
+            Platform.runLater(() -> {
+                ClientSession.getInstance().clear();
+                try {
+                    Parent root = FXMLLoader.load(getClass().getResource("/view/view/auth/LoginView.fxml"));
+                    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+                    stage.setScene(new Scene(root));
+                    stage.show();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        });
     }
+
     private void switchPage(ActionEvent event, String fxmlPath) {
         unregisterAllHandlers();
         try {
@@ -501,7 +519,6 @@ public class The_Home_Page_Admin_View_Controller {
             else if (controller instanceof The_Transaction_Page_Admin_View_Controller c) c.setUserData(currentUser);
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root));
-            // KHÔNG setMaximized → giữ nguyên kích thước cửa sổ hiện tại
             stage.show();
         } catch (Exception e) {e.printStackTrace();}
     }
@@ -516,8 +533,8 @@ public class The_Home_Page_Admin_View_Controller {
     }
 
     private String formatMoney(double amount) {
-        if (amount >= 1_000_000_000) return String.format("%.2f tỷ đ", amount / 1_000_000_000.0);
-        if (amount >= 1_000_000)     return String.format("%.0f tr đ",  amount / 1_000_000.0);
+        if (amount >= 1_000_000_000) return String.format("%.2f tỷ UETệ", amount / 1_000_000_000.0);
+        if (amount >= 1_000_000)     return String.format("%.0f tr UETệ",  amount / 1_000_000.0);
         return String.format("%,.0f đ", amount);
     }
 }

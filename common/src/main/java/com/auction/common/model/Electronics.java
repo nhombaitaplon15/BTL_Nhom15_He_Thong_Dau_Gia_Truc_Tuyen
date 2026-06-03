@@ -18,7 +18,10 @@ public class Electronics extends Item {
         this.model = model;
         this.warrantyMonths = warrantyMonths;
     }
-    public String getBrand() {
+
+  public Electronics() {}
+
+  public String getBrand() {
         return brand;
     }
     public void setBrand(String brand) {

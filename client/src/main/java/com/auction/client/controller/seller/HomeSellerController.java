@@ -8,6 +8,7 @@ import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
 import com.auction.common.network.AuctionItemDTO;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,6 +19,8 @@ import javafx.scene.control.*;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public class HomeSellerController {
 
@@ -25,7 +28,7 @@ public class HomeSellerController {
   @FXML private Label lblPendingPayments;
   @FXML private Label lblExpectedRevenue;
   @FXML private Label lblTodayBids;
-  @FXML private ListView<String>        listRealtimeFeed;
+  @FXML private ListView<String> listRealtimeFeed;
   @FXML private TableView<AuctionItemDTO> tblEndingSoon;
   @FXML private TableColumn<AuctionItemDTO, String> colItemName;
   @FXML private TableColumn<AuctionItemDTO, String> colStartPrice;
@@ -33,54 +36,41 @@ public class HomeSellerController {
   @FXML private TableColumn<AuctionItemDTO, String> colEndTime;
   @FXML private TableColumn<AuctionItemDTO, String> colStatus;
 
-  // ── Khai báo đường dây liên lạc (Callback) để nhờ Controller chính đổi tab ──
   public static Runnable onRequireSwitchToMyProducts;
 
-  // ── Handler references để unregister ──
-  private final java.util.function.Consumer<Message> onAuctionsResult  = this::handleInitialAuctionsData;
-  private final java.util.function.Consumer<Message> onNewBid          = this::handleNewBid;
-  private final java.util.function.Consumer<Message> onAuctionApproved = this::handleAuctionApproved;
-  private final java.util.function.Consumer<Message> onAuctionSold     = this::handleAuctionSold;
-  private final java.util.function.Consumer<Message> onAuctionEnded    = this::handleAuctionEnded;
-  private final java.util.function.Consumer<Message> onTimeExtended    = this::handleTimeExtended;
+  private final Consumer<Message> onAuctionsResult = this::handleAuctionsResult;
+  private final Consumer<Message> onNewBid = this::handleNewBidUpdate;
+  private final Consumer<Message> onAuctionApproved = this::handleAuctionApproved;
+  private final Consumer<Message> onAuctionSold = this::handleAuctionSold;
+  private final Consumer<Message> onAuctionEnded = this::handleAuctionEnded;
+  private final Consumer<Message> onTimeExtended = this::handleTimeExtended;
 
-  int myId = ClientSession.getInstance().getUserId();
+  private int myId;
 
   @FXML
   public void initialize() {
-    setupTableColumns();
+    myId = ClientSession.getInstance().getUserId();
+    setupTableCols();
     registerNetworkHandlers();
-
-    // Lấy dữ liệu ban đầu
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    loadDashboardData();
   }
 
-  // ════════════════════════════════════════
-  // XỬ LÝ SỰ KIỆN NÚT "THÊM SẢN PHẨM MỚI"
-  // ════════════════════════════════════════
   @FXML
   public void handleAddNewProduct(ActionEvent event) {
-    // 1. Nhờ MainController (nơi chứa menu ngang) đổi tab sang "Sản phẩm của bạn"
     if (onRequireSwitchToMyProducts != null) {
       onRequireSwitchToMyProducts.run();
     }
-
-    // 2. Ép MyProductsController mở form thêm sản phẩm ngay lập tức
     MyProductsController.openInsertFormDirectly();
   }
 
-  // ════════════════════════════════════════
-  // ĐĂNG KÝ / HUỶ HANDLER
-  // ════════════════════════════════════════
-
   private void registerNetworkHandlers() {
     MessageRouter r = MessageRouter.getInstance();
-    r.register(ResponseCode.SELLER_AUCTIONS_RESULT,  onAuctionsResult);
-    r.register(ResponseCode.NEW_BID_UPDATE,          onNewBid);
+    r.register(ResponseCode.SELLER_AUCTIONS_RESULT, onAuctionsResult);
+    r.register(ResponseCode.NEW_BID_UPDATE, onNewBid);
     r.register(ResponseCode.SELLER_AUCTION_APPROVED, onAuctionApproved);
-    r.register(ResponseCode.SELLER_AUCTION_SOLD,     onAuctionSold);
-    r.register(ResponseCode.AUCTION_ENDED,           onAuctionEnded);
-    r.register(ResponseCode.AUCTION_TIME_EXTENDED,   onTimeExtended);
+    r.register(ResponseCode.SELLER_AUCTION_SOLD, onAuctionSold);
+    r.register(ResponseCode.AUCTION_ENDED, onAuctionEnded);
+    r.register(ResponseCode.AUCTION_TIME_EXTENDED, onTimeExtended);
   }
 
   public void cleanupHandlers() {
@@ -93,153 +83,173 @@ public class HomeSellerController {
     r.unregister(ResponseCode.AUCTION_TIME_EXTENDED);
   }
 
-  // ════════════════════════════════════════
-  // XỬ LÝ RESPONSE TỪ SERVER
-  // ════════════════════════════════════════
+  private void loadDashboardData() {
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    });
+  }
 
   @SuppressWarnings("unchecked")
-  private void handleInitialAuctionsData(Message message) {
-    try {
-      List<AuctionItemDTO> list = (List<AuctionItemDTO>) message.getPayload();
-      if (list == null) return;
+  private void handleAuctionsResult(Message msg) {
+    if (!(msg.getPayload() instanceof List<?> list)) return;
+    List<AuctionItemDTO> auctions = (List<AuctionItemDTO>) list;
 
-      int activeCount = 0, pendingCount = 0;
-      double expectedRevenue = 0;
-      ObservableList<AuctionItemDTO> tableData = FXCollections.observableArrayList();
+    CompletableFuture.runAsync(() -> {
+      for (AuctionItemDTO row : auctions) {
+        Auction a = row.getAuction();
+        String status = a.getAuctionStatus();
+        if ("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status)) {
+          SocketClient.getInstance().sendRequest(RequestCode.JOIN_ROOM, a.getAuctionId());
+        }
+      }
+    });
 
-      for (AuctionItemDTO row : list) {
+    Platform.runLater(() -> {
+      long active = 0;
+      long pendingPay = 0;
+      double revenue = 0;
+      int todayBids = 0;
+
+      ObservableList<AuctionItemDTO> activeTableData = FXCollections.observableArrayList();
+
+      for (AuctionItemDTO row : auctions) {
         Auction a = row.getAuction();
         String status = a.getAuctionStatus();
 
         if ("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status)) {
-          activeCount++;
-          expectedRevenue += a.getCurrentPrice();
-          tableData.add(row);
-
-          SocketClient.getInstance().sendRequest(RequestCode.JOIN_ROOM, a.getAuctionId());
-
+          active++;
+          revenue += a.getCurrentPrice();
+          todayBids += a.getTotalBids();
+          activeTableData.add(row);
         } else if ("SOLD".equalsIgnoreCase(status) || "FINISHED".equalsIgnoreCase(status)) {
-          pendingCount++;
-          expectedRevenue += a.getCurrentPrice();
+          pendingPay++;
+          revenue += a.getCurrentPrice();
+        } else if ("PAID".equalsIgnoreCase(status)) {
+          revenue += a.getCurrentPrice();
         }
       }
 
-      lblActiveAuctions .setText(String.valueOf(activeCount));
-      lblPendingPayments.setText(String.valueOf(pendingCount));
-      lblExpectedRevenue.setText(formatMoney(expectedRevenue) + " UETệ");
-      lblTodayBids      .setText("0");
-      tblEndingSoon     .setItems(tableData);
+      lblActiveAuctions.setText(String.valueOf(active));
+      lblPendingPayments.setText(String.valueOf(pendingPay));
+      lblExpectedRevenue.setText(formatMoney(revenue) + " UETệ");
+      lblTodayBids.setText(String.valueOf(todayBids));
 
-    } catch (Exception e) {
-      System.err.println("[HOME] Lỗi load dữ liệu ban đầu: " + e.getMessage());
-    }
+      activeTableData.sort((a, b) -> {
+        if (a.getAuction().getEndTime() == null) return 1;
+        if (b.getAuction().getEndTime() == null) return -1;
+        return a.getAuction().getEndTime().compareTo(b.getAuction().getEndTime());
+      });
+
+      if (activeTableData.size() > 5) {
+        tblEndingSoon.setItems(FXCollections.observableArrayList(activeTableData.subList(0, 5)));
+      } else {
+        tblEndingSoon.setItems(activeTableData);
+      }
+    });
   }
 
-  private void handleNewBid(Message message) {
-    try {
-      Object payload = message.getPayload();
-      if (!(payload instanceof Object[] data)) return;
+  private void handleNewBidUpdate(Message msg) {
+    Platform.runLater(() -> {
+      try {
+        Object[] data = (Object[]) msg.getPayload();
+        int auctionId = Integer.parseInt(data[0].toString());
+        double newPrice = Double.parseDouble(data[1].toString());
+        String winner = String.valueOf(data[2]);
 
-      int    auctionId  = Integer.parseInt(data[0].toString());
-      double newPrice   = Double.parseDouble(data[1].toString());
-      String bidderName = String.valueOf(data[2]);
+        addFeedItem(String.format("⚡ %s vừa bid %s UETệ cho phiên #%d", winner, formatMoney(newPrice), auctionId));
+        incrementLabel(lblTodayBids, 1);
 
-      addFeedItem(String.format("⚡ %s vừa bid %s UETệ cho phiên #%d",
-          bidderName, formatMoney(newPrice), auctionId));
+        double currentRevenue = parseMoneyFromLabel(lblExpectedRevenue.getText());
+        double difference = newPrice;
 
-      lblExpectedRevenue.setText(formatMoney(newPrice) + " UETệ");
-      incrementLabel(lblTodayBids, 1);
-
-      for (AuctionItemDTO row : tblEndingSoon.getItems()) {
-        if (row.getAuction().getAuctionId() == auctionId) {
-          row.getAuction().setCurrentPrice(newPrice);
-          row.getAuction().setTotalBids(row.getAuction().getTotalBids() + 1);
-          break;
+        for (AuctionItemDTO row : tblEndingSoon.getItems()) {
+          if (row.getAuction().getAuctionId() == auctionId) {
+            difference = newPrice - row.getAuction().getCurrentPrice();
+            row.getAuction().setCurrentPrice(newPrice);
+            row.getAuction().setTotalBids(row.getAuction().getTotalBids() + 1);
+            break;
+          }
         }
-      }
-      tblEndingSoon.refresh();
 
-    } catch (Exception e) {
-      System.err.println("[HOME] Lỗi xử lý NEW_BID_UPDATE: " + e.getMessage());
-    }
+        lblExpectedRevenue.setText(formatMoney(currentRevenue + difference) + " UETệ");
+        tblEndingSoon.refresh();
+
+      } catch (Exception e) {
+        System.err.println("[HOME] Error NEW_BID_UPDATE: " + e.getMessage());
+      }
+    });
   }
 
   private void handleAuctionApproved(Message message) {
-    Integer auctionId = (Integer) message.getPayload();
-    addFeedItem("🟢 Admin vừa duyệt và mở phiên #" + auctionId);
-    incrementLabel(lblActiveAuctions, 1);
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    Platform.runLater(() -> {
+      Integer auctionId = (Integer) message.getPayload();
+      addFeedItem("🟢 Admin vừa duyệt và mở phiên #" + auctionId);
+      incrementLabel(lblActiveAuctions, 1);
+      loadDashboardData();
+    });
   }
 
   private void handleAuctionSold(Message message) {
-    try {
-      Object[] payload = (Object[]) message.getPayload();
-      int    auctionId  = Integer.parseInt(payload[0].toString());
-      double finalPrice = Double.parseDouble(payload[1].toString());
-      String buyerName  = String.valueOf(payload[2]);
+    Platform.runLater(() -> {
+      try {
+        Object[] payload = (Object[]) message.getPayload();
+        int auctionId = Integer.parseInt(payload[0].toString());
+        double finalPrice = Double.parseDouble(payload[1].toString());
+        String buyerName = String.valueOf(payload[2]);
 
-      addFeedItem(String.format("🔥 Phiên #%d đã chốt %s UETệ — Người mua: %s",
-          auctionId, formatMoney(finalPrice), buyerName));
-
-      incrementLabel(lblActiveAuctions,  -1);
-      incrementLabel(lblPendingPayments,  1);
-
-      tblEndingSoon.getItems().removeIf(r -> r.getAuction().getAuctionId() == auctionId);
-
-    } catch (Exception e) {
-      System.err.println("[HOME] Lỗi xử lý SELLER_AUCTION_SOLD: " + e.getMessage());
-    }
+        addFeedItem(String.format("🔥 Phiên #%d đã chốt %s UETệ — Người mua: %s", auctionId, formatMoney(finalPrice), buyerName));
+        incrementLabel(lblActiveAuctions, -1);
+        incrementLabel(lblPendingPayments, 1);
+        tblEndingSoon.getItems().removeIf(r -> r.getAuction().getAuctionId() == auctionId);
+      } catch (Exception e) {
+        System.err.println("[HOME] Error SELLER_AUCTION_SOLD: " + e.getMessage());
+      }
+    });
   }
 
   private void handleAuctionEnded(Message message) {
-    try {
-      Object[] payload = (Object[]) message.getPayload();
-      int auctionId = Integer.parseInt(payload[0].toString());
-      addFeedItem("🏁 Phiên #" + auctionId + " đã kết thúc.");
-      tblEndingSoon.getItems().removeIf(r -> r.getAuction().getAuctionId() == auctionId);
-      incrementLabel(lblActiveAuctions, -1);
-    } catch (Exception e) {
-      System.err.println("[HOME] Lỗi xử lý AUCTION_ENDED: " + e.getMessage());
-    }
+    Platform.runLater(() -> {
+      try {
+        Object[] payload = (Object[]) message.getPayload();
+        int auctionId = Integer.parseInt(payload[0].toString());
+
+        addFeedItem("🏁 Phiên #" + auctionId + " đã kết thúc.");
+        tblEndingSoon.getItems().removeIf(r -> r.getAuction().getAuctionId() == auctionId);
+        incrementLabel(lblActiveAuctions, -1);
+      } catch (Exception e) {
+        System.err.println("[HOME] Error AUCTION_ENDED: " + e.getMessage());
+      }
+    });
   }
 
   private void handleTimeExtended(Message message) {
-    try {
-      Object[] payload = (Object[]) message.getPayload();
-      int auctionId = Integer.parseInt(payload[0].toString());
-      addFeedItem("⏱ Phiên #" + auctionId + " được gia hạn thêm thời gian!");
-    } catch (Exception e) {
-      System.err.println("[HOME] Lỗi xử lý AUCTION_TIME_EXTENDED: " + e.getMessage());
-    }
+    Platform.runLater(() -> {
+      try {
+        Object[] payload = (Object[]) message.getPayload();
+        int auctionId = Integer.parseInt(payload[0].toString());
+        addFeedItem("⏱ Phiên #" + auctionId + " được gia hạn thêm thời gian!");
+      } catch (Exception e) {
+        System.err.println("[HOME] Error AUCTION_TIME_EXTENDED: " + e.getMessage());
+      }
+    });
   }
 
-  // ════════════════════════════════════════
-  // SETUP TABLE COLUMNS
-  // ════════════════════════════════════════
-
-  private void setupTableColumns() {
-    colItemName   .setCellValueFactory(c ->
-        new SimpleStringProperty(c.getValue().getItem().getName()));
-    colStartPrice .setCellValueFactory(c ->
-        new SimpleStringProperty(formatMoney(c.getValue().getAuction().getStartingPrice()) + " UETệ"));
-    colCurrentPrice.setCellValueFactory(c ->
-        new SimpleStringProperty(formatMoney(c.getValue().getAuction().getCurrentPrice()) + " UETệ"));
-    colEndTime    .setCellValueFactory(c -> {
+  private void setupTableCols() {
+    colItemName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getItem().getName()));
+    colStartPrice.setCellValueFactory(c -> new SimpleStringProperty(formatMoney(c.getValue().getAuction().getStartingPrice()) + " UETệ"));
+    colCurrentPrice.setCellValueFactory(c -> new SimpleStringProperty(formatMoney(c.getValue().getAuction().getCurrentPrice()) + " UETệ"));
+    colEndTime.setCellValueFactory(c -> {
       var endTime = c.getValue().getAuction().getEndTime();
       return new SimpleStringProperty(endTime != null ? endTime.toString() : "—");
     });
-    colStatus     .setCellValueFactory(c ->
-        new SimpleStringProperty(c.getValue().getAuction().getAuctionStatus()));
+    colStatus.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getAuction().getAuctionStatus()));
   }
-
-  // ════════════════════════════════════════
-  // HELPERS
-  // ════════════════════════════════════════
 
   private void addFeedItem(String text) {
     listRealtimeFeed.getItems().add(0, text);
-    if (listRealtimeFeed.getItems().size() > 50)
+    if (listRealtimeFeed.getItems().size() > 50) {
       listRealtimeFeed.getItems().remove(50, listRealtimeFeed.getItems().size());
+    }
   }
 
   private void incrementLabel(Label label, int delta) {
@@ -250,7 +260,17 @@ public class HomeSellerController {
     } catch (NumberFormatException ignored) {}
   }
 
+  private double parseMoneyFromLabel(String text) {
+    try {
+      String cleanStr = text.replaceAll("[^\\d]", "");
+      if (cleanStr.isEmpty()) return 0;
+      return Double.parseDouble(cleanStr);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
+  }
+
   private String formatMoney(double amount) {
-    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) amount);
+    return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(amount);
   }
 }

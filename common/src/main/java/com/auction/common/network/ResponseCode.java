@@ -49,6 +49,7 @@ public enum ResponseCode {
     BIDDER_CANCEL_SUCCESS,      // payload: null
     BIDDER_CANCEL_FAILED,       // payload: String reason
     WINNER_NOTIFICATION,
+    ROOM_STATE_UPDATE,          // payload: AuctionRoomDTO
 
     // ===================== SELLER =====================
     SELLER_ITEMS_RESULT,        // payload: List<Item> (items của seller)

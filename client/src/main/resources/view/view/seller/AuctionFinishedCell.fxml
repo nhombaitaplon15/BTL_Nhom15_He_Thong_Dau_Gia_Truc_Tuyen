@@ -50,20 +50,20 @@
     </VBox>
 
     <Label fx:id="lblStatusPill"
-           text="PAID"
+           text="SOLD"
            style="-fx-background-color:#E8F5E9;-fx-text-fill:#2E7D32;
                   -fx-font-size:10;-fx-font-weight:bold;
                   -fx-padding:3 10 3 10;-fx-background-radius:99;
                   -fx-min-width:80;-fx-alignment:CENTER;"/>
 
-    <Button fx:id="btnRemind"
-            text="Nhắc TT"
-            onAction="#onRemind"
-            managed="false" visible="false"
-            style="-fx-background-color:#D7A859;-fx-text-fill:#3A2408;
-                   -fx-font-size:12;-fx-font-weight:bold;
-                   -fx-padding:7 14 7 14;-fx-background-radius:7;
-                   -fx-cursor:hand;-fx-border-color:transparent;"/>
+<!--    <Button fx:id="btnRemind"-->
+<!--            text="Nhắc TT"-->
+<!--            onAction="#onRemind"-->
+<!--            managed="false" visible="false"-->
+<!--            style="-fx-background-color:#D7A859;-fx-text-fill:#3A2408;-->
+<!--                   -fx-font-size:12;-fx-font-weight:bold;-->
+<!--                   -fx-padding:7 14 7 14;-fx-background-radius:7;-->
+<!--                   -fx-cursor:hand;-fx-border-color:transparent;"/>-->
 
     <Button fx:id="btnView"
             text="Xem lại"

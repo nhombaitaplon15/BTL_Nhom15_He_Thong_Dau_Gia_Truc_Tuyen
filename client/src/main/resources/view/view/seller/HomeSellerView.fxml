@@ -135,24 +135,6 @@
                             </children>
                             <padding><Insets bottom="15.0" left="15.0" right="15.0" top="15.0" /></padding>
                         </VBox>
-
-                        <VBox prefWidth="320.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #E5E7EB; -fx-border-radius: 8;">
-                            <children>
-                                <HBox alignment="CENTER_LEFT">
-                                    <children>
-                                        <Label text="Hoạt động đang diễn ra" textFill="#333333">
-                                            <font><Font name="Times New Roman Bold" size="14.0" /></font>
-                                        </Label>
-                                        <Region HBox.hgrow="ALWAYS" />
-                                        <Label styleClass="live-badge" text="🟢 Trực tiếp" textFill="#10b981">
-                                            <font><Font size="13.0" /></font>
-                                        </Label>
-                                    </children>
-                                </HBox>
-                                <ListView fx:id="listRealtimeFeed" styleClass="activity-list" VBox.vgrow="ALWAYS" />
-                            </children>
-                            <padding><Insets bottom="15.0" left="15.0" right="15.0" top="15.0" /></padding>
-                        </VBox>
                     </children>
                 </HBox>
             </children>

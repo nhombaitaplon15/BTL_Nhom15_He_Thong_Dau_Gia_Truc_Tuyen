@@ -6,6 +6,7 @@ import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.TransactionRequest;
 import com.auction.common.model.User;
+import com.auction.common.network.AuctionItemDTO;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
 import com.auction.common.network.ResponseCode;
@@ -26,6 +27,7 @@ import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class AccountController {
@@ -81,6 +83,7 @@ public class AccountController {
   private final Consumer<Message> onTransactionsResult = this::handleTransactionsResult;
   private final Consumer<Message> onSwitchRoleSuccess = this::handleSwitchRoleSuccess;
   private final Consumer<Message> onSwitchRoleFailed = this::handleSwitchRoleFailed;
+  private final Consumer<Message> onMyAuctionsResult = this::handleMyAuctionsResult;
 
   @FXML
   public void initialize() {
@@ -96,8 +99,9 @@ public class AccountController {
     if (btnStay != null) btnStay.setOnAction(e -> switchTab(btnProfile, paneProfile, null));
 
     switchTab(btnProfile, paneProfile, null);
-    requestProfile();
-    requestWalletData();
+
+    // Gộp chung một lần lấy dữ liệu để tránh xung đột luồng
+    loadAllData();
   }
 
   private void registerNetworkHandlers() {
@@ -113,6 +117,7 @@ public class AccountController {
     router.register(ResponseCode.TRANSACTIONS_RESULT, onTransactionsResult);
     router.register(ResponseCode.SWITCH_ROLE_SUCCESS, onSwitchRoleSuccess);
     router.register(ResponseCode.SWITCH_ROLE_FAILED, onSwitchRoleFailed);
+    router.register(ResponseCode.SELLER_AUCTIONS_RESULT, onMyAuctionsResult);
   }
 
   public void cleanupHandlers() {
@@ -128,15 +133,16 @@ public class AccountController {
     router.unregister(ResponseCode.TRANSACTIONS_RESULT);
     router.unregister(ResponseCode.SWITCH_ROLE_SUCCESS);
     router.unregister(ResponseCode.SWITCH_ROLE_FAILED);
+    router.unregister(ResponseCode.SELLER_AUCTIONS_RESULT);
   }
 
-  private void requestProfile() {
-    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
-  }
-
-  private void requestWalletData() {
-    SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
-    SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, myId);
+  // Gộp chung các request vào một Thread duy nhất chạy tuần tự
+  private void loadAllData() {
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, myId);
+      SocketClient.getInstance().sendRequest(RequestCode.GET_USER_TRANSACTIONS, myId);
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, null);
+    });
   }
 
   @SuppressWarnings("unchecked")
@@ -185,7 +191,7 @@ public class AccountController {
   private void handleProfileUpdated(Message msg) {
     Platform.runLater(() -> {
       showSuccess("Cập nhật thông tin thành công!");
-      requestProfile();
+      loadAllData();
     });
   }
 
@@ -203,16 +209,14 @@ public class AccountController {
   private void handleDepositSuccess(Message msg) {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu nạp tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
-      requestProfile();
-      requestWalletData();
+      loadAllData();
     });
   }
 
   private void handleWithdrawSuccess(Message msg) {
     Platform.runLater(() -> {
       showSuccess("Yêu cầu rút tiền đã được gửi!\nAdmin sẽ xét duyệt sớm.");
-      requestProfile();
-      requestWalletData();
+      loadAllData();
     });
   }
 
@@ -245,7 +249,9 @@ public class AccountController {
     if (txtEmail != null) user.setEmail(txtEmail.getText().trim());
     if (txtPhone != null) user.setPhone(txtPhone.getText().trim());
 
-    SocketClient.getInstance().sendRequest(RequestCode.UPDATE_PROFILE, user);
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.UPDATE_PROFILE, user);
+    });
   }
 
   @FXML
@@ -265,7 +271,9 @@ public class AccountController {
     }
 
     String[] passwords = {currentPwd, newPwd, confirmPwd};
-    SocketClient.getInstance().sendRequest(RequestCode.CHANGE_PASSWORD, passwords);
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.CHANGE_PASSWORD, passwords);
+    });
   }
 
   @FXML
@@ -278,7 +286,10 @@ public class AccountController {
       try {
         double amount = Double.parseDouble(input.trim().replace(",", ""));
         if (amount <= 0) { showError("Số tiền phải lớn hơn 0!"); return; }
-        SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
+
+        CompletableFuture.runAsync(() -> {
+          SocketClient.getInstance().sendRequest(RequestCode.DEPOSIT_REQUEST, amount);
+        });
       } catch (NumberFormatException e) {
         showError("Số tiền không hợp lệ!");
       }
@@ -295,7 +306,10 @@ public class AccountController {
       try {
         double amount = Double.parseDouble(input.trim().replace(",", ""));
         if (amount <= 0) { showError("Số tiền phải lớn hơn 0!"); return; }
-        SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
+
+        CompletableFuture.runAsync(() -> {
+          SocketClient.getInstance().sendRequest(RequestCode.WITHDRAW_REQUEST, amount);
+        });
       } catch (NumberFormatException e) {
         showError("Số tiền không hợp lệ!");
       }
@@ -304,21 +318,32 @@ public class AccountController {
 
   private void doLogout() {
     cleanupHandlers();
-    ClientSession.getInstance().clear();
-    SocketClient.getInstance().disconnect();
-    try {
-      javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-          getClass().getResource("/view/view/auth/LoginView.fxml"));
-      javafx.scene.Parent root = loader.load();
-      javafx.stage.Stage stage = (javafx.stage.Stage) btnProfile.getScene().getWindow();
-      stage.setScene(new javafx.scene.Scene(root));
-    } catch (Exception e) {
-      showError("Không thể chuyển trang: " + e.getMessage());
-    }
+
+    // Gửi request logout và đảm bảo disconnect được gọi trong cùng một luồng an toàn
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.LOGOUT, null);
+      SocketClient.getInstance().disconnect(); // Khôi phục lại hàm này
+    }).thenRun(() -> {
+      // Đảm bảo việc xóa session và đổi scene chạy trên JavaFX thread sau khi socket đã đóng
+      Platform.runLater(() -> {
+        ClientSession.getInstance().clear();
+        try {
+          javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+              getClass().getResource("/view/view/auth/LoginView.fxml"));
+          javafx.scene.Parent root = loader.load();
+          javafx.stage.Stage stage = (javafx.stage.Stage) btnProfile.getScene().getWindow();
+          stage.setScene(new javafx.scene.Scene(root));
+        } catch (Exception e) {
+          showError("Không thể chuyển trang: " + e.getMessage());
+        }
+      });
+    });
   }
 
   @FXML void handleSwitchToBidder(ActionEvent event) {
-    SocketClient.getInstance().sendRequest(RequestCode.SWITCH_ROLE, "BIDDER");
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SWITCH_ROLE, "BIDDER");
+    });
   }
 
   private void handleSwitchRoleSuccess(Message msg) {
@@ -454,6 +479,37 @@ public class AccountController {
     if (type.startsWith("BID_AUCTION_")) return "Đặt giá phiên #" + type.replace("BID_AUCTION_", "");
     if (type.startsWith("PROFIT_AUCTION_")) return "Phí hoa hồng";
     return type;
+  }
+  @SuppressWarnings("unchecked")
+  private void handleMyAuctionsResult(Message msg) {
+    Platform.runLater(() -> {
+      try {
+        Object payload = msg.getPayload();
+        if (payload instanceof List) {
+          List<AuctionItemDTO> list = (List<AuctionItemDTO>) payload;
+
+          int totalProducts = list.size();
+          int totalSold = 0;
+
+          // Duyệt qua danh sách để đếm các sản phẩm đã bán thành công
+          for (AuctionItemDTO dto : list) {
+            String status = dto.getAuction().getAuctionStatus();
+            if ("SOLD".equals(status) || "PAID".equals(status) || "FINISHED".equals(status)) {
+              totalSold++;
+            }
+          }
+
+          // Cập nhật lên giao diện
+          set(lblStatProducts, String.valueOf(totalProducts));
+          set(lblStatSold, String.valueOf(totalSold));
+
+          // Hệ thống chưa có cơ sở dữ liệu Rating, tạm set cứng một con số đẹp cho Seller
+          set(lblStatRating, "5.0 ★");
+        }
+      } catch (Exception e) {
+        System.err.println("[DETAIL] Lỗi load thống kê Seller: " + e.getMessage());
+      }
+    });
   }
 
   private String formatStatus(String s) {

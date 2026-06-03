@@ -21,7 +21,9 @@ public class Art extends Item {
         this.hasCertificate = hasCertificate;
     }
 
-    public String getArtist() {
+  public Art() {}
+
+  public String getArtist() {
         return artist;
     }
 

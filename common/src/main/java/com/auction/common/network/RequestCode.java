@@ -16,7 +16,7 @@ public enum RequestCode {
     REGISTER,           // Đăng ký (payload: LoginDTO)
     FORGOT_PASSWORD,    // Khôi phục mật khẩu (payload: String[] {username, phone, newPass})
     SWITCH_ROLE,        // Chuyển đổi vai trò
-
+    LOGOUT,             // Đăng xuất
     // ===================== BIDDER / SHARED USER =====================
     FETCH_ROOMS,        // Lấy danh sách phòng đấu giá đang mở
     FETCH_ITEMS,        // Lấy items theo danh mục phòng (payload: String category)

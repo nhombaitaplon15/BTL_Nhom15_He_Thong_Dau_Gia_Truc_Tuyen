@@ -18,6 +18,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.text.Normalizer;
 
@@ -56,7 +57,10 @@ public class RegisterController {
         }
 
         RegisterDTO registerData = new RegisterDTO(username, password, email, phone, "BIDDER");
-        SocketClient.getInstance().sendRequest(RequestCode.REGISTER, registerData);
+
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.REGISTER, registerData);
+        });
     }
 
     private void handleRegisterSuccess(Message msg) {

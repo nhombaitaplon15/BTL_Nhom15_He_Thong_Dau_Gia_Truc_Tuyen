@@ -1,5 +1,6 @@
 package com.auction.client.controller.bidder;
 
+import com.auction.client.core.ClientSession;
 import com.auction.client.core.MessageRouter;
 import com.auction.client.core.SocketClient;
 import com.auction.common.model.Auction;
@@ -29,6 +30,7 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class The_Home_Page_Bidder_View_Controller {
@@ -65,6 +67,15 @@ public class The_Home_Page_Bidder_View_Controller {
         MessageRouter.getInstance().register(ResponseCode.SWITCH_ROLE_FAILED, onSwitchRoleFailed);
         MessageRouter.getInstance().register(ResponseCode.NEW_BID_UPDATE, onNewBidUpdate);
         MessageRouter.getInstance().register(ResponseCode.AUCTION_ENDED, onAuctionEnded);
+        MessageRouter.getInstance().register(ResponseCode.AUCTION_STATUS_CHANGED, msg -> {
+            Platform.runLater(() -> {
+                // Kiểm tra xem user đang đứng ở danh mục nào thì load lại danh mục đó
+                String title = lblRoomTitle.getText();
+                if (title.contains("PHƯƠNG TIỆN")) loadAuctionsFromDatabase("VEHICLE");
+                else if (title.contains("NGHỆ THUẬT")) loadAuctionsFromDatabase("ART");
+                else if (title.contains("ĐIỆN TỬ")) loadAuctionsFromDatabase("ELECTRONICS");
+            });
+        });
     }
 
     private void cleanupHandlers() {
@@ -133,8 +144,7 @@ public class The_Home_Page_Bidder_View_Controller {
             try {
                 double actualBalance = paymentDAO.getBalance(currentUser.getId());
                 double totalUserEscrow = 0;
-                String sqlEscrow = "SELECT SUM(current_price) FROM auctions WHERE current_winner_id = ? AND auction_status = 'RUNNING'";
-
+                String sqlEscrow = "SELECT SUM(current_price) FROM auctions WHERE current_winner_id = ? AND auction_status IN ('OPEN', 'RUNNING')";
                 try (java.sql.Connection conn = com.auction.server.dao.DBConnection.getConnection();
                      java.sql.PreparedStatement ps = conn.prepareStatement(sqlEscrow)) {
                     ps.setInt(1, currentUser.getId());
@@ -221,7 +231,10 @@ public class The_Home_Page_Bidder_View_Controller {
     @FXML void handleSearch(ActionEvent event) { }
 
     @FXML void handleSwitchToSeller(ActionEvent event) {
-        SocketClient.getInstance().sendRequest(RequestCode.SWITCH_ROLE, "SELLER");
+        // TỐI ƯU: Đưa lệnh gửi Socket ra luồng nền để màn hình mượt mà
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.SWITCH_ROLE, "SELLER");
+        });
     }
 
     private void handleSwitchRoleSuccess(Message msg) {
@@ -262,12 +275,25 @@ public class The_Home_Page_Bidder_View_Controller {
     void handleLogout(ActionEvent event) {
         clearActiveTimers();
         cleanupHandlers();
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/view/auth/LoginView.fxml"));
-            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
-        } catch (Exception e) { e.printStackTrace(); }
+
+        // Chạy ngầm gửi request và ngắt kết nối
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.LOGOUT, null);
+            SocketClient.getInstance().disconnect();
+        }).thenRun(() -> {
+            // Sau khi ngắt socket xong mới xóa bộ nhớ và đổi giao diện
+            Platform.runLater(() -> {
+                ClientSession.getInstance().clear();
+                try {
+                    Parent root = FXMLLoader.load(getClass().getResource("/view/view/auth/LoginView.fxml"));
+                    Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+                    stage.setScene(new Scene(root));
+                    stage.show();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        });
     }
 
     private void switchSceneWithUser(ActionEvent event, String fxmlPath, String title, int type) {

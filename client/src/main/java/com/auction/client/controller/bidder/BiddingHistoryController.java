@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,6 @@ public class BiddingHistoryController implements Initializable {
     private The_Home_Page_Bidder_View_Controller homeControllerInstance;
     private Scene homeScene;
 
-    // Các Consumer lắng nghe dữ liệu trả về từ Server Realtime
     private final Consumer<Message> onHistoryResult = this::handleHistoryResult;
     private final Consumer<Message> onProfileResult = this::handleProfileResult;
 
@@ -53,7 +53,6 @@ public class BiddingHistoryController implements Initializable {
         setupTable();
         setupSearch();
 
-        // Đăng ký nhận kết quả từ Server qua Socket
         MessageRouter.getInstance().register(ResponseCode.BID_HISTORY_RESULT, onHistoryResult);
         MessageRouter.getInstance().register(ResponseCode.PROFILE_RESULT, onProfileResult);
     }
@@ -87,7 +86,6 @@ public class BiddingHistoryController implements Initializable {
             protected void updateItem(Double amount, boolean empty) {
                 super.updateItem(amount, empty);
 
-                // GỌI CSS: Xóa class cũ trước khi gán mới (JavaFX hay dùng lại Cell cũ khi cuộn)
                 getStyleClass().removeAll("amount-text");
 
                 if (empty || amount == null) {
@@ -104,7 +102,6 @@ public class BiddingHistoryController implements Initializable {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(empty || item == null ? null : item, empty);
 
-                // GỌI CSS: Dọn dẹp sạch sẽ các màu cũ
                 getStyleClass().removeAll("status-win", "status-lead", "status-fail", "status-default");
 
                 if (empty || item == null) {
@@ -139,20 +136,21 @@ public class BiddingHistoryController implements Initializable {
 
     private void loadHistory() {
         if (currentUser == null) return;
-        SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, currentUser.getId());
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.FETCH_BID_HISTORY, currentUser.getId());
+        });
     }
 
     private void handleHistoryResult(Message msg) {
         Object payload = msg.getPayload();
 
-        // 🛡️ LỚP KHIÊN BẢO VỆ CHỐNG CRASH CLASSCASTEXCEPTION
         if (payload instanceof List<?> rawList) {
             List<BidHistoryRow> safeList = new ArrayList<>();
             for (Object obj : rawList) {
                 if (obj instanceof BidHistoryRow) {
                     safeList.add((BidHistoryRow) obj);
                 } else {
-                    System.err.println("❌ LỖI NGHIÊM TRỌNG: Server trả về sai kiểu dữ liệu (" + obj.getClass().getSimpleName() + " thay vì BidHistoryRow). Vui lòng báo Backend sửa DAO!");
+                    System.err.println("❌ LỖI NGHIÊM TRỌNG: Server trả về sai kiểu dữ liệu.");
                 }
             }
 
@@ -179,7 +177,9 @@ public class BiddingHistoryController implements Initializable {
     @FXML
     private void handleRefresh() {
         if (currentUser != null) {
-            SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, currentUser.getId());
+            CompletableFuture.runAsync(() -> {
+                SocketClient.getInstance().sendRequest(RequestCode.GET_PROFILE, currentUser.getId());
+            });
         }
         loadHistory();
     }

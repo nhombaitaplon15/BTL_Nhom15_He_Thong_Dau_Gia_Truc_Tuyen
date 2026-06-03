@@ -7,56 +7,45 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-/**
- * Tập hợp các hàm tiện ích dùng chung cho tất cả card controller.
- * Tránh copy-paste loadImage() và formatMoney() ở 5 nơi.
- */
 public final class CardUtils {
 
   private static final NumberFormat VN_FORMAT =
       NumberFormat.getNumberInstance(new Locale("vi", "VN"));
 
-  private CardUtils() {} // Không cho khởi tạo
+  private CardUtils() {}
 
-  // ------------------------------------------------------------------ //
-  //  Format tiền                                                        //
-  // ------------------------------------------------------------------ //
-
-  /** "1.500.000" (không có đơn vị — caller tự thêm "UETệ" hay "đ") */
   public static String formatMoney(double amount) {
     return VN_FORMAT.format(amount);
   }
 
-  // ------------------------------------------------------------------ //
-  //  Load ảnh                                                           //
-  // ------------------------------------------------------------------ //
-
-  /**
-   * Load ảnh từ đường dẫn tuyệt đối trong DB vào ImageView.
-   * Nếu path null/rỗng hoặc file không tồn tại → set null (hiện placeholder).
-   *
-   * @param imgView  ImageView cần set ảnh
-   * @param path     Đường dẫn tuyệt đối lấy từ DB (item.getImgItem())
-   */
   public static void loadImage(ImageView imgView, String path) {
     if (imgView == null) return;
 
     if (path != null && !path.isBlank()) {
-      File file = new File(path);
-      if (file.exists()) {
-        imgView.setImage(new Image(file.toURI().toString()));
-        return;
+      try {
+        // 1. Dạy hệ thống đọc link Internet (từ ImgBB)
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+          imgView.setImage(new Image(path, true)); // true: tải ngầm để không đơ màn hình
+          return;
+        }
+
+        // 2. Vẫn giữ lại cơ chế đọc file nội bộ cũ (dành cho các ảnh cũ lưu trước đó)
+        File file = new File(path);
+        if (file.exists()) {
+          imgView.setImage(new Image(file.toURI().toString(), true));
+          return;
+        }
+
+        System.out.println("[CardUtils] Không tìm thấy ảnh: " + path);
+      } catch (Exception e) {
+        System.err.println("[CardUtils] Lỗi tải ảnh: " + e.getMessage());
       }
-      System.out.println("[CardUtils] Không tìm thấy ảnh: " + path);
     }
-    imgView.setImage(null); // Giữ placeholder trong FXML
+
+    // Nếu không có link hoặc tải lỗi, set ảnh về null (khung trắng)
+    imgView.setImage(null);
   }
 
-  // ------------------------------------------------------------------ //
-  //  Ẩn/hiện node                                                      //
-  // ------------------------------------------------------------------ //
-
-  /** Set visible + managed cùng lúc để không chiếm layout space khi ẩn. */
   public static void setVisible(javafx.scene.Node node, boolean visible) {
     if (node == null) return;
     node.setVisible(visible);

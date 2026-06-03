@@ -13,31 +13,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.Consumer;
 
-/**
- * Controller dùng chung cho 3 loại thẻ: AUCTIONING / PENDING / SOLD.
- * FXML tương ứng: ProductCard.fxml
- *
- * Cách dùng trong cell factory:
- *   cardController.setData(item, ProductsCardController.CardType.AUCTIONING);
- */
 public class ProductsCardController {
 
   public enum CardType { AUCTIONING, PENDING, SOLD }
 
-  // --- Labels chung ---
   @FXML private Label itemNameLabel;
-  @FXML private Label subTitleLabel;     // categoryDateLabel / timeLabel / endTimeLabel
+  @FXML private Label subTitleLabel;
   @FXML private Label startPriceLabel;
-  @FXML private Label mainPriceLabel;    // currentPrice / "Chưa mở" / finalPrice
-  @FXML private Label priceSubLabel;     // bidCount / "Chưa có bid" / "✓ Đã chốt"
-  @FXML private Label statusBadgeLabel;  // "Đang mở" / "Chờ admin duyệt" / "Hoàn tất"
-  @FXML private Label winnerLabel;       // chỉ dùng cho SOLD
+  @FXML private Label mainPriceLabel;
+  @FXML private Label priceSubLabel;
+  @FXML private Label statusBadgeLabel;
+  @FXML private Label winnerLabel;
 
-  // --- Buttons ---
-  @FXML private Button primaryButton;    // "Chi tiết" / "Sửa" / "Xem lại"
-  @FXML private Button deleteButton;     // chỉ hiện ở PENDING
+  @FXML private Button primaryButton;
+  @FXML private Button deleteButton;
 
-  // --- Image ---
   @FXML private ImageView imgProduct;
 
   private Consumer<AuctionItemDTO> onDetailCallback;
@@ -50,24 +40,19 @@ public class ProductsCardController {
 
   public void setData(AuctionItemDTO dto, CardType type) {
     try {
-      // SỬA Ở ĐÂY: Gán dữ liệu cho biến global của class
       this.currentItem = dto;
 
       var item    = dto.getItem();
       var auction = dto.getAuction();
 
-      // --- Tên & giá khởi điểm (giống nhau ở cả 3 loại) ---
       itemNameLabel.setText(item.getName());
       startPriceLabel.setText("Khởi điểm: " + VN_FMT.format(item.getStartingPrice()) + "UETệ");
 
-      // --- Load ảnh (dùng chung) ---
       loadImage(item.getImgItem());
 
-      // SỬA Ở ĐÂY: Gom chung sự kiện click cho primaryButton (Chi tiết / Sửa / Xem lại)
       primaryButton.setOnAction(e -> handleChiTietButtonClick());
 
       switch (type) {
-
         case AUCTIONING -> {
           String date = item.getCreatedAt() != null
               ? item.getCreatedAt().format(DATE_FMT) : "N/A";
@@ -84,8 +69,6 @@ public class ProductsCardController {
 
           primaryButton.setText("Chi tiết");
           primaryButton.setStyle("-fx-background-color:transparent;-fx-border-color:#dcdde1;-fx-border-radius:5;");
-
-          // ĐÃ XÓA dòng primaryButton.setOnAction(e -> System.out.println(...)) ở đây
 
           setVisible(winnerLabel, false);
           setVisible(deleteButton, false);
@@ -108,11 +91,8 @@ public class ProductsCardController {
           primaryButton.setText("Sửa");
           primaryButton.setStyle("-fx-background-color:#192a56;-fx-text-fill:white;-fx-background-radius:5;");
 
-          // ĐÃ XÓA dòng primaryButton.setOnAction(e -> System.out.println(...)) ở đây
-
           setVisible(deleteButton, true);
-          deleteButton.setOnAction(e ->
-              System.out.println("Xóa Item ID: " + item.getId())); // Chức năng xóa giữ nguyên tạm thời
+          deleteButton.setOnAction(e -> handleHuyButtonClick());
 
           setVisible(winnerLabel, false);
         }
@@ -122,25 +102,39 @@ public class ProductsCardController {
               ? auction.getEndTime().format(DATE_FMT) : "N/A";
           subTitleLabel.setText(item.getItemType() + " · Kết thúc " + endDate);
 
-          mainPriceLabel.setText(VN_FMT.format(auction.getCurrentPrice()) + "UETệ");
-          mainPriceLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 18; -fx-font-weight: bold;");
+          String status = auction.getAuctionStatus();
 
-          priceSubLabel.setText("✓ Đã chốt");
-          priceSubLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 11;");
+          if ("REJECTED".equalsIgnoreCase(status) || "CANCELED".equalsIgnoreCase(status)) {
+            mainPriceLabel.setText("Không có bid");
+            mainPriceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 16; -fx-font-weight: bold;");
 
-          statusBadgeLabel.setText("Hoàn tất");
-          statusBadgeLabel.setStyle("-fx-background-color:#eafaf1;-fx-text-fill:#2ecc71;"
-              + "-fx-padding:3 10 3 10;-fx-background-radius:15;-fx-font-size:11;");
+            priceSubLabel.setText("✗ Từ chối / Huỷ");
+            priceSubLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 11;");
 
-          String winnerId = auction.getCurrentWinnerId() != null
-              ? String.valueOf(auction.getCurrentWinnerId()) : "Không có";
-          setVisible(winnerLabel, true);
-          winnerLabel.setText("Người thắng ID: " + winnerId);
+            statusBadgeLabel.setText(status);
+            statusBadgeLabel.setStyle("-fx-background-color:#fadbd8;-fx-text-fill:#c0392b;"
+                + "-fx-padding:3 10 3 10;-fx-background-radius:15;-fx-font-size:11;");
+
+            setVisible(winnerLabel, false);
+          } else {
+            mainPriceLabel.setText(VN_FMT.format(auction.getCurrentPrice()) + "UETệ");
+            mainPriceLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 18; -fx-font-weight: bold;");
+
+            priceSubLabel.setText("✓ Đã chốt");
+            priceSubLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 11;");
+
+            statusBadgeLabel.setText(status);
+            statusBadgeLabel.setStyle("-fx-background-color:#eafaf1;-fx-text-fill:#2ecc71;"
+                + "-fx-padding:3 10 3 10;-fx-background-radius:15;-fx-font-size:11;");
+
+            String winnerId = auction.getCurrentWinnerId() != null
+                ? String.valueOf(auction.getCurrentWinnerId()) : "Không có";
+            setVisible(winnerLabel, true);
+            winnerLabel.setText("Người thắng ID: " + winnerId);
+          }
 
           primaryButton.setText("Xem lại");
           primaryButton.setStyle("-fx-background-color:transparent;-fx-border-color:#dcdde1;-fx-border-radius:5;");
-
-          // ĐÃ XÓA dòng primaryButton.setOnAction(e -> System.out.println(...)) ở đây
 
           setVisible(deleteButton, false);
         }
@@ -153,43 +147,37 @@ public class ProductsCardController {
     }
   }
 
-  // ------------------------------------------------------------------ //
-  //  Helper                                                              //
-  // ------------------------------------------------------------------ //
-
   private void loadImage(String imagePathFromDB) {
     if (imgProduct == null) return;
     if (imagePathFromDB != null && !imagePathFromDB.trim().isEmpty()) {
       File imageFile = new File(imagePathFromDB);
-
-      // Kiểm tra xem file có thực sự tồn tại trong ổ cứng không
       if (imageFile.exists()) {
-        // Lệnh toURI().toString() sẽ tự động thêm "file:/" và chuyển đổi các ký tự khoảng trắng cho chuẩn
-        Image image = new Image(imageFile.toURI().toString());
-
-        // imageViewProduct là cái biến ImageView trên giao diện của bạn
+        // TỐI ƯU: Truyền true để JavaFX load ảnh bằng luồng nền (Background Thread), giúp hết giật lag khi cuộn danh sách
+        Image image = new Image(imageFile.toURI().toString(), true);
         imgProduct.setImage(image);
       } else {
         System.out.println("Lỗi: Không tìm thấy file ảnh tại đường dẫn: " + imagePathFromDB);
-      }  // Ở đây
+      }
     }
   }
 
-  /** Ẩn/hiện node và giải phóng layout space luôn */
   private void setVisible(javafx.scene.Node node, boolean visible) {
     if (node == null) return;
     node.setVisible(visible);
     node.setManaged(visible);
   }
+
   public void setOnDetailCallback(Consumer<AuctionItemDTO> callback) {
     this.onDetailCallback = callback;
   }
+
   @FXML
   private void handleChiTietButtonClick() {
     if (onDetailCallback != null) {
       onDetailCallback.accept(currentItem);
     }
   }
+
   public void setOnCancelCallback(Consumer<AuctionItemDTO> callback) {
     this.onCancelCallback = callback;
   }

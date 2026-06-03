@@ -19,75 +19,59 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class EditAuctionController {
 
-  // ── PREVIEW ──
   @FXML private ImageView imgItemPreview;
   @FXML private Label lblItemName;
   @FXML private Label lblItemMeta;
   @FXML private Label lblStartingPrice;
 
-  // ── FORM FIELDS ──
   @FXML private DatePicker dtpStartTime;
   @FXML private DatePicker dtpEndTime;
   @FXML private TextField txtBuyNowPrice;
 
-  // ── BUTTONS ──
   @FXML private Button btnSave;
+  @FXML private Button btnCancel;
 
-  // ── STATE ──
-  private AuctionItemDTO currentAuctionItem;
+  private AuctionItemDTO currentAuctionData;
   private Runnable onSuccessCallback;
 
-  // ── HANDLERS ──
-  // LƯU Ý: Đảm bảo bạn đã khai báo SELLER_EDIT_SUCCESS và SELLER_EDIT_FAILED trong ResponseCode
   private final Consumer<Message> onEditSuccess = this::handleEditSuccess;
   private final Consumer<Message> onEditFailed = this::handleEditFailed;
 
   @FXML
   public void initialize() {
-    registerNetworkHandlers();
-    addNumberOnlyListener(txtBuyNowPrice);
-  }
-
-  private void registerNetworkHandlers() {
-    MessageRouter r = MessageRouter.getInstance();
-    // Giả định bạn dùng ResponseCode này, bạn có thể đổi theo chuẩn của hệ thống
-    r.register(ResponseCode.SELLER_EDIT_SUCCESS, onEditSuccess);
-    r.register(ResponseCode.SELLER_EDIT_FAILED, onEditFailed);
+    MessageRouter.getInstance().register(ResponseCode.SELLER_EDIT_SUCCESS, onEditSuccess);
+    MessageRouter.getInstance().register(ResponseCode.SELLER_EDIT_FAILED, onEditFailed);
   }
 
   public void cleanupHandlers() {
-    MessageRouter r = MessageRouter.getInstance();
-    r.unregister(ResponseCode.SELLER_EDIT_SUCCESS);
-    r.unregister(ResponseCode.SELLER_EDIT_FAILED);
+    MessageRouter.getInstance().unregister(ResponseCode.SELLER_EDIT_SUCCESS);
+    MessageRouter.getInstance().unregister(ResponseCode.SELLER_EDIT_FAILED);
   }
 
-  // Nạp dữ liệu cũ vào form để người dùng sửa
-  public void setAuctionData(AuctionItemDTO itemDAO) {
-    this.currentAuctionItem = itemDAO;
-    Auction auction = itemDAO.getAuction();
+  public void setAuctionData(AuctionItemDTO dto) {
+    this.currentAuctionData = dto;
+    lblItemName.setText(dto.getItem().getName());
+    lblItemMeta.setText("Chỉnh sửa phiên #" + dto.getAuction().getAuctionId());
+    lblStartingPrice.setText(formatMoney(dto.getAuction().getStartingPrice()) + " UETệ");
 
-    // 1. Đổ dữ liệu Preview
-    lblItemName.setText(itemDAO.getItem().getName());
-    lblItemMeta.setText(itemDAO.getItem().getItemType() + " · Phiên #A"
-        + String.format("%04d", auction.getAuctionId()) + " · CHỜ DUYỆT");
-    lblStartingPrice.setText(formatMoney(auction.getStartingPrice()) + "đ");
-    loadImage(itemDAO.getItem().getImgItem());
+    // Nạp ảnh bằng luồng nền
+    loadImage(dto.getItem().getImgItem());
 
-    // 2. Đổ dữ liệu Form (thời gian)
-    if (auction.getStartTime() != null) {
-      dtpStartTime.setValue(auction.getStartTime().toLocalDate());
+    if (dto.getAuction().getStartTime() != null) {
+      dtpStartTime.setValue(dto.getAuction().getStartTime().toLocalDate());
     }
-    if (auction.getEndTime() != null) {
-      dtpEndTime.setValue(auction.getEndTime().toLocalDate());
+    if (dto.getAuction().getEndTime() != null) {
+      dtpEndTime.setValue(dto.getAuction().getEndTime().toLocalDate());
     }
   }
 
-  public void setOnSuccessCallback(Runnable callback) {
-    this.onSuccessCallback = callback;
+  public void setOnSuccessCallback(Runnable cb) {
+    this.onSuccessCallback = cb;
   }
 
   @FXML
@@ -97,14 +81,14 @@ public class EditAuctionController {
     btnSave.setDisable(true);
     btnSave.setText("Đang lưu...");
 
-    // 1. Cập nhật lại object Auction với dữ liệu mới từ form
-    Auction updatedAuction = currentAuctionItem.getAuction();
+    Auction updatedAuction = currentAuctionData.getAuction();
     updatedAuction.setStartTime(dtpStartTime.getValue().atTime(LocalTime.of(8, 0)));
     updatedAuction.setEndTime(dtpEndTime.getValue().atTime(LocalTime.of(20, 0)));
-    // updatedAuction.setNote(txtNote.getText()); // Cập nhật các trường khác nếu có
 
-    // 2. Gửi request lên Server (Đảm bảo có mã RequestCode.SELLER_EDIT_AUCTION)
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_EDIT_AUCTION, updatedAuction);
+    // Đẩy luồng kết nối Mạng sang Background
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_EDIT_AUCTION, updatedAuction);
+    });
   }
 
   @FXML
@@ -125,7 +109,7 @@ public class EditAuctionController {
   private void handleEditFailed(Message msg) {
     Platform.runLater(() -> {
       btnSave.setDisable(false);
-      btnSave.setText("💾 Lưu thay đổi");
+      btnSave.setText("Lưu thay đổi");
       String reason = msg.getMessage() != null ? msg.getMessage() : "Vui lòng thử lại sau.";
       new Alert(Alert.AlertType.ERROR, "Cập nhật thất bại: " + reason, ButtonType.OK).showAndWait();
     });
@@ -156,16 +140,11 @@ public class EditAuctionController {
   private void loadImage(String path) {
     if (imgItemPreview == null || path == null || path.isBlank()) return;
     File file = new File(path);
-    if (file.exists()) imgItemPreview.setImage(new Image(file.toURI().toString()));
+    // Tính năng tải ảnh bằng luồng nền của JavaFX (tham số true)
+    if (file.exists()) imgItemPreview.setImage(new Image(file.toURI().toString(), true));
   }
 
   private String formatMoney(double amount) {
     return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format((long) amount);
-  }
-
-  private void addNumberOnlyListener(TextField field) {
-    field.textProperty().addListener((obs, o, n) -> {
-      if (!n.matches("\\d*")) field.setText(n.replaceAll("[^\\d]", ""));
-    });
   }
 }

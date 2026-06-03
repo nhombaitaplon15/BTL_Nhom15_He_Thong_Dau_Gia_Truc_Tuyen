@@ -15,12 +15,13 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.concurrent.CompletableFuture;
+
 public class ReportIssueController {
     @FXML private TextField txtSessionId;
     @FXML private ComboBox<String> cbIssueType;
     @FXML private TextArea txtDescription;
 
-    // ĐÃ FIX: Sử dụng đúng kiểu BidHistoryRow để đồng bộ với BiddingHistoryController
     private BidHistoryRow currentData;
     private User currentUser;
 
@@ -41,7 +42,6 @@ public class ReportIssueController {
         MessageRouter.getInstance().register(ResponseCode.REPORT_SENT, this::handleReportSuccess);
     }
 
-    // ĐÃ FIX: Đổi tham số truyền vào thành BidHistoryRow
     public void setIssueData(BidHistoryRow data, User user) {
         if (data != null) {
             this.currentData = data;
@@ -74,7 +74,11 @@ public class ReportIssueController {
 
         // Đóng gói mảng dữ liệu bắn lên Server
         Object[] reportPayload = new Object[]{auctionId, issueType, description};
-        SocketClient.getInstance().sendRequest(RequestCode.REPORT_ISSUE, reportPayload);
+
+        // ĐẨY VÀO LUỒNG NỀN ĐỂ GIAO DIỆN KHÔNG BỊ ĐƠ KHI BẤM NÚT GỬI
+        CompletableFuture.runAsync(() -> {
+            SocketClient.getInstance().sendRequest(RequestCode.REPORT_ISSUE, reportPayload);
+        });
     }
 
     private void handleReportSuccess(Message msg) {

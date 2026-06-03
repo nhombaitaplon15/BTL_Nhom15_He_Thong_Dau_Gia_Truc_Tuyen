@@ -40,7 +40,7 @@
                         <items>
                             <FXCollections fx:factory="observableArrayList" xmlns="http://javafx.com/javafx">
                                 <String fx:value="Phương tiện" />
-                                <String fx:value="Đồ điện tử" />
+                                <String fx:value="Điện tử" />
                                 <String fx:value="Nghệ thuật" />
                             </FXCollections>
                         </items>
@@ -186,7 +186,7 @@
 
         <HBox alignment="CENTER_RIGHT" spacing="12">
             <Button styleClass="btn-cancel" text="Huỷ" />
-            <Button onAction="#handleSubmit" styleClass="btn-submit" text="✓  Đăng sản phẩm" />
+            <Button onAction="#handleSave" styleClass="btn-submit" text="✓  Đăng sản phẩm" />
         </HBox>
         <padding>
             <Insets left="13.0" right="15.0" />

@@ -30,7 +30,9 @@ public abstract class Item extends Entity implements java.io.Serializable {
         this.createdAt = createdAt;
     }
 
-    // --- Getters & Setters ---
+  public Item() {}
+
+  // --- Getters & Setters ---
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

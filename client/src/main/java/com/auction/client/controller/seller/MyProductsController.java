@@ -22,33 +22,29 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class MyProductsController {
 
-  // --- SỬA THÀNH ScrollPane ĐỂ ĐỒNG BỘ VỚI FXML TRÀN VIỀN ---
   @FXML private ScrollPane paneAuctioning;
   @FXML private ScrollPane panePending;
   @FXML private ScrollPane paneSold;
 
-  // --- ListView ---
   @FXML private ListView<AuctionItemDTO> listAuctioning;
   @FXML private ListView<AuctionItemDTO> listPending;
   @FXML private ListView<AuctionItemDTO> listSold;
 
-  // --- Label đếm số lượng ---
   @FXML private Label lblCountAuc;
   @FXML private Label badgeAuctioning;
   @FXML private Label lblCountPend;
   @FXML private Label badgePending;
   @FXML private Label lblCountSold;
 
-  // --- Sidebar buttons ---
   @FXML private HBox btnAuctioning;
   @FXML private HBox btnPending;
   @FXML private HBox btnSold;
 
-  // --- Ô tìm kiếm ---
   @FXML private TextField searchAuctioning;
   @FXML private TextField searchPending;
   @FXML private TextField searchSold;
@@ -56,39 +52,32 @@ public class MyProductsController {
   @FXML private StackPane mainContentArea;
   @FXML private Parent insertItemNode = null;
 
-  // Cache data từ server để filter local
   private List<AuctionItemDTO> cachedAuctioning = List.of();
   private List<AuctionItemDTO> cachedPending = List.of();
   private List<AuctionItemDTO> cachedSold = List.of();
 
-  // ── Handler references để unregister ──
   private final Consumer<Message> onAuctionsResult = this::handleAuctionsResult;
   private final Consumer<Message> onAuctionApproved = msg -> refreshAll();
   private final Consumer<Message> onAuctionRejected = msg -> refreshAll();
   private final Consumer<Message> onAuctionSold = msg -> refreshAll();
 
-  // THÊM MỚI: Biến giữ instance để có thể điều khiển từ xa
   private static MyProductsController instance;
   public static boolean requestOpenInsertItem = false;
 
   int myId = ClientSession.getInstance().getUserId();
-  // ================================================================
-  // INITIALIZE
-  // ================================================================
+
   @FXML
   public void initialize() {
-    instance = this; // THÊM MỚI: Gán instance hiện tại
+    instance = this;
 
     setupCellFactories();
     registerNetworkHandlers();
 
-    // Tab switching
     btnAuctioning.setOnMouseClicked(e -> switchTab(btnAuctioning, paneAuctioning));
     btnPending.setOnMouseClicked(e -> switchTab(btnPending, panePending));
     btnSold.setOnMouseClicked(e -> switchTab(btnSold, paneSold));
     switchTab(btnAuctioning, paneAuctioning);
 
-    // Live search: filter trên data đã cache
     searchAuctioning.textProperty().addListener((obs, o, kw) ->
         filterLocal(cachedAuctioning, kw, listAuctioning, lblCountAuc, badgeAuctioning));
     searchPending.textProperty().addListener((obs, o, kw) ->
@@ -98,18 +87,14 @@ public class MyProductsController {
 
     refreshAll();
 
-    // Kiểm tra cờ hiệu khi trang này vừa được load lên
     Platform.runLater(() -> {
       if (requestOpenInsertItem) {
-        showInsertItemView(null);      // Mở màn hình Thêm sản phẩm
-        requestOpenInsertItem = false; // Tắt cờ đi để tránh tự động mở ở các lần sau
+        showInsertItemView(null);
+        requestOpenInsertItem = false;
       }
     });
   }
 
-  // ================================================================
-  // THÊM MỚI: HÀM HỖ TRỢ GỌI TỪ TRANG CHỦ
-  // ================================================================
   public static void openInsertFormDirectly() {
     if (instance != null) {
       Platform.runLater(() -> instance.showInsertItemView(null));
@@ -118,9 +103,6 @@ public class MyProductsController {
     }
   }
 
-  // ================================================================
-  // ĐĂNG KÝ / HUỶ HANDLER
-  // ================================================================
   private void registerNetworkHandlers() {
     MessageRouter r = MessageRouter.getInstance();
     r.register(ResponseCode.SELLER_AUCTIONS_RESULT, onAuctionsResult);
@@ -137,16 +119,13 @@ public class MyProductsController {
     r.unregister(ResponseCode.SELLER_AUCTION_SOLD);
   }
 
-  // ================================================================
-  // GỬI REQUEST LÊN SERVER
-  // ================================================================
   private void refreshAll() {
-    SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    // TỐI ƯU: Đẩy tác vụ Socket xuống luồng nền
+    CompletableFuture.runAsync(() -> {
+      SocketClient.getInstance().sendRequest(RequestCode.SELLER_GET_MY_AUCTIONS, myId);
+    });
   }
 
-  // ================================================================
-  // XỬ LÝ RESPONSE TỪ SERVER
-  // ================================================================
   @SuppressWarnings("unchecked")
   private void handleAuctionsResult(Message msg) {
     if (!(msg.getPayload() instanceof List<?> rawList)) return;
@@ -162,7 +141,8 @@ public class MyProductsController {
         .filter(a -> {
           String s = a.getAuction().getAuctionStatus();
           return "SOLD".equalsIgnoreCase(s) || "FINISHED".equalsIgnoreCase(s)
-              || "PAID".equalsIgnoreCase(s);
+              || "PAID".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s)
+              || "REJECTED".equalsIgnoreCase(s);
         })
         .toList();
 
@@ -176,9 +156,6 @@ public class MyProductsController {
     });
   }
 
-  // ================================================================
-  // FILTER LOCAL
-  // ================================================================
   private void filterLocal(List<AuctionItemDTO> source, String keyword,
                            ListView<AuctionItemDTO> listView, Label lblCount, Label badge) {
     List<AuctionItemDTO> filtered = (keyword == null || keyword.isBlank())
@@ -193,9 +170,6 @@ public class MyProductsController {
     if (badge != null) badge.setText(String.valueOf(filtered.size()));
   }
 
-  // ================================================================
-  // CELL FACTORIES VÀ CHI TIẾT PHIÊN
-  // ================================================================
   private void setupCellFactories() {
     setupCellFactory(listAuctioning, ProductsCardController.CardType.AUCTIONING,
         "/view/view/seller/ProductsCardView.fxml");
@@ -217,7 +191,6 @@ public class MyProductsController {
           controller = loader.getController();
 
           if (controller != null) {
-            // 1. Nút Chi tiết / Sửa
             controller.setOnDetailCallback(ignored -> {
               AuctionItemDTO currentItem = getItem();
               if (currentItem != null) {
@@ -229,7 +202,6 @@ public class MyProductsController {
               }
             });
 
-            // 2. Nút Huỷ (Chỉ dành cho Pending)
             controller.setOnCancelCallback(ignored -> {
               AuctionItemDTO currentItem = getItem();
               if (currentItem != null && type == ProductsCardController.CardType.PENDING) {
@@ -336,11 +308,6 @@ public class MyProductsController {
     }
   }
 
-  // ================================================================
-  // TAB SWITCHING
-  // ================================================================
-
-  // SỬA: Thay VBox activePane thành ScrollPane activePane
   private void switchTab(HBox activeBtn, ScrollPane activePane) {
     paneAuctioning.setVisible(false); paneAuctioning.setManaged(false);
     panePending.setVisible(false); panePending.setManaged(false);
@@ -360,9 +327,6 @@ public class MyProductsController {
     activeBtn.setStyle(active);
   }
 
-  // ================================================================
-  // INSERT ITEM
-  // ================================================================
   @FXML
   void showInsertItemView(ActionEvent event) {
     try {
