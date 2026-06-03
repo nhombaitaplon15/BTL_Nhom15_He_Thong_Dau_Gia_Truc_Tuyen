@@ -178,4 +178,24 @@ class PaymentServiceTest {
             }
         }
     }
+    @Nested @DisplayName("Test cơ chế Rollback")
+    class RollbackTests {
+
+        @Test @DisplayName("releaseFunds thất bại ở bước cộng tiền Seller -> Rollback")
+        void releaseFunds_rollbackOnFailure() throws Exception {
+            Connection mockConn = mock(Connection.class);
+            try (MockedStatic<DBConnection> dbMock = mockStatic(DBConnection.class)) {
+                dbMock.when(DBConnection::getConnection).thenReturn(mockConn);
+
+                // Bước 1 Admin thành công, nhưng Bước 2 Seller thất bại
+                when(paymentDAO.updateAdminFunds(any(), anyInt(), anyDouble(), anyString(), anyDouble())).thenReturn(true);
+                when(paymentDAO.updateBalance(any(), anyInt(), anyDouble(), eq("+"))).thenReturn(false);
+
+                assertThrows(AuctionException.class, () -> paymentService.releaseFunds(2, 1000, 1));
+
+                verify(mockConn).rollback(); // Đảm bảo đã rollback
+                verify(mockConn, never()).commit();
+            }
+        }
+    }
 }
