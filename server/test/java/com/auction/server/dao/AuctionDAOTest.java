@@ -226,4 +226,27 @@ class AuctionDAOTest {
     String desc = auctionDAO.getItemDescription(100);
     assertEquals("Mô tả chi tiết vật phẩm", desc);
   }
+  @Test
+  @DisplayName("getAuctionsBySeller - Lấy danh sách phiên của người bán")
+  void testGetAuctionsBySeller_Success() throws SQLException {
+    when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+    when(mockResultSet.next()).thenReturn(true, false);
+    mockAuctionResultSet();
+
+    List<Auction> result = auctionDAO.getAuctionsBySeller(200);
+    assertFalse(result.isEmpty());
+    verify(mockPreparedStatement).setInt(1, 200);
+  }
+  @Test
+  @DisplayName("getAll - Xử lý khi có SQLException")
+  void testGetAll_SQLException() throws SQLException {
+    when(mockPreparedStatement.executeQuery()).thenThrow(new SQLException("DB Down"));
+
+    // Đảm bảo không ném ngoại lệ ra ngoài (do bạn đang try-catch và in stack trace)
+    assertDoesNotThrow(() -> {
+      List<Auction> list = auctionDAO.getAll();
+      assertTrue(list.isEmpty());
+    });
+  }
+
 }

@@ -219,4 +219,5 @@ class PaymentDAOTest {
     double escrowBalance = paymentDAO.getEscrowBalance(2);
     assertEquals(2500000.0, escrowBalance);
   }
+
 }
