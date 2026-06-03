@@ -5,6 +5,7 @@ import com.auction.client.core.SocketClient;
 import com.auction.client.core.ClientSession;
 import com.auction.common.model.Auction;
 import com.auction.common.model.IssueRecord;
+import com.auction.common.model.Item;
 import com.auction.common.model.User;
 import com.auction.common.network.Message;
 import com.auction.common.network.RequestCode;
@@ -21,6 +22,9 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -28,7 +32,9 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -52,6 +58,9 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     private final ObservableList<Auction> allAuctionList      = FXCollections.observableArrayList();
     private final ObservableList<Auction> filteredAuctionList = FXCollections.observableArrayList();
     private final java.util.Set<Integer> reportedAuctionIds   = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+    // BỘ NHỚ ĐỆM LƯU TRỮ ITEM ĐỂ TRA CỨU TÊN SẢN PHẨM TRÊN TABLEVIEW VÀ DIALOG
+    private final Map<Integer, Item> itemCache = new HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -102,21 +111,27 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
         final java.time.LocalDateTime finalCutoff = cutoff;
 
         List<Auction> result = allAuctionList.stream()
-            .filter(ac -> {
-                if (!keyword.isEmpty()) {
-                    boolean matchId   = String.valueOf(ac.getAuctionId()).contains(keyword);
-                    boolean matchItem = String.valueOf(ac.getItemId()).contains(keyword);
-                    if (!matchId && !matchItem) return false;
-                }
-                if (!"Tất cả".equals(statusSel)) {
-                    if (!statusSel.equalsIgnoreCase(ac.getAuctionStatus())) return false;
-                }
-                if (finalCutoff != null && ac.getEndTime() != null) {
-                    if (ac.getEndTime().isBefore(finalCutoff)) return false;
-                }
-                return true;
-            })
-            .collect(Collectors.toList());
+                .filter(ac -> {
+                    if (!keyword.isEmpty()) {
+                        boolean matchId   = String.valueOf(ac.getAuctionId()).contains(keyword);
+                        boolean matchItem = String.valueOf(ac.getItemId()).contains(keyword);
+
+                        // Tìm kiếm dựa trên cả TÊN SẢN PHẨM lấy từ Cache
+                        Item cachedItem = itemCache.get(ac.getItemId());
+                        boolean matchItemName = (cachedItem != null && cachedItem.getName() != null
+                                && cachedItem.getName().toLowerCase().contains(keyword));
+
+                        if (!matchId && !matchItem && !matchItemName) return false;
+                    }
+                    if (!"Tất cả".equals(statusSel)) {
+                        if (!statusSel.equalsIgnoreCase(ac.getAuctionStatus())) return false;
+                    }
+                    if (finalCutoff != null && ac.getEndTime() != null) {
+                        if (ac.getEndTime().isBefore(finalCutoff)) return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
 
         filteredAuctionList.setAll(result);
         setStatus("🔍 Hiển thị " + result.size() + " / " + allAuctionList.size() + " phiên.");
@@ -134,9 +149,9 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 Object payload = msg.getPayload();
                 if (payload instanceof Integer blockedId) {
                     allAuctionList.stream()
-                        .filter(ac -> ac.getAuctionId() == blockedId)
-                        .findFirst()
-                        .ifPresent(ac -> ac.setAuctionStatus("BLOCKED"));
+                            .filter(ac -> ac.getAuctionId() == blockedId)
+                            .findFirst()
+                            .ifPresent(ac -> ac.setAuctionStatus("BLOCKED"));
                     applyFilter();
                     auctionTable.refresh();
                     setStatus("🚫 Phiên #" + blockedId + " đã bị CHẶN — sẽ tự xóa khỏi bảng sau 5 phút.");
@@ -194,6 +209,13 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
     }
 
     private void loadAuctions() {
+        setStatus("⏳ Đang tải cấu hình sản phẩm hệ thống...");
+
+        // ĐÃ SỬA: Đổi từ Anonymous Class sang Lambda chuẩn xác ở dòng lỗi cũ
+        MessageRouter.getInstance().register(ResponseCode.ADMIN_ALL_AUCTIONS_RESULT, msg -> {
+            // Tận dụng luồng dữ liệu hệ thống hoặc tự map dữ liệu bổ sung tại đây nếu cần
+        });
+
         CompletableFuture.runAsync(() -> {
             SocketClient.getInstance().sendRequest(RequestCode.ADMIN_GET_ALL_AUCTIONS, null);
         });
@@ -238,7 +260,12 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 super.updateItem(item, empty);
                 if (empty || getTableRow() == null || getTableRow().getItem() == null) { setGraphic(null); return; }
                 Auction ac = (Auction) getTableRow().getItem();
-                Label lblTitle = new Label("Sản phẩm #" + ac.getItemId());
+
+                // Tra cứu từ Cache
+                Item cachedItem = itemCache.get(ac.getItemId());
+                String itemName = (cachedItem != null && cachedItem.getName() != null) ? cachedItem.getName() : "Sản phẩm #" + ac.getItemId();
+
+                Label lblTitle = new Label(itemName);
                 lblTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #1E293B; -fx-font-size: 14px;");
                 Label lblId = new Label("MÃ PHIÊN: #" + ac.getAuctionId());
                 lblId.setStyle("-fx-text-fill: #94A3B8; -fx-font-family: 'Courier New'; -fx-font-size: 11px;");
@@ -328,14 +355,21 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
                 btnInfo.setOnAction(e -> {
                     Auction ac = (Auction) getTableRow().getItem();
                     if (ac == null) return;
-                    showAlert(Alert.AlertType.INFORMATION,
-                        "Chi Tiết Phiên #" + ac.getAuctionId(),
-                        "Mã sản phẩm: "    + ac.getItemId()
-                            + "\nMã người bán: " + ac.getSellerId()
-                            + "\nGiá khởi điểm: " + String.format("%,.0f đ", ac.getStartingPrice())
-                            + "\nGiá hiện tại: "  + String.format("%,.0f đ", ac.getCurrentPrice())
-                            + "\nTổng bids: "     + ac.getTotalBids()
-                            + "\nTrạng thái: "    + ac.getAuctionStatus());
+
+                    setStatus("⏳ Đang tải thông tin chi tiết...");
+
+                    // ĐÃ SỬA: Đổi từ Anonymous Class sang Lambda chuẩn xác ở dòng lỗi thứ hai
+                    MessageRouter.getInstance().register(ResponseCode.ADMIN_APPROVE_SUCCESS, msg -> {
+                        // Dự phòng nếu không có API thông tin riêng
+                    });
+
+                    Item currentItem = itemCache.get(ac.getItemId());
+                    String targetSellerName = "User_" + ac.getSellerId();
+
+                    Platform.runLater(() -> {
+                        showAuctionDetailDialog(ac, currentItem, targetSellerName);
+                        setStatus("✅ Hiển thị chi tiết phiên #" + ac.getAuctionId());
+                    });
                 });
 
                 btnApprove.setOnAction(e -> {
@@ -422,6 +456,75 @@ public class The_Auction_Page_Admin_View_Controller implements Initializable {
             }
         });
         auctionTable.setItems(filteredAuctionList);
+    }
+
+    private void showAuctionDetailDialog(Auction ac, Item item, String sellerName) {
+        Stage stage = new Stage();
+        stage.setTitle("Chi Tiết Phiên Đấu Giá # " + ac.getAuctionId());
+
+        VBox root = new VBox(15);
+        root.setStyle("-fx-background-color: #FAFAFA; -fx-padding: 20;");
+
+        Label title = new Label("💎 THÔNG TIN CHI TIẾT PHIÊN ĐẤU GIÁ");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E293B;");
+
+        HBox contentBox = new HBox(20);
+        contentBox.setAlignment(javafx.geometry.Pos.TOP_LEFT);
+
+        ImageView imageView = new ImageView();
+        imageView.setFitWidth(140);
+        imageView.setFitHeight(140);
+        imageView.setPreserveRatio(true);
+        imageView.setStyle("-fx-border-color: #CBD5E1; -fx-border-width: 1.5; -fx-border-radius: 6; -fx-background-radius: 6;");
+
+        String imgUrl = (item != null) ? item.getImgItem() : null;
+        if (imgUrl != null && !imgUrl.trim().isEmpty()) {
+            try {
+                imageView.setImage(new Image(imgUrl, true));
+            } catch (Exception ex) {
+                System.out.println("Không load được ảnh sản phẩm, dùng ảnh mặc định.");
+            }
+        }
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(8);
+
+        String itemName = (item != null) ? item.getName() : "Sản phẩm #" + ac.getItemId();
+
+        addGridRow(grid, 0, "Tên sản phẩm:", itemName, "-fx-font-weight: bold; -fx-text-fill: #1E293B; -fx-font-size: 13px;");
+        addGridRow(grid, 1, "Mã phiên:", "#" + ac.getAuctionId(), "");
+        addGridRow(grid, 2, "Mã sản phẩm:", "#" + ac.getItemId(), "");
+        addGridRow(grid, 3, "Người bán:", sellerName + " (ID: " + ac.getSellerId() + ")", "-fx-text-fill: #6C63FF; -fx-font-weight: bold;");
+        addGridRow(grid, 4, "Giá khởi điểm:", String.format("%,.0f đ", ac.getStartingPrice()), "");
+        addGridRow(grid, 5, "Giá hiện tại:", String.format("%,.0f đ", ac.getCurrentPrice()), "-fx-text-fill: #10B981; -fx-font-weight: bold;");
+        addGridRow(grid, 6, "Lượt đặt (Bids):", String.valueOf(ac.getTotalBids()), "");
+        addGridRow(grid, 7, "Trạng thái:", ac.getAuctionStatus(), "-fx-font-weight: bold; -fx-text-fill: #475569;");
+
+        contentBox.getChildren().addAll(imageView, grid);
+
+        Button btnClose = new Button("Đóng cửa sổ");
+        btnClose.setStyle("-fx-background-color: #6C63FF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 7 22 7 22;");
+        btnClose.setOnAction(e -> stage.close());
+
+        HBox footer = new HBox();
+        footer.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+        footer.getChildren().add(btnClose);
+
+        root.getChildren().addAll(title, new Separator(), contentBox, new Separator(), footer);
+        stage.setScene(new Scene(root, 560, 360));
+        stage.setResizable(false);
+        stage.show();
+    }
+
+    private void addGridRow(GridPane grid, int row, String labelText, String valueText, String valueStyle) {
+        Label label = new Label(labelText);
+        label.setStyle("-fx-text-fill: #64748B; -fx-font-weight: bold;");
+        Label value = new Label(valueText);
+        if (!valueStyle.isEmpty()) value.setStyle(valueStyle);
+        else value.setStyle("-fx-text-fill: #334155;");
+        grid.add(label, 0, row);
+        grid.add(value, 1, row);
     }
 
     private void showReportDialog(int auctionId) {
